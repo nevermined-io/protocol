@@ -1,0 +1,30 @@
+name: Tests Nightly
+
+on:
+  schedule:
+    - cron: '30 5 * * *'
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+          - uses: actions/setup-node@v4
+            with:
+              node-version: '18'
+          - name: Pre-install
+            run: |
+              rm -rf node_modules
+              yarn install
+          - name: Lint
+            run: |
+              yarn lint
+          - name: Compile
+            run: |
+              yarn clean
+              yarn compile
+          - name: Run Unit Tests
+            run: |
+              yarn test
+
+
