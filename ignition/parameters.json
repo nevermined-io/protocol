@@ -1,0 +1,9 @@
+{
+  "$global": {
+    "ownerAccountIndex": "0",
+    "governorAccountIndex": "1"
+  },
+  "MyModule": {
+    "shouldBeAllowed": false
+  }
+}

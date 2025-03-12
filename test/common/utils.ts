@@ -1,5 +1,9 @@
 import { keccak256, parseEventLogs, toBytes } from 'viem'
 
+export function generateId(): string {
+  return sha3(Math.random().toString())
+}
+
 export function sha3(message: string): string {
   return keccak256(toBytes(message))
 }

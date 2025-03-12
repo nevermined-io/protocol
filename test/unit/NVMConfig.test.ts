@@ -1,10 +1,9 @@
-import {  
-  loadFixture,
-} from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
+import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { expect } from 'chai'
 import hre from 'hardhat'
 import { toHex, zeroAddress } from 'viem'
-import { getTxParsedLogs, sha3 } from './common/utils'
+import { getTxParsedLogs, sha3 } from '../common/utils'
+import { NVMConfigModule } from '../../ignition/modules/FullDeployment'
 
 var chai = require('chai')
 chai.use(require('chai-string'))
@@ -17,10 +16,10 @@ describe('NVMConfig', function () {
     // Contracts are deployed using the first signer/account by default
     const [owner, governor] = await hre.viem.getWalletClients()
 
-    const nvmConfig = await hre.viem.deployContract('NVMConfig', [], {})
-
+    // const nvmConfig = await hre.viem.deployContract('NVMConfig', [], {})
+    const { nvmConfig } = await hre.ignition.deploy(NVMConfigModule)
     const publicClient = await hre.viem.getPublicClient()
-
+    // FullDeploymentModule
     return {
       nvmConfig,
       owner,
@@ -33,16 +32,16 @@ describe('NVMConfig', function () {
     it('Should deploy and initialize correctly', async function () {
       const { nvmConfig, owner, governor, publicClient } =
         await loadFixture(deployInstance)
-      const hash = await nvmConfig.write.initialize(
-        [owner.account.address, governor.account.address],
-        { account: owner.account },
-      )
-      console.log(`txHash: ${hash}`)
-      expect(hash).to.be.a('string')
+      // const hash = await nvmConfig.write.initialize(
+      //   [owner.account.address, governor.account.address],
+      //   { account: owner.account },
+      // )
+      // console.log(`txHash: ${hash}`)
+      // expect(hash).to.be.a('string')
 
-      await publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
-        expect(receipt.status).to.equal('success')
-      })
+      // await publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
+      //   expect(receipt.status).to.equal('success')
+      // })
     })
   })
 
@@ -54,22 +53,19 @@ describe('NVMConfig', function () {
 
     before(async () => {
       const config = await loadFixture(deployInstance)
-
       nvmConfig = config.nvmConfig
       owner = config.owner
       governor = config.governor
       publicClient = config.publicClient
-
-      await nvmConfig.write.initialize(
-        [owner.account.address, governor.account.address],
-        { account: owner.account },
-      )
     })
 
     it('Fees can be changed by a governor account', async () => {
-      const txHash = await nvmConfig.write.setNetworkFees([100n, governor.account.address], {
-        account: governor.account,
-      })
+      const txHash = await nvmConfig.write.setNetworkFees(
+        [100n, governor.account.address],
+        {
+          account: governor.account,
+        },
+      )
       expect(txHash).to.be.a.string
 
       expect(await nvmConfig.read.getNetworkFee()).to.equal(100n)
@@ -79,7 +75,7 @@ describe('NVMConfig', function () {
 
       console.log('txHash:', txHash)
       const logs = await getTxParsedLogs(publicClient, txHash, nvmConfig.abi)
-      expect(logs.length).to.be.greaterThanOrEqual(2)      
+      expect(logs.length).to.be.greaterThanOrEqual(2)
       expect(logs[0].eventName).to.equalIgnoreCase('NeverminedConfigChange')
     })
 
@@ -124,27 +120,25 @@ describe('NVMConfig', function () {
       owner = config.owner
       governor = config.governor
       publicClient = config.publicClient
-
-      await nvmConfig.write.initialize(
-        [owner.account.address, governor.account.address],
-        { account: owner.account },
-      )
     })
 
     it('Params can be set by a governor account', async () => {
       console.log('paramName:', paramName)
       console.log('paramValue:', paramValue)
-      const txHash = await nvmConfig.write.setParameter([paramName, paramValue], {
-        account: governor.account,
-      })
+      const txHash = await nvmConfig.write.setParameter(
+        [paramName, paramValue],
+        {
+          account: governor.account,
+        },
+      )
       expect(txHash).to.be.a.string
       const _value = await nvmConfig.read.getParameter([paramName])
       expect(_value[0]).to.equal(paramValue)
       expect(_value[1]).to.be.true
-      
+
       console.log('txHash:', txHash)
       const logs = await getTxParsedLogs(publicClient, txHash, nvmConfig.abi)
-      expect(logs.length).to.be.greaterThanOrEqual(1)      
+      expect(logs.length).to.be.greaterThanOrEqual(1)
       // console.log('Parsed Logs', logs)
       expect(logs[0].eventName).to.equalIgnoreCase('NeverminedConfigChange')
     })
@@ -157,7 +151,6 @@ describe('NVMConfig', function () {
         }),
       ).to.be.rejectedWith('OnlyGovernor')
     })
-    
   })
 
   describe('Only the owner can grant Governor permissions', () => {
@@ -166,18 +159,18 @@ describe('NVMConfig', function () {
 
     before(async () => {
       config = await loadFixture(deployInstance)
-      await config.nvmConfig.write.initialize(
-        [config.owner.account.address, config.governor.account.address],
-        { account: config.owner.account },
-      )
+
       const [, , anotherAccount] = await hre.viem.getWalletClients()
       newGovernor = anotherAccount
     })
     it('The owner grants governor permissions', async () => {
       const governorAddress = newGovernor.account.address
-      const txHash = await config.nvmConfig.write.grantGovernor([governorAddress], {
-        account: config.owner.account,
-      })
+      const txHash = await config.nvmConfig.write.grantGovernor(
+        [governorAddress],
+        {
+          account: config.owner.account,
+        },
+      )
 
       const isGovernor = await config.nvmConfig.read.isGovernor([
         governorAddress,
@@ -185,8 +178,12 @@ describe('NVMConfig', function () {
       expect(isGovernor).to.be.true
 
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(config.publicClient, txHash, config.nvmConfig.abi)
-      expect(logs.length).to.be.greaterThanOrEqual(2)      
+      const logs = await getTxParsedLogs(
+        config.publicClient,
+        txHash,
+        config.nvmConfig.abi,
+      )
+      expect(logs.length).to.be.greaterThanOrEqual(2)
       expect(logs[1].eventName).to.equalIgnoreCase('ConfigPermissionsChange')
     })
 
@@ -219,4 +216,91 @@ describe('NVMConfig', function () {
     })
   })
 
+  describe('Contracts Registry: We can register and resolve contracts', () => {
+    let nvmConfig: any
+    let owner: any
+    let governor: any
+    let publicClient: any
+    let paramName = sha3('myparam')
+    let paramValue = toHex('myvalue')
+
+    before(async () => {
+      const config = await loadFixture(deployInstance)
+
+      nvmConfig = config.nvmConfig
+      owner = config.owner
+      governor = config.governor
+      publicClient = config.publicClient
+    })
+
+    it('Contracts can be registered by a governor account', async () => {
+      const contractName = sha3('MyContract')
+      const contractAddress = nvmConfig.address
+      const version = 1
+      const txHash = await nvmConfig.write.registerContract(
+        [contractName, contractAddress, version],
+        {
+          account: governor.account,
+        },
+      )
+      expect(txHash).to.be.a.string
+      const _address = await nvmConfig.read.resolveContract([
+        contractName,
+        version,
+      ])
+      expect(_address).to.equalIgnoreCase(contractAddress)
+
+      console.log('txHash:', txHash)
+      const logs = await getTxParsedLogs(publicClient, txHash, nvmConfig.abi)
+      expect(logs.length).to.be.greaterThanOrEqual(1)
+      // console.log('Parsed Logs', logs)
+      expect(logs[0].eventName).to.equalIgnoreCase('ContractRegistered')
+    })
+
+    it('A new version of the same contract can be deployed', async () => {
+      const contractName = sha3('MyContract')
+      const contractAddress = '0xaF6AaaA5B8D12F7d7dD4e2BE1d1B087544f585d0'
+      const version = 2
+      const txHash = await nvmConfig.write.registerContract(
+        [contractName, contractAddress, version],
+        {
+          account: governor.account,
+        },
+      )
+      expect(txHash).to.be.a.string
+      const _address = await nvmConfig.read.resolveContract([
+        contractName,
+        version,
+      ])
+      expect(_address).to.equalIgnoreCase(contractAddress)
+
+      console.log('txHash:', txHash)
+      const logs = await getTxParsedLogs(publicClient, txHash, nvmConfig.abi)
+      expect(logs.length).to.be.greaterThanOrEqual(1)
+
+      expect(logs[0].eventName).to.equalIgnoreCase('ContractRegistered')
+    })
+
+    it('A contract can not be change a previous version', async () => {
+      const contractName = sha3('MyContract')
+      const contractAddress = '0xaF6AaaA5B8D12F7d7dD4e2BE1d1B087544f585d0'
+
+      await expect(
+        nvmConfig.write.registerContract([contractName, contractAddress, 1], {
+          account: governor.account,
+        }),
+      ).to.be.rejectedWith('InvalidContractVersion')
+    })
+
+    it('Contract address can not be changed by a not granted account', async () => {
+      const contractName = sha3('MyContract')
+      const contractAddress = nvmConfig.address
+      const [, , another] = await hre.viem.getWalletClients()
+      await expect(
+        nvmConfig.write.registerContract([contractName, contractAddress], {
+          account: another.account,
+        }),
+      ).to.be.rejectedWith('OnlyGovernor')
+    })
+  })
 })

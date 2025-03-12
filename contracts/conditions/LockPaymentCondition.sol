@@ -1,0 +1,177 @@
+// Copyright 2025 Nevermined AG.
+// SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
+// Code is Apache-2.0 and docs are CC-BY-4.0
+pragma solidity ^0.8.28;
+
+import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import {IAgreement} from '../interfaces/IAgreement.sol';
+import {IAsset} from '../interfaces/IAsset.sol';
+import {IVault} from '../interfaces/IVault.sol';
+import {TemplateCondition} from './TemplateCondition.sol';
+import {TokenUtils} from '../utils/TokenUtils.sol';
+
+contract LockPaymentCondition is
+  Initializable,
+  ReentrancyGuardUpgradeable,
+  TemplateCondition,
+  TokenUtils
+{
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');
+
+  INVMConfig internal nvmConfig;
+  IAsset internal assetsRegistry;
+  IAgreement internal agreementStore;
+  IVault internal vault;
+
+  /// The `priceType` given is not supported by the condition
+  /// @param priceType The price type supported by the condition
+  error UnsupportedPriceTypeOption(IAsset.PriceType priceType);
+
+  /// The `amounts` and `receivers` do not include the Nevermined fees
+  /// @param amounts The distribution of the payment amounts
+  /// @param receivers The distribution of the payment amounts receivers
+  error NeverminedFeesNotIncluded(uint256[] amounts, address[] receivers);
+
+  /// The `amounts` and `receivers` are incorrect
+  /// @param amounts The distribution of the payment amounts
+  /// @param receivers The distribution of the payment amounts receivers
+  error IncorrectPaymentDistribution(uint256[] amounts, address[] receivers);
+
+  function initialize(
+    address _nvmConfigAddress,
+    address _assetsRegistryAddress,
+    address _agreementStoreAddress,
+    address _vaultAddress
+  ) public initializer {
+    ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+    nvmConfig = INVMConfig(_nvmConfigAddress);
+    this._reinitializeConnections(
+      _assetsRegistryAddress,
+      _agreementStoreAddress,
+      _vaultAddress
+    );
+  }
+
+  function _reinitializeConnections(
+    address _assetsRegistryAddress,
+    address _agreementStoreAddress,
+    address _vaultAddress
+  ) public {
+    if (!nvmConfig.isGovernor(msg.sender))
+      revert INVMConfig.OnlyGovernor(msg.sender);
+
+    assetsRegistry = IAsset(_assetsRegistryAddress);
+    agreementStore = IAgreement(_agreementStoreAddress);
+    vault = IVault(_vaultAddress);
+  }
+
+  function fulfill(
+    bytes32 _conditionId,
+    bytes32 _agreementId,
+    bytes32 _did,
+    bytes32 _planId
+  ) external payable nonReentrant {
+    // 0. Validate if the account calling this function is a registered template
+    if (!nvmConfig.isTemplate(msg.sender))
+      revert INVMConfig.OnlyTemplate(msg.sender);
+
+    // 1. Check if the agreementId is registered in the AssetsRegistry
+    if (!agreementStore.agreementExists(_agreementId))
+      revert IAgreement.AgreementNotFound(_agreementId);
+
+    // 2. Check if the DID & Plan are registered in the AssetsRegistry
+    if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+    if (!assetsRegistry.planExists(_planId))
+      revert IAsset.PlanNotFound(_planId);
+
+    // 3. Check if the plan config (token, amount) is correct
+    IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+
+    if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
+      // Check if the lengths of amounts and receivers are the same
+      if (plan.price.amounts.length != plan.price.receivers.length)
+        revert IncorrectPaymentDistribution(
+          plan.price.amounts,
+          plan.price.receivers
+        );
+      // Check if the amounts and receivers include the Nevermined fees
+      if (!_areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers))
+        revert NeverminedFeesNotIncluded(
+          plan.price.amounts,
+          plan.price.receivers
+        );
+
+      if (plan.price.tokenAddress == address(0)) {
+        // Native token payment
+
+        TokenUtils.transferNativeToken(
+          payable(address(vault)),
+          calculateTotalAmount(plan.price.amounts)
+        );
+        // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
+      } else {
+        // ERC20 payment
+        TokenUtils.transferERC20(
+          msg.sender,
+          address(vault),
+          plan.price.tokenAddress,
+          calculateTotalAmount(plan.price.amounts)
+        );
+      }
+
+      // FULFILL THE CONDITION
+      agreementStore.updateConditionStatus(
+        _agreementId,
+        _conditionId,
+        IAgreement.ConditionState.Fulfilled
+      );
+    } else if (plan.price.priceType == IAsset.PriceType.FIXED_FIAT_PRICE) {
+      // Fiat payment can not be locked via LockPaymentCondition but some Oracle integrated with the payment provider (i.e Stripe)
+      revert UnsupportedPriceTypeOption(plan.price.priceType);
+    } else if (plan.price.priceType == IAsset.PriceType.SMART_CONTRACT_PRICE) {
+      // Smart contract payment is not implemented yet
+      revert UnsupportedPriceTypeOption(plan.price.priceType);
+    } else {
+      revert UnsupportedPriceTypeOption(plan.price.priceType);
+    }
+  }
+
+  function _areNeverminedFeesIncluded(
+    uint256[] memory _amounts,
+    address[] memory _receivers
+  ) internal view returns (bool) {
+    if (
+      nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
+    ) return true;
+
+    uint256 totalAmount = calculateTotalAmount(_amounts);
+    if (totalAmount == 0) return true;
+
+    bool _feeReceiverIncluded = false;
+    uint256 _receiverIndex = 0;
+
+    for (uint256 i = 0; i < _receivers.length; i++) {
+      if (_receivers[i] == nvmConfig.getFeeReceiver()) {
+        _feeReceiverIncluded = true;
+        _receiverIndex = i;
+      }
+    }
+    if (!_feeReceiverIncluded) return false;
+
+    // Return if fee calculation is correct
+    return
+      (nvmConfig.getNetworkFee() * totalAmount) /
+        nvmConfig.getFeeDenominator() ==
+      _amounts[_receiverIndex];
+  }
+
+  function calculateTotalAmount(
+    uint256[] memory _amounts
+  ) public pure returns (uint256) {
+    uint256 _totalAmount;
+    for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
+    return _totalAmount;
+  }
+}
