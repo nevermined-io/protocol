@@ -2,55 +2,41 @@ import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpe
 import { expect } from 'chai'
 import hre from 'hardhat'
 import { generateId, getTxParsedLogs } from '../common/utils'
+import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
+import { stringToHex } from 'viem'
 
 var chai = require('chai')
 chai.use(require('chai-string'))
 
 describe('AgreementsStore', function () {
-  // We define a fixture to reuse the same setup in every test.
-  // We use loadFixture to run this setup once, snapshot that state,
-  // and reset Hardhat Network to that snapshot in every test.
   async function deployInstance() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, userAccount] = await hre.viem.getWalletClients()
+    const [owner, governor, userAccount] = await hre.viem.getWalletClients()
 
-    const agreementsStore = await hre.viem.deployContract(
-      'AgreementsStore',
-      [],
-      {},
-    )
-
+    // const agreementsStore = await hre.viem.deployContract(
+    //   'AgreementsStore',
+    //   [],
+    //   {},
+    // )
+    const { nvmConfig, assetsRegistry, agreementsStore } =
+      await hre.ignition.deploy(FullDeploymentModule)
     const publicClient = await hre.viem.getPublicClient()
 
     return {
+      nvmConfig,
       agreementsStore,
       owner,
+      governor,
       userAccount,
       publicClient,
     }
   }
 
-  describe('Deployment', function () {
-    it('Should deploy and initialize correctly', async function () {
-      const { agreementsStore, owner, userAccount, publicClient } =
-        await loadFixture(deployInstance)
-
-      const hash = await agreementsStore.write.initialize(
-        [owner.account.address],
-        { account: owner.account },
-      )
-      console.log(`txHash: ${hash}`)
-      expect(hash).to.be.a('string')
-
-      await publicClient.waitForTransactionReceipt({ hash }).then((receipt) => {
-        expect(receipt.status).to.equal('success')
-      })
-    })
-  })
-
   describe('Assets: I can register assets', () => {
+    let nvmConfig: any
     let agreementsStore: any
     let owner: any
+    let governor: any
     let userAccount: any
     let publicClient: any
     let agreementId: string
@@ -61,14 +47,19 @@ describe('AgreementsStore', function () {
     before(async () => {
       const config = await loadFixture(deployInstance)
 
+      nvmConfig = config.nvmConfig
       agreementsStore = config.agreementsStore
       owner = config.owner
+      governor = config.governor
       userAccount = config.userAccount
       publicClient = config.publicClient
 
-      await agreementsStore.write.initialize([owner.account.address], {
-        account: owner.account,
-      })
+      console.log('owner:', owner.account.address)
+      console.log('governor:', governor.account.address)
+      console.log('userAccount:', userAccount.account.address)
+      // await agreementsStore.write.initialize([owner.account.address], {
+      //   account: owner.account,
+      // })
     })
 
     it('I can generate the hash for a DID', async () => {
@@ -86,10 +77,44 @@ describe('AgreementsStore', function () {
       expect(agreement.lastUpdated).to.equal(0n)
     })
 
+    it('I can not register an agreement if Im not a template', async () => {
+      const _params = [stringToHex('')]
+      await expect(
+        agreementsStore.write.register(
+          [
+            generateId(),
+            userAccount.account.address,
+            did,
+            planId,
+            [generateId()],
+            [0],
+            _params,
+          ],
+          {
+            account: userAccount.account,
+          },
+        ),
+      ).to.be.rejectedWith('OnlyTemplate')
+    })
+
     it('I can generate the hash for a Agreement', async () => {
-      const txHash = await agreementsStore.write.register([seed, did, planId], {
-        account: owner.account,
+      await nvmConfig.write.grantTemplate([owner.account.address], {
+        account: governor.account,
       })
+      const txHash = await agreementsStore.write.register(
+        [
+          agreementId,
+          userAccount.account.address,
+          did,
+          planId,
+          [generateId()],
+          [0],
+          [],
+        ],
+        {
+          account: owner.account,
+        },
+      )
 
       expect(txHash).to.be.a.string
       console.log('txHash:', txHash)

@@ -47,11 +47,9 @@ contract LockPaymentCondition is
   ) public initializer {
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    this._reinitializeConnections(
-      _assetsRegistryAddress,
-      _agreementStoreAddress,
-      _vaultAddress
-    );
+    assetsRegistry = IAsset(_assetsRegistryAddress);
+    agreementStore = IAgreement(_agreementStoreAddress);
+    vault = IVault(_vaultAddress);
   }
 
   function _reinitializeConnections(
@@ -59,8 +57,7 @@ contract LockPaymentCondition is
     address _agreementStoreAddress,
     address _vaultAddress
   ) public {
-    if (!nvmConfig.isGovernor(msg.sender))
-      revert INVMConfig.OnlyGovernor(msg.sender);
+    if (!nvmConfig.isOwner(msg.sender)) revert INVMConfig.OnlyOwner(msg.sender);
 
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
@@ -108,7 +105,7 @@ contract LockPaymentCondition is
 
         TokenUtils.transferNativeToken(
           payable(address(vault)),
-          calculateTotalAmount(plan.price.amounts)
+          calculateAmountSum(plan.price.amounts)
         );
         // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
       } else {
@@ -117,7 +114,7 @@ contract LockPaymentCondition is
           msg.sender,
           address(vault),
           plan.price.tokenAddress,
-          calculateTotalAmount(plan.price.amounts)
+          calculateAmountSum(plan.price.amounts)
         );
       }
 
@@ -146,7 +143,7 @@ contract LockPaymentCondition is
       nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
     ) return true;
 
-    uint256 totalAmount = calculateTotalAmount(_amounts);
+    uint256 totalAmount = TokenUtils.calculateAmountSum(_amounts);
     if (totalAmount == 0) return true;
 
     bool _feeReceiverIncluded = false;
@@ -165,13 +162,5 @@ contract LockPaymentCondition is
       (nvmConfig.getNetworkFee() * totalAmount) /
         nvmConfig.getFeeDenominator() ==
       _amounts[_receiverIndex];
-  }
-
-  function calculateTotalAmount(
-    uint256[] memory _amounts
-  ) public pure returns (uint256) {
-    uint256 _totalAmount;
-    for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
-    return _totalAmount;
   }
 }

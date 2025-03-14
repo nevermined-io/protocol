@@ -114,6 +114,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     AccessControlUpgradeable.__AccessControl_init();
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
+    
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -167,6 +168,18 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     return hasRole(GOVERNOR_ROLE, _address);
   }
 
+  /**
+   * Checks if an address has the owner role
+   * @param _address the address to check if has the owner role
+   * @return true if the address has the owner role, false otherwise
+   */
+  function isOwner(address _address) external view returns (bool) {
+    return hasRole(OWNER_ROLE, _address);
+  }
+
+  function hasRole(address _address, bytes32 _role) external view returns (bool) {
+    return super.hasRole(_role, _address);
+  }
   /**
    * Function to grant the governor role to an address.
    * @notice Only an owner address can call this function.

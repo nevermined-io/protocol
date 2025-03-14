@@ -9,11 +9,13 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
+import {TokenUtils} from '../utils/TokenUtils.sol';
 
 contract TransferCreditsCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
-  TemplateCondition
+  TemplateCondition,
+  TokenUtils
 {
   bytes32 public constant NVM_CONTRACT_NAME =
     keccak256('TransferCreditsCondition');
@@ -89,7 +91,7 @@ contract TransferCreditsCondition is
       nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
     ) return true;
 
-    uint256 totalAmount = calculateTotalAmount(_amounts);
+    uint256 totalAmount = TokenUtils.calculateAmountSum(_amounts);
     if (totalAmount == 0) return true;
 
     bool _feeReceiverIncluded = false;
@@ -108,13 +110,5 @@ contract TransferCreditsCondition is
       (nvmConfig.getNetworkFee() * totalAmount) /
         nvmConfig.getFeeDenominator() ==
       _amounts[_receiverIndex];
-  }
-
-  function calculateTotalAmount(
-    uint256[] memory _amounts
-  ) public pure returns (uint256) {
-    uint256 _totalAmount;
-    for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
-    return _totalAmount;
   }
 }

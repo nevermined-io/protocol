@@ -12,16 +12,17 @@ abstract contract NFT1155Credits is
   ERC1155Upgradeable,
   AccessControlUpgradeable
 {
+  /**
+   * @notice Role allowing to mint credits
+   */
+  bytes32 public constant CREDITS_MINTER_ROLE =
+    keccak256('CREDITS_MINTER_ROLE');
 
   /**
    * @notice Role allowing to mint credits
-  */
-  bytes32 public constant CREDITS_MINTER_ROLE = keccak256('CREDITS_MINTER_ROLE');
-
-  /**
-   * @notice Role allowing to mint credits
-  */
-  bytes32 public constant CREDITS_BURNER_ROLE = keccak256('CREDITS_MINTER_ROLE');
+   */
+  bytes32 public constant CREDITS_BURNER_ROLE =
+    keccak256('CREDITS_MINTER_ROLE');
 
   INVMConfig internal nvmConfig;
 

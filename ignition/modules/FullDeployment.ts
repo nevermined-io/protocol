@@ -4,9 +4,13 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules"
 import hre from 'hardhat'
 import { sha3 } from "../../test/common/utils"
+import { zeroAddress } from "viem"
 
 const OWNER_ACCOUNT_INDEX = (process.env.OWNER_ACCOUNT_INDEX || 0) as number
 const GOVERNOR_ACCOUNT_INDEX = (process.env.GOVERNOR_ACCOUNT_INDEX || 1) as number
+const NVM_FEE_AMOUNT = (process.env.NVM_FEE_AMOUNT || 10000) as number // 1% by default
+const NVM_FEE_RECEIVER = process.env.NVM_FEE_RECEIVER
+
 
 const HASH_ASSETS_REGISTRY = sha3('AssetsRegistry')
 const HASH_AGREEMENTS_STORE = sha3('AgreementsStore')
@@ -21,6 +25,8 @@ const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 
 	const nvmConfig = m.contract("NVMConfig", [], { from: owner })
 	m.call(nvmConfig, 'initialize', [owner, governor])
+
+	m.call(nvmConfig, 'setNetworkFees', [NVM_FEE_AMOUNT, NVM_FEE_RECEIVER || owner], { from: governor })
 
 	return { nvmConfig }
 })
@@ -85,7 +91,7 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 		{ from: governor, id: 'AgreementsStore_registerContract' })
 
 	// Payments Vault
-	m.call(paymentsVault, 'initialize', [owner, nvmConfig])	
+	m.call(paymentsVault, 'initialize', [nvmConfig], { from: owner })	
 	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
 		[HASH_PAYMENTS_VAULT, paymentsVault, 1], 
 		{ from: governor, id: 'PaymentsVault_registerContract' })
@@ -97,25 +103,25 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 		{ from: governor, id: 'LockPaymentCondition_registerContract' })
 
 	// Fixed Payment Template
-	m.call(fixedPaymentTemplate, 'initialize', [fixedPaymentTemplate])			
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_FIXED_PAYMENT_TEMPLATE, fixedPaymentTemplate, 1], 
-		{ from: governor, id: 'FixedPaymentTemplate_registerContract' })
-	m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
+	// m.call(fixedPaymentTemplate, 'initialize', [fixedPaymentTemplate, agreementsStore, lockPaymentCondition, zeroAddress])
+	// m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
+	// 	[HASH_FIXED_PAYMENT_TEMPLATE, fixedPaymentTemplate, 1], 
+	// 	{ from: governor, id: 'FixedPaymentTemplate_registerContract' })
+	// m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
 
 	// Grant Deposit and Withdrawal permissions to Payments Vault
-	const DEPOSIT_ROLE = m.staticCall(paymentsVault, 'DEPOSIT_ROLE', [])
+	const DEPOSITOR_ROLE = m.staticCall(paymentsVault, 'DEPOSITOR_ROLE', [])
 	const WITHDRAW_ROLE = m.staticCall(paymentsVault, 'WITHDRAW_ROLE', [])
-	m.call(paymentsVault, 'grantRole', [DEPOSIT_ROLE, lockPaymentCondition], { from: owner })
+	// m.call(nvmConfig, 'grantRole', [DEPOSITOR_ROLE, lockPaymentCondition], { from: owner })
 
-	return { nvmConfig, paymentsVault, assetsRegistry, lockPaymentCondition, fixedPaymentTemplate }
+	return { nvmConfig, paymentsVault, assetsRegistry, agreementsStore, lockPaymentCondition, fixedPaymentTemplate }
 })
 
 const FullDeploymentModule = buildModule("FullDeploymentModule", (m) => {
-	const { nvmConfig, paymentsVault, assetsRegistry, fixedPaymentTemplate } = m.useModule(DeploymentOfContractsModule)
+	const { nvmConfig, paymentsVault, assetsRegistry, agreementsStore, fixedPaymentTemplate } = m.useModule(DeploymentOfContractsModule)
 
 	console.log(nvmConfig)
-	return { nvmConfig, paymentsVault, assetsRegistry, fixedPaymentTemplate }
+	return { nvmConfig, paymentsVault, assetsRegistry, agreementsStore, fixedPaymentTemplate }
 })
 
 // const registerContract = (_name: string, _address: string, _version = 0) => {
