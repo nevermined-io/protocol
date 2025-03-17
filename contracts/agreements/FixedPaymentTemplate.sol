@@ -26,25 +26,23 @@ contract FixedPaymentTemplate is BaseTemplate {
     address _transferCondtionAddress
   ) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    _reinitializeConnections(
-      _agreementStoreAddress,
-      _lockPaymentConditionAddress,
-      _transferCondtionAddress
-    );
-  }
-
-  function _reinitializeConnections(
-    address _agreementStoreAddress,
-    address _lockPaymentConditionAddress,
-    address _transferCondtionAddress
-  ) public {
-    if (!nvmConfig.isGovernor(msg.sender))
-      revert INVMConfig.OnlyGovernor(msg.sender);
-
     agreementStore = AgreementsStore(_agreementStoreAddress);
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
   }
+
+  // function _reinitializeConnections(
+  //   address _agreementStoreAddress,
+  //   address _lockPaymentConditionAddress,
+  //   address _transferCondtionAddress
+  // ) public {
+  //   if (!nvmConfig.isGovernor(msg.sender))
+  //     revert INVMConfig.OnlyGovernor(msg.sender);
+
+  //   agreementStore = AgreementsStore(_agreementStoreAddress);
+  //   lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
+  //   transferCondition = TransferCreditsCondition(_transferCondtionAddress);
+  // }
 
   function createAgreement(
     bytes32 _seed,
@@ -62,6 +60,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     IAgreement.Agreement memory agreement = agreementStore.getAgreement(
       agreementId
     );
+
     if (agreement.lastUpdated != 0) {
       revert IAgreement.AgreementAlreadyRegistered(agreementId);
     }
@@ -77,6 +76,7 @@ contract FixedPaymentTemplate is BaseTemplate {
       agreementId,
       transferCondition.NVM_CONTRACT_NAME()
     );
+
     // IAgreement.ConditionState[] memory _conditionStates = new IAgreement.ConditionState[](3);
 
     agreementStore.register(
@@ -91,7 +91,14 @@ contract FixedPaymentTemplate is BaseTemplate {
 
     // 3. Lock the payment
     _lockPayment(conditionIds[0], agreementId, _did, _planId);
-    _transferPlan(conditionIds[1], agreementId, _did, _planId, conditionIds[0]);
+    _transferPlan(
+      conditionIds[1],
+      agreementId,
+      _did,
+      _planId,
+      conditionIds[0],
+      msg.sender
+    );
     _distributePayment(agreementId);
   }
 
@@ -101,7 +108,12 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _did,
     bytes32 _planId
   ) internal {
-    lockPaymentCondition.fulfill(_conditionId, _agreementId, _did, _planId);
+    lockPaymentCondition.fulfill{value: msg.value}(
+      _conditionId,
+      _agreementId,
+      _did,
+      _planId
+    );
   }
 
   function _transferPlan(
@@ -109,7 +121,8 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _agreementId,
     bytes32 _did,
     bytes32 _planId,
-    bytes32 _lockPaymentCondition
+    bytes32 _lockPaymentCondition,
+    address _receiverAddress
   ) internal {
     bytes32[] memory _requiredConditons = new bytes32[](1);
     _requiredConditons[0] = _lockPaymentCondition;
@@ -118,7 +131,8 @@ contract FixedPaymentTemplate is BaseTemplate {
       _agreementId,
       _did,
       _planId,
-      _requiredConditons
+      _requiredConditons,
+      _receiverAddress
     );
   }
 

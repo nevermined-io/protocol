@@ -115,6 +115,11 @@ interface IAsset {
   /// @param planId The unique identifier of a Plan
   error PlanNotFound(bytes32 planId);
 
+  /// The `amounts` and `receivers` do not include the Nevermined fees
+  /// @param amounts The distribution of the payment amounts
+  /// @param receivers The distribution of the payment amounts receivers
+  error NeverminedFeesNotIncluded(uint256[] amounts, address[] receivers);
+
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
   function assetExists(bytes32 _did) external view returns (bool);
@@ -122,4 +127,9 @@ interface IAsset {
   function getPlan(bytes32 _planId) external view returns (Plan memory);
 
   function planExists(bytes32 _planId) external view returns (bool);
+
+  function areNeverminedFeesIncluded(
+    uint256[] memory _amounts,
+    address[] memory _receivers
+  ) external view returns (bool);
 }

@@ -29,11 +29,6 @@ contract LockPaymentCondition is
   /// @param priceType The price type supported by the condition
   error UnsupportedPriceTypeOption(IAsset.PriceType priceType);
 
-  /// The `amounts` and `receivers` do not include the Nevermined fees
-  /// @param amounts The distribution of the payment amounts
-  /// @param receivers The distribution of the payment amounts receivers
-  error NeverminedFeesNotIncluded(uint256[] amounts, address[] receivers);
-
   /// The `amounts` and `receivers` are incorrect
   /// @param amounts The distribution of the payment amounts
   /// @param receivers The distribution of the payment amounts receivers
@@ -52,17 +47,17 @@ contract LockPaymentCondition is
     vault = IVault(_vaultAddress);
   }
 
-  function _reinitializeConnections(
-    address _assetsRegistryAddress,
-    address _agreementStoreAddress,
-    address _vaultAddress
-  ) public {
-    if (!nvmConfig.isOwner(msg.sender)) revert INVMConfig.OnlyOwner(msg.sender);
+  // function _reinitializeConnections(
+  //   address _assetsRegistryAddress,
+  //   address _agreementStoreAddress,
+  //   address _vaultAddress
+  // ) public {
+  //   if (!nvmConfig.isOwner(msg.sender)) revert INVMConfig.OnlyOwner(msg.sender);
 
-    assetsRegistry = IAsset(_assetsRegistryAddress);
-    agreementStore = IAgreement(_agreementStoreAddress);
-    vault = IVault(_vaultAddress);
-  }
+  //   assetsRegistry = IAsset(_assetsRegistryAddress);
+  //   agreementStore = IAgreement(_agreementStoreAddress);
+  //   vault = IVault(_vaultAddress);
+  // }
 
   function fulfill(
     bytes32 _conditionId,
@@ -94,8 +89,13 @@ contract LockPaymentCondition is
           plan.price.receivers
         );
       // Check if the amounts and receivers include the Nevermined fees
-      if (!_areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers))
-        revert NeverminedFeesNotIncluded(
+      if (
+        !assetsRegistry.areNeverminedFeesIncluded(
+          plan.price.amounts,
+          plan.price.receivers
+        )
+      )
+        revert IAsset.NeverminedFeesNotIncluded(
           plan.price.amounts,
           plan.price.receivers
         );
@@ -133,34 +133,5 @@ contract LockPaymentCondition is
     } else {
       revert UnsupportedPriceTypeOption(plan.price.priceType);
     }
-  }
-
-  function _areNeverminedFeesIncluded(
-    uint256[] memory _amounts,
-    address[] memory _receivers
-  ) internal view returns (bool) {
-    if (
-      nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
-    ) return true;
-
-    uint256 totalAmount = TokenUtils.calculateAmountSum(_amounts);
-    if (totalAmount == 0) return true;
-
-    bool _feeReceiverIncluded = false;
-    uint256 _receiverIndex = 0;
-
-    for (uint256 i = 0; i < _receivers.length; i++) {
-      if (_receivers[i] == nvmConfig.getFeeReceiver()) {
-        _feeReceiverIncluded = true;
-        _receiverIndex = i;
-      }
-    }
-    if (!_feeReceiverIncluded) return false;
-
-    // Return if fee calculation is correct
-    return
-      (nvmConfig.getNetworkFee() * totalAmount) /
-        nvmConfig.getFeeDenominator() ==
-      _amounts[_receiverIndex];
   }
 }

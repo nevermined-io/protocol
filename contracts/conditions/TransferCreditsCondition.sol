@@ -10,6 +10,7 @@ import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
 import {TokenUtils} from '../utils/TokenUtils.sol';
+import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 
 contract TransferCreditsCondition is
   Initializable,
@@ -31,29 +32,28 @@ contract TransferCreditsCondition is
   ) public initializer {
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    this._reinitializeConnections(
-      _assetsRegistryAddress,
-      _agreementStoreAddress
-    );
-  }
-
-  function _reinitializeConnections(
-    address _assetsRegistryAddress,
-    address _agreementStoreAddress
-  ) public {
-    if (!nvmConfig.isGovernor(msg.sender))
-      revert INVMConfig.OnlyGovernor(msg.sender);
-
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
   }
+
+  // function _reinitializeConnections(
+  //   address _assetsRegistryAddress,
+  //   address _agreementStoreAddress
+  // ) public {
+  //   if (!nvmConfig.isGovernor(msg.sender))
+  //     revert INVMConfig.OnlyGovernor(msg.sender);
+
+  //   assetsRegistry = IAsset(_assetsRegistryAddress);
+  //   agreementStore = IAgreement(_agreementStoreAddress);
+  // }
 
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
     bytes32 _planId,
-    bytes32[] memory _requiredConditions
+    bytes32[] memory _requiredConditions,
+    address _receiverAddress
   ) external payable nonReentrant {
     // 0. Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender))
@@ -75,40 +75,21 @@ contract TransferCreditsCondition is
 
     // 3. Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+
+    NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
+    nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
     // TODO: Implement the logic
     // LOAD NFT1155(plan.nftAddress)
     // IF plan.credits.creditsType == EXPIRABLE
     // ELSE IF plan.credits.creditsType == FIXED
     // ELSE IF plan.credits.creditsType == DYNAMIC
     // ELSE revert
-  }
 
-  function _areNeverminedFeesIncluded(
-    uint256[] memory _amounts,
-    address[] memory _receivers
-  ) internal view returns (bool) {
-    if (
-      nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
-    ) return true;
-
-    uint256 totalAmount = TokenUtils.calculateAmountSum(_amounts);
-    if (totalAmount == 0) return true;
-
-    bool _feeReceiverIncluded = false;
-    uint256 _receiverIndex = 0;
-
-    for (uint256 i = 0; i < _receivers.length; i++) {
-      if (_receivers[i] == nvmConfig.getFeeReceiver()) {
-        _feeReceiverIncluded = true;
-        _receiverIndex = i;
-      }
-    }
-    if (!_feeReceiverIncluded) return false;
-
-    // Return if fee calculation is correct
-    return
-      (nvmConfig.getNetworkFee() * totalAmount) /
-        nvmConfig.getFeeDenominator() ==
-      _amounts[_receiverIndex];
+    // FULFILL THE CONDITION
+    agreementStore.updateConditionStatus(
+      _agreementId,
+      _conditionId,
+      IAgreement.ConditionState.Fulfilled
+    );
   }
 }

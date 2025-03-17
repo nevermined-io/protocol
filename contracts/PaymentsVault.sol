@@ -52,7 +52,10 @@ contract PaymentsVault is ERC4626Upgradeable, IVault {
   }
 
   // solhint-disable-next-line
-  function mint(uint256 _shares, address _receiver) 
+  function mint(
+    uint256 /*_shares*/, 
+    address /*_receiver*/
+  ) 
   public 
   override(ERC4626Upgradeable, IVault)   
   returns (uint256) {

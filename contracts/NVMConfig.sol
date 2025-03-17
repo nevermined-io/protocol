@@ -112,6 +112,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function initialize(address _owner, address _governor) public initializer {
     AccessControlUpgradeable.__AccessControl_init();
+    AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
     
