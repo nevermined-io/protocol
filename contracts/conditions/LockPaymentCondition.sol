@@ -15,8 +15,7 @@ import {TokenUtils} from '../utils/TokenUtils.sol';
 contract LockPaymentCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
-  TemplateCondition,
-  TokenUtils
+  TemplateCondition
 {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');
 
@@ -89,12 +88,12 @@ contract LockPaymentCondition is
           plan.price.receivers
         );
 
-      uint256 amountToTransfer = calculateAmountSum(plan.price.amounts);
+      uint256 amountToTransfer = TokenUtils.calculateAmountSum(plan.price.amounts);
       if (plan.price.tokenAddress == address(0)) {
         // Native token payment
         if (amountToTransfer > 0) {
           if (msg.value != amountToTransfer)
-            revert InvalidTransactionAmount(msg.value, amountToTransfer);
+            revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
           vault.depositNativeToken{value: amountToTransfer}();
         }
         // TokenUtils.transferNativeToken(

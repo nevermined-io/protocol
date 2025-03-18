@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-abstract contract TokenUtils {
+library TokenUtils {
   /// Error sending native token (i.e ETH)
   error FailedToSendNativeToken();
 
@@ -27,7 +27,7 @@ abstract contract TokenUtils {
     address _receiverAddress,
     address _tokenAddress,
     uint256 _amount
-  ) internal {
+  ) public {
     if (_amount > 0) {
       IERC20 token = IERC20(_tokenAddress);
       token.approve(_receiverAddress, _amount);
@@ -43,7 +43,7 @@ abstract contract TokenUtils {
   function transferNativeToken(
     address payable _receiverAddress,
     uint256 _amount
-  ) internal {
+  ) public {
     if (_amount > 0) {
       if (msg.value != _amount)
         revert InvalidTransactionAmount(msg.value, _amount);

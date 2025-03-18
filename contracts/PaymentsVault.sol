@@ -7,9 +7,10 @@ import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IVault} from './interfaces/IVault.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 
 
-contract PaymentsVault is Initializable, IVault {
+contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
 
   /**
    * @notice Role allowing to deposit assets into the Vault
@@ -55,7 +56,8 @@ contract PaymentsVault is Initializable, IVault {
     uint256 amount
   );
 
-  function initialize(address _nvmConfigAddress) public initializer {    
+  function initialize(address _nvmConfigAddress) public initializer {
+    ReentrancyGuardUpgradeable.__ReentrancyGuard_init();    
     nvmConfig = INVMConfig(_nvmConfigAddress);
   }  
 
@@ -66,7 +68,7 @@ contract PaymentsVault is Initializable, IVault {
   }
 
   function depositNativeToken() 
-  external payable 
+  external payable nonReentrant
   {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
       revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
@@ -74,18 +76,18 @@ contract PaymentsVault is Initializable, IVault {
   }
 
   function withdrawNativeToken(uint256 _amount, address _receiver) 
-  external   
+  external nonReentrant  
   {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) revert InvalidRole(msg.sender, WITHDRAW_ROLE);
     
     (bool sent, ) = _receiver.call{value: _amount}('');
     if (!sent) revert FailedToSendNativeToken();
-    
+
     emit WithdrawNativeToken(msg.sender, _receiver, _amount);    
   }
 
   function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) 
-  external  
+  external nonReentrant 
   {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
       revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
@@ -93,7 +95,7 @@ contract PaymentsVault is Initializable, IVault {
   }
 
   function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver) 
-  external   
+  external nonReentrant  
   {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE))
       revert InvalidRole(msg.sender, WITHDRAW_ROLE);

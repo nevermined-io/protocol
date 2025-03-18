@@ -9,14 +9,12 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
-import {TokenUtils} from '../utils/TokenUtils.sol';
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 
 contract TransferCreditsCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
-  TemplateCondition,
-  TokenUtils
+  TemplateCondition
 {
   bytes32 public constant NVM_CONTRACT_NAME =
     keccak256('TransferCreditsCondition');
@@ -36,16 +34,6 @@ contract TransferCreditsCondition is
     agreementStore = IAgreement(_agreementStoreAddress);
   }
 
-  // function _reinitializeConnections(
-  //   address _assetsRegistryAddress,
-  //   address _agreementStoreAddress
-  // ) public {
-  //   if (!nvmConfig.isGovernor(msg.sender))
-  //     revert INVMConfig.OnlyGovernor(msg.sender);
-
-  //   assetsRegistry = IAsset(_assetsRegistryAddress);
-  //   agreementStore = IAgreement(_agreementStoreAddress);
-  // }
 
   function fulfill(
     bytes32 _conditionId,

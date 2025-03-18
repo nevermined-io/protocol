@@ -22,6 +22,7 @@ const HASH_DISTRIBUTEPAYMENTS_CONDITION = sha3('DistributePaymentsCondition')
 const HASH_FIXED_PAYMENT_TEMPLATE = sha3('FixedPaymentTemplate')
 
 
+
 const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
@@ -32,6 +33,13 @@ const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	m.call(nvmConfig, 'setNetworkFees', [NVM_FEE_AMOUNT, NVM_FEE_RECEIVER || owner], { from: governor })
 
 	return { nvmConfig }
+})
+
+const LibrariesDeploymentModule = buildModule("LibrariesDeploymentModule", (m) => {
+	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
+	const tokenUtils = m.library("TokenUtils", { from: owner })	
+
+	return { tokenUtils }
 })
 
 const AssetsRegistryModule = buildModule("AssetsRegistryModule", (m) => {
@@ -62,7 +70,10 @@ const NFT1155CreditsModule = buildModule("NFT1155CreditsModule", (m) => {
 
 const LockPaymentConditionModule = buildModule("LockPaymentConditionModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-	const lockPaymentCondition = m.contract("LockPaymentCondition", [], { from: owner })	
+	const lockPaymentCondition = m.contract("LockPaymentCondition", [], { 
+		from: owner, 
+		libraries: { TokenUtils: m.useModule(LibrariesDeploymentModule).tokenUtils } 
+	})	
 	return { lockPaymentCondition }
 })
 
@@ -74,7 +85,10 @@ const TransferCreditsConditionModule = buildModule("TransferCreditsConditionModu
 
 const DistributePaymentsConditionModule = buildModule("DistributePaymentsConditionModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-	const distributePaymentsCondition = m.contract("DistributePaymentsCondition", [], { from: owner })	
+	const distributePaymentsCondition = m.contract("DistributePaymentsCondition", [], { 
+		from: owner,
+		libraries: { TokenUtils: m.useModule(LibrariesDeploymentModule).tokenUtils } 
+	})	
 	return { distributePaymentsCondition }
 })
 
@@ -93,6 +107,7 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
 	
 	const { nvmConfig } = m.useModule(NVMConfigModule)
+	const { tokenUtils } = m.useModule(LibrariesDeploymentModule)
 	const { assetsRegistry } = m.useModule(AssetsRegistryModule)
 	const { agreementsStore } = m.useModule(AgreementsStoreModule)
 	const { paymentsVault } = m.useModule(PaymentsVaultModule)

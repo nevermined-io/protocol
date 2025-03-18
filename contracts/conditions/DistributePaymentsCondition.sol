@@ -15,8 +15,7 @@ import {TokenUtils} from '../utils/TokenUtils.sol';
 contract DistributePaymentsCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
-  TemplateCondition,
-  TokenUtils
+  TemplateCondition
 {
   bytes32 public constant NVM_CONTRACT_NAME =
     keccak256('DistributePaymentsCondition');
