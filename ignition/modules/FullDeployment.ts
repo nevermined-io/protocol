@@ -18,6 +18,7 @@ const HASH_PAYMENTS_VAULT = sha3('PaymentsVault')
 const HASH_NFT1155CREDITS = sha3('NFT1155Credits')
 const HASH_LOCKPAYMENT_CONDITION = sha3('LockPaymentCondition')
 const HASH_TRANSFERCREDITS_CONDITION = sha3('TransferCreditsCondition')
+const HASH_DISTRIBUTEPAYMENTS_CONDITION = sha3('DistributePaymentsCondition')
 const HASH_FIXED_PAYMENT_TEMPLATE = sha3('FixedPaymentTemplate')
 
 
@@ -71,6 +72,12 @@ const TransferCreditsConditionModule = buildModule("TransferCreditsConditionModu
 	return { transferCreditsCondition }
 })
 
+const DistributePaymentsConditionModule = buildModule("DistributePaymentsConditionModule", (m) => {
+	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
+	const distributePaymentsCondition = m.contract("DistributePaymentsCondition", [], { from: owner })	
+	return { distributePaymentsCondition }
+})
+
 const TemplatesDeploymentModule = buildModule("TemplatesDeploymentModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
@@ -92,6 +99,7 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	const { nftCredits } = m.useModule(NFT1155CreditsModule)
 	const { lockPaymentCondition } = m.useModule(LockPaymentConditionModule)
 	const { transferCreditsCondition } = m.useModule(TransferCreditsConditionModule)
+	const { distributePaymentsCondition } = m.useModule(DistributePaymentsConditionModule)
 	const { fixedPaymentTemplate } = m.useModule(TemplatesDeploymentModule)	
 	
 	/////////////////// CORE CONTRACTS //////////////////////////////////
@@ -137,10 +145,17 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 		{ from: governor, id: 'TransferCreditsCondition_registerContract' })
 	m.call(nvmConfig, 'grantCondition', [transferCreditsCondition], { from: governor , id: 'grantCondition_transferCredits' })
 
+	// DistributePaymentsCondition
+	m.call(distributePaymentsCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore, paymentsVault])	
+	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
+		[HASH_DISTRIBUTEPAYMENTS_CONDITION, distributePaymentsCondition, 1], 
+		{ from: governor, id: 'DistributePaymentsCondition_registerContract' })
+	m.call(nvmConfig, 'grantCondition', [distributePaymentsCondition], { from: governor , id: 'grantCondition_distributePayments' })
+
 
 	/////////////////// TEMPLATES //////////////////////////////////
 	// Fixed Payment Template
-	m.call(fixedPaymentTemplate, 'initialize', [fixedPaymentTemplate, agreementsStore, lockPaymentCondition, transferCreditsCondition])
+	m.call(fixedPaymentTemplate, 'initialize', [fixedPaymentTemplate, agreementsStore, lockPaymentCondition, transferCreditsCondition, distributePaymentsCondition])
 	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
 	 	[HASH_FIXED_PAYMENT_TEMPLATE, fixedPaymentTemplate, 1], 
 	 	{ from: governor, id: 'FixedPaymentTemplate_registerContract' })
@@ -152,6 +167,7 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	const DEPOSITOR_ROLE = m.staticCall(paymentsVault, 'DEPOSITOR_ROLE', [])
 	const WITHDRAW_ROLE = m.staticCall(paymentsVault, 'WITHDRAW_ROLE', [])	
 	m.call(nvmConfig, 'grantRole', [DEPOSITOR_ROLE, lockPaymentCondition], { from: owner, id: 'grantRole_depositor_lockPayment' })
+	m.call(nvmConfig, 'grantRole', [WITHDRAW_ROLE, distributePaymentsCondition], { from: owner, id: 'grantRole_withdraw_distributePayments' })
 	
 	// Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
 	const CREDITS_MINTER_ROLE = m.staticCall(nftCredits, 'CREDITS_MINTER_ROLE', [])
@@ -165,6 +181,7 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 		nftCredits,
 		lockPaymentCondition, 
 		transferCreditsCondition, 
+		distributePaymentsCondition,
 		fixedPaymentTemplate 
 	}
 })

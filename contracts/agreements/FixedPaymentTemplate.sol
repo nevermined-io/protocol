@@ -9,6 +9,7 @@ import {BaseTemplate} from './BaseTemplate.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {LockPaymentCondition} from '../conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../conditions/TransferCreditsCondition.sol';
+import {DistributePaymentsCondition} from '../conditions/DistributePaymentsCondition.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
@@ -17,32 +18,23 @@ contract FixedPaymentTemplate is BaseTemplate {
   // Conditions required to execute this template
   LockPaymentCondition internal lockPaymentCondition;
   TransferCreditsCondition internal transferCondition;
-  //DistributePaymentCondition internal distributePaymentCondition;
+  DistributePaymentsCondition internal distributePaymentsCondition;
 
   function initialize(
     address _nvmConfigAddress,
     address _agreementStoreAddress,
     address _lockPaymentConditionAddress,
-    address _transferCondtionAddress
+    address _transferCondtionAddress,
+    address _distributePaymentsCondition
   ) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
     agreementStore = AgreementsStore(_agreementStoreAddress);
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
+    distributePaymentsCondition = DistributePaymentsCondition(
+      _distributePaymentsCondition
+    );
   }
-
-  // function _reinitializeConnections(
-  //   address _agreementStoreAddress,
-  //   address _lockPaymentConditionAddress,
-  //   address _transferCondtionAddress
-  // ) public {
-  //   if (!nvmConfig.isGovernor(msg.sender))
-  //     revert INVMConfig.OnlyGovernor(msg.sender);
-
-  //   agreementStore = AgreementsStore(_agreementStoreAddress);
-  //   lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
-  //   transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-  // }
 
   function createAgreement(
     bytes32 _seed,
@@ -76,6 +68,10 @@ contract FixedPaymentTemplate is BaseTemplate {
       agreementId,
       transferCondition.NVM_CONTRACT_NAME()
     );
+    conditionIds[2] = distributePaymentsCondition.hashConditionId(
+      agreementId,
+      distributePaymentsCondition.NVM_CONTRACT_NAME()
+    );
 
     // IAgreement.ConditionState[] memory _conditionStates = new IAgreement.ConditionState[](3);
 
@@ -90,7 +86,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     );
 
     // 3. Lock the payment
-    _lockPayment(conditionIds[0], agreementId, _did, _planId);
+    _lockPayment(conditionIds[0], agreementId, _did, _planId, msg.sender);
     _transferPlan(
       conditionIds[1],
       agreementId,
@@ -99,20 +95,29 @@ contract FixedPaymentTemplate is BaseTemplate {
       conditionIds[0],
       msg.sender
     );
-    _distributePayment(agreementId);
+    _distributePayments(
+      conditionIds[2],
+      agreementId,
+      _did,
+      _planId,
+      conditionIds[0],
+      conditionIds[1]
+    );
   }
 
   function _lockPayment(
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId
+    bytes32 _planId,
+    address _senderAddress
   ) internal {
     lockPaymentCondition.fulfill{value: msg.value}(
       _conditionId,
       _agreementId,
       _did,
-      _planId
+      _planId,
+      _senderAddress
     );
   }
 
@@ -136,5 +141,25 @@ contract FixedPaymentTemplate is BaseTemplate {
     );
   }
 
-  function _distributePayment(bytes32 _agreementId) public {}
+  function _distributePayments(
+    bytes32 _conditionId,
+    bytes32 _agreementId,
+    bytes32 _did,
+    bytes32 _planId,
+    bytes32 _lockPaymentCondition,
+    bytes32 _releaseCondition
+  ) public {
+    // bytes32[] memory _requiredConditons = new bytes32[](2);
+    // _requiredConditons[0] = _lockPaymentCondition;
+    // _requiredConditons[1] = _transferCondition;
+
+    distributePaymentsCondition.fulfill(
+      _conditionId,
+      _agreementId,
+      _did,
+      _planId,
+      _lockPaymentCondition,
+      _releaseCondition
+    );
+  }
 }

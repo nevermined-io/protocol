@@ -4,11 +4,20 @@
 pragma solidity ^0.8.28;
 
 interface IVault {
-  function deposit(uint256 assets, address receiver) external returns (uint256);
-  function mint(uint256 shares, address receiver) external returns (uint256);
-  function withdraw(
-    uint256 assets,
-    address receiver,
-    address owner
-  ) external returns (uint256);
+  function depositNativeToken() external payable;
+  function depositERC20(
+    address _erc20TokenAddress,
+    uint256 _amount,
+    address _from
+  ) external;
+  function withdrawERC20(
+    address _erc20TokenAddress,
+    uint256 _amount,
+    address _receiver
+  ) external;
+  function withdrawNativeToken(uint256 _amount, address _receiver) external;
+  function getBalanceNativeToken() external view returns (uint256 balance);
+  function getBalanceERC20(
+    address _erc20TokenAddress
+  ) external view returns (uint256 balance);
 }

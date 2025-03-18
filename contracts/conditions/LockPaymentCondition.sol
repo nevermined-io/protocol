@@ -47,23 +47,12 @@ contract LockPaymentCondition is
     vault = IVault(_vaultAddress);
   }
 
-  // function _reinitializeConnections(
-  //   address _assetsRegistryAddress,
-  //   address _agreementStoreAddress,
-  //   address _vaultAddress
-  // ) public {
-  //   if (!nvmConfig.isOwner(msg.sender)) revert INVMConfig.OnlyOwner(msg.sender);
-
-  //   assetsRegistry = IAsset(_assetsRegistryAddress);
-  //   agreementStore = IAgreement(_agreementStoreAddress);
-  //   vault = IVault(_vaultAddress);
-  // }
-
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId
+    bytes32 _planId,
+    address _senderAddress
   ) external payable nonReentrant {
     // 0. Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender))
@@ -100,22 +89,33 @@ contract LockPaymentCondition is
           plan.price.receivers
         );
 
+      uint256 amountToTransfer = calculateAmountSum(plan.price.amounts);
       if (plan.price.tokenAddress == address(0)) {
         // Native token payment
-
-        TokenUtils.transferNativeToken(
-          payable(address(vault)),
-          calculateAmountSum(plan.price.amounts)
-        );
+        if (amountToTransfer > 0) {
+          if (msg.value != amountToTransfer)
+            revert InvalidTransactionAmount(msg.value, amountToTransfer);
+          vault.depositNativeToken{value: amountToTransfer}();
+        }
+        // TokenUtils.transferNativeToken(
+        //   payable(address(vault)),
+        //   calculateAmountSum(plan.price.amounts)
+        // );
         // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
       } else {
-        // ERC20 payment
-        TokenUtils.transferERC20(
-          msg.sender,
-          address(vault),
-          plan.price.tokenAddress,
-          calculateAmountSum(plan.price.amounts)
-        );
+        // ERC20 deposit
+        if (amountToTransfer > 0)
+          vault.depositERC20(
+            plan.price.tokenAddress,
+            amountToTransfer,
+            _senderAddress
+          );
+        // TokenUtils.transferERC20(
+        //   _senderAddress,
+        //   address(vault),
+        //   plan.price.tokenAddress,
+        //   calculateAmountSum(plan.price.amounts)
+        // );
       }
 
       // FULFILL THE CONDITION

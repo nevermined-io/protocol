@@ -84,6 +84,21 @@ contract AgreementsStore is Initializable, IAgreement {
     return agreements[_agreementId];
   }
 
+  function getConditionState(
+    bytes32 _agreementId,
+    bytes32 _conditionId
+  ) external view returns (ConditionState state) {
+    IAgreement.Agreement memory agreement = agreements[_agreementId];
+    if (agreement.lastUpdated == 0) {
+      revert AgreementNotFound(_agreementId);
+    }
+    for (uint256 i = 0; i < agreement.conditionStates.length; i++) {
+      if (agreement.conditionIds[i] == _conditionId)
+        return agreement.conditionStates[i];
+    }
+    revert ConditionIdNotFound(_conditionId);
+  }
+
   function agreementExists(bytes32 _agreementId) external view returns (bool) {
     return agreements[_agreementId].lastUpdated != 0;
   }

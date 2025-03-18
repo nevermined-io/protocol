@@ -30,6 +30,7 @@ abstract contract TokenUtils {
   ) internal {
     if (_amount > 0) {
       IERC20 token = IERC20(_tokenAddress);
+      token.approve(_receiverAddress, _amount);
       token.transferFrom(_senderAddress, _receiverAddress, _amount);
     }
   }
@@ -54,7 +55,7 @@ abstract contract TokenUtils {
 
   function calculateAmountSum(
     uint256[] memory _amounts
-  ) internal pure returns (uint256) {
+  ) public pure returns (uint256) {
     uint256 _totalAmount;
     for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
     return _totalAmount;

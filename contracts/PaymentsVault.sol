@@ -3,12 +3,13 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {ERC4626Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC4626Upgradeable.sol';
+import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IVault} from './interfaces/IVault.sol';
+import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 
-contract PaymentsVault is ERC4626Upgradeable, IVault {
+contract PaymentsVault is Initializable, IVault {
 
   /**
    * @notice Role allowing to deposit assets into the Vault
@@ -27,50 +28,90 @@ contract PaymentsVault is ERC4626Upgradeable, IVault {
   /// @param role The role required to call this function
   error InvalidRole(address sender, bytes32 role);  
 
-  event Received(
-    address indexed _from, 
-    uint256 _value
+  /// Error sending native token (i.e ETH)
+  error FailedToSendNativeToken();
+
+  event ReceivedNativeToken(
+    address indexed from, 
+    uint256 value
   );
 
-  function initialize(address _nvmConfigAddress) public initializer {
-    // AccessControlUpgradeable.__AccessControl_init();
-    // AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);    
+  event WithdrawNativeToken(    
+    address indexed from, 
+    address indexed receiver,
+    uint256 amount
+  );
+
+  event ReceivedERC20(
+    address indexed erc20TokenAddress,
+    address indexed from, 
+    uint256 amount
+  );
+
+  event WithdrawERC20(
+    address indexed erc20TokenAddress,
+    address indexed from, 
+    address indexed receiver,
+    uint256 amount
+  );
+
+  function initialize(address _nvmConfigAddress) public initializer {    
     nvmConfig = INVMConfig(_nvmConfigAddress);
   }  
 
   receive() external payable {
-    emit Received(msg.sender, msg.value);
-  }
-
-  function deposit(uint256 assets, address receiver) 
-  public
-  override(ERC4626Upgradeable, IVault)  
-  returns (uint256) {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
       revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
-    return super.deposit(assets, receiver);
+    emit ReceivedNativeToken(msg.sender, msg.value);
   }
 
-  // solhint-disable-next-line
-  function mint(
-    uint256 /*_shares*/, 
-    address /*_receiver*/
-  ) 
-  public 
-  override(ERC4626Upgradeable, IVault)   
-  returns (uint256) {
-    return 0;    
+  function depositNativeToken() 
+  external payable 
+  {
+    if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
+      revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
+    emit ReceivedNativeToken(msg.sender, msg.value);
   }
 
-  function withdraw(uint256 assets, address receiver, address owner) 
-  public 
-  override(ERC4626Upgradeable, IVault)
-  returns (uint256) {
+  function withdrawNativeToken(uint256 _amount, address _receiver) 
+  external   
+  {
+    if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) revert InvalidRole(msg.sender, WITHDRAW_ROLE);
+    
+    (bool sent, ) = _receiver.call{value: _amount}('');
+    if (!sent) revert FailedToSendNativeToken();
+    
+    emit WithdrawNativeToken(msg.sender, _receiver, _amount);    
+  }
+
+  function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) 
+  external  
+  {
+    if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
+      revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
+    emit ReceivedERC20(_erc20TokenAddress, _from, _amount);    
+  }
+
+  function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver) 
+  external   
+  {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE))
       revert InvalidRole(msg.sender, WITHDRAW_ROLE);
-    return super.withdraw(assets, receiver, owner);
+    
+    IERC20 token = IERC20(_erc20TokenAddress);
+    token.approve(_receiver, _amount);
+    token.transferFrom(address(this), _receiver, _amount);
+    
+    emit WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);    
   }
 
+  function getBalanceNativeToken() external view returns (uint256 balance) {
+    return address(this).balance;
+  }
 
+  function getBalanceERC20(address _erc20TokenAddress) external view returns (uint256 balance) {
+    IERC20 token = IERC20(_erc20TokenAddress);
+    return token.balanceOf(address(this));    
+  }
 
 }

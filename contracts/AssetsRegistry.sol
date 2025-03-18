@@ -15,8 +15,6 @@ contract AssetsRegistry is Initializable, IAsset {
 
   mapping(bytes32 => DIDAsset) public assets;
 
-
-
   /// The mapping of the plans registered in the contract
   mapping(bytes32 => Plan) public plans;
 

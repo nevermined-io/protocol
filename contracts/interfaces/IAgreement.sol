@@ -45,6 +45,11 @@ interface IAgreement {
     bytes32 _agreementId
   ) external view returns (Agreement memory);
 
+  function getConditionState(
+    bytes32 _agreementId,
+    bytes32 _conditionId
+  ) external view returns (ConditionState state);
+
   function updateConditionStatus(
     bytes32 _agreementId,
     bytes32 _conditionId,
