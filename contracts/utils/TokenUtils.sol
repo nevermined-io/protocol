@@ -3,7 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 library TokenUtils {
   /// Error sending native token (i.e ETH)
@@ -41,22 +41,16 @@ library TokenUtils {
    * @param _receiverAddress the address to receive the ETH
    * @param _amount Native token (ETH, ...) amount to be transferred
    */
-  function transferNativeToken(
-    address payable _receiverAddress,
-    uint256 _amount
-  ) public {
+  function transferNativeToken(address payable _receiverAddress, uint256 _amount) public {
     if (_amount > 0) {
-      if (msg.value != _amount)
-        revert InvalidTransactionAmount(msg.value, _amount);
+      if (msg.value != _amount) revert InvalidTransactionAmount(msg.value, _amount);
       // solhint-disable-next-line
-      (bool sent, ) = _receiverAddress.call{value: _amount}('');
+      (bool sent, ) = _receiverAddress.call{ value: _amount }('');
       if (!sent) revert FailedToSendNativeToken();
     }
   }
 
-  function calculateAmountSum(
-    uint256[] memory _amounts
-  ) public pure returns (uint256) {
+  function calculateAmountSum(uint256[] memory _amounts) public pure returns (uint256) {
     uint256 _totalAmount;
     for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
     return _totalAmount;
@@ -91,8 +85,7 @@ library TokenUtils {
     uint256 _feeAmount,
     address _feeReceiver
   ) public pure returns (uint256[] memory, address[] memory) {
-    if (_feeAmount == 0 || _feeReceiver == address(0))
-      return (_amounts, _receivers);
+    if (_feeAmount == 0 || _feeReceiver == address(0)) return (_amounts, _receivers);
 
     uint256 _totalAmount = calculateAmountSum(_amounts);
     if (_totalAmount == 0) return (_amounts, _receivers);

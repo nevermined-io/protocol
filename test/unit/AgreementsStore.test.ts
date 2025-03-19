@@ -18,8 +18,9 @@ describe('AgreementsStore', function () {
     //   [],
     //   {},
     // )
-    const { nvmConfig, assetsRegistry, agreementsStore } =
-      await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry, agreementsStore } = await hre.ignition.deploy(
+      FullDeploymentModule,
+    )
     const publicClient = await hre.viem.getPublicClient()
 
     return {
@@ -63,10 +64,7 @@ describe('AgreementsStore', function () {
     })
 
     it('I can generate the hash for a DID', async () => {
-      agreementId = await agreementsStore.read.hashAgreementId([
-        seed,
-        owner.account.address,
-      ])
+      agreementId = await agreementsStore.read.hashAgreementId([seed, owner.account.address])
       console.log(`agreement hash: ${agreementId}`)
       expect(agreementId).to.be.a('string')
       expect(agreementId).startsWith('0x')
@@ -81,15 +79,7 @@ describe('AgreementsStore', function () {
       const _params = [stringToHex('')]
       await expect(
         agreementsStore.write.register(
-          [
-            generateId(),
-            userAccount.account.address,
-            did,
-            planId,
-            [generateId()],
-            [0],
-            _params,
-          ],
+          [generateId(), userAccount.account.address, did, planId, [generateId()], [0], _params],
           {
             account: userAccount.account,
           },
@@ -102,15 +92,7 @@ describe('AgreementsStore', function () {
         account: governor.account,
       })
       const txHash = await agreementsStore.write.register(
-        [
-          agreementId,
-          userAccount.account.address,
-          did,
-          planId,
-          [generateId()],
-          [0],
-          [],
-        ],
+        [agreementId, userAccount.account.address, did, planId, [generateId()], [0], []],
         {
           account: owner.account,
         },
@@ -118,11 +100,7 @@ describe('AgreementsStore', function () {
 
       expect(txHash).to.be.a.string
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        agreementsStore.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
       expect(logs.length).to.be.equal(1)
       expect(logs[0].eventName).to.equalIgnoreCase('AgreementRegistered')
     })

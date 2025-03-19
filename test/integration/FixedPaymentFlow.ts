@@ -53,9 +53,7 @@ describe('IT: FixedPaymentTemplate e2e flow', function () {
 
     _deployment = await loadFixture(deployModuleFixture)
     expect(_deployment.nvmConfig.address).to.be.a('string').to.startWith('0x')
-    expect(_deployment.assetsRegistry.address)
-      .to.be.a('string')
-      .to.startWith('0x')
+    expect(_deployment.assetsRegistry.address).to.be.a('string').to.startWith('0x')
 
     console.log(`NVM Config: ${_deployment.nvmConfig.address}`)
     console.log(`Assets Registry: ${_deployment.assetsRegistry.address}`)
@@ -63,11 +61,10 @@ describe('IT: FixedPaymentTemplate e2e flow', function () {
 
   it('Alice can define the fees of the plan', async () => {
     priceConfig.receivers = [alice.account.address]
-    const feesSetup =
-      await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers,
-      ])
+    const feesSetup = await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
+      priceConfig.amounts,
+      priceConfig.receivers,
+    ])
     priceConfig.amounts = feesSetup[0]
     priceConfig.receivers = feesSetup[1]
     console.log('Fees Setup:', feesSetup)
@@ -83,10 +80,9 @@ describe('IT: FixedPaymentTemplate e2e flow', function () {
   it('Alice can register an asset with a plan', async () => {
     console.log(`Alice: ${alice.account.address}`)
     const didSeed = generateId()
-    did = await _deployment.assetsRegistry.read.hashDID(
-      [didSeed, alice.account.address],
-      { from: alice.account },
-    )
+    did = await _deployment.assetsRegistry.read.hashDID([didSeed, alice.account.address], {
+      from: alice.account,
+    })
 
     expect(did).to.be.a('string').to.startWith('0x')
     console.log(`DID SEED: ${didSeed}`)
@@ -98,11 +94,7 @@ describe('IT: FixedPaymentTemplate e2e flow', function () {
     )
     expect(txHash).to.be.a('string').to.startWith('0x')
     console.log('txHash:', txHash)
-    const logs = await getTxParsedLogs(
-      publicClient,
-      txHash,
-      _deployment.assetsRegistry.abi,
-    )
+    const logs = await getTxParsedLogs(publicClient, txHash, _deployment.assetsRegistry.abi)
 
     console.log('Logs:', logs)
     expect(logs.length).to.be.equal(2)
@@ -153,10 +145,7 @@ describe('IT: FixedPaymentTemplate e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftCredits.read.balanceOf([
-      bob.account.address,
-      did,
-    ])
+    const balance = await _deployment.nftCredits.read.balanceOf([bob.account.address, did])
     console.log('Credits Balance:', balance)
     expect(balance > 0n).to.be.true
   })

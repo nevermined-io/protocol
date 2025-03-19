@@ -3,9 +3,9 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {INVMConfig} from './interfaces/INVMConfig.sol';
-import {IAsset} from './interfaces/IAsset.sol';
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { INVMConfig } from './interfaces/INVMConfig.sol';
+import { IAsset } from './interfaces/IAsset.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 // import 'hardhat/console.sol';
 
 contract AssetsRegistry is Initializable, IAsset {
@@ -17,7 +17,6 @@ contract AssetsRegistry is Initializable, IAsset {
 
   /// The mapping of the plans registered in the contract
   mapping(bytes32 => Plan) public plans;
-
 
   /**
    * @notice Event that is emitted when a new Asset is registered
@@ -51,7 +50,6 @@ contract AssetsRegistry is Initializable, IAsset {
     // console.log('AssetsRegistry initialized', _nvmConfigAddress);
   }
 
-
   function getAsset(bytes32 _did) external view returns (DIDAsset memory) {
     return assets[_did];
   }
@@ -66,19 +64,11 @@ contract AssetsRegistry is Initializable, IAsset {
    * @param _creator address of the creator of the DID
    * @return the new DID created
    */
-  function hashDID(
-    bytes32 _didSeed,
-    address _creator
-  ) public pure returns (bytes32) {
+  function hashDID(bytes32 _didSeed, address _creator) public pure returns (bytes32) {
     return keccak256(abi.encode(_didSeed, _creator));
   }
 
-
-  function register(
-    bytes32 _didSeed,
-    string memory _url,
-    bytes32[] memory _plans
-  ) public virtual {
+  function register(bytes32 _didSeed, string memory _url, bytes32[] memory _plans) public virtual {
     bytes32 did = hashDID(_didSeed, msg.sender);
     if (assets[did].owner != address(0x0)) {
       revert DIDAlreadyRegistered(did);
@@ -103,22 +93,14 @@ contract AssetsRegistry is Initializable, IAsset {
     CreditsConfig memory _creditsConfig,
     address _nftAddress
   ) public {
-    bytes32 planId = hashPlanId(
-      _priceConfig,
-      _creditsConfig,
-      _nftAddress,
-      msg.sender
-    );
+    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
     if (plans[planId].lastUpdated != 0) {
       revert PlanAlreadyRegistered(planId);
     }
     if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
-      revert NeverminedFeesNotIncluded(
-        _priceConfig.amounts,
-        _priceConfig.receivers
-      );
+      revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
     }
-    
+
     plans[planId] = Plan({
       price: _priceConfig,
       credits: _creditsConfig,
@@ -135,16 +117,11 @@ contract AssetsRegistry is Initializable, IAsset {
     CreditsConfig memory _creditsConfig,
     address _nftAddress
   ) external {
-    bytes32 planId = hashPlanId(
-      _priceConfig,
-      _creditsConfig,
-      _nftAddress,
-      msg.sender
-    );
+    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
     if (!this.planExists(planId)) {
       createPlan(_priceConfig, _creditsConfig, _nftAddress);
-    }    
-    
+    }
+
     bytes32[] memory _assetPlans = new bytes32[](1);
     _assetPlans[0] = planId;
     register(_didSeed, _url, _assetPlans);
@@ -157,7 +134,6 @@ contract AssetsRegistry is Initializable, IAsset {
   function planExists(bytes32 _planId) external view returns (bool) {
     return plans[_planId].lastUpdated != 0;
   }
-
 
   /**
    * Given the plan attributes and the address of the plan creator, it computes a unique identifier for the plan
@@ -173,21 +149,15 @@ contract AssetsRegistry is Initializable, IAsset {
     address _nftAddress,
     address _creator
   ) public pure returns (bytes32) {
-    return
-      keccak256(
-        abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator)
-      );
+    return keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator));
   }
 
   function areNeverminedFeesIncluded(
     uint256[] memory _amounts,
     address[] memory _receivers
   ) external view returns (bool) {
-    if (
-      nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)
-    ) return true;
+    if (nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)) return true;
 
-    
     uint256 totalAmount = 0;
     for (uint256 i; i < _amounts.length; i++) totalAmount += _amounts[i];
 
@@ -205,11 +175,9 @@ contract AssetsRegistry is Initializable, IAsset {
     if (!_feeReceiverIncluded) return false;
 
     // Return if fee calculation is correct
-    return _calculateFeeAmount(
-      nvmConfig.getNetworkFee(),
-      totalAmount,
-      nvmConfig.getFeeDenominator()
-    ) == _amounts[_receiverIndex];
+    return
+      _calculateFeeAmount(nvmConfig.getNetworkFee(), totalAmount, nvmConfig.getFeeDenominator()) ==
+      _amounts[_receiverIndex];
     // return
     //   (nvmConfig.getNetworkFee() * totalAmount) /
     //     nvmConfig.getFeeDenominator() ==
@@ -221,13 +189,13 @@ contract AssetsRegistry is Initializable, IAsset {
     address[] memory _receivers
   ) external view returns (uint256[] memory amounts, address[] memory receivers) {
     // If the fees are already added we don't need to do anything
-    if (this.areNeverminedFeesIncluded(_amounts, _receivers)) return ( _amounts, _receivers );
+    if (this.areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
 
     uint256 totalAmount = 0;
     for (uint256 i; i < _amounts.length; i++) totalAmount += _amounts[i];
 
     // If the total amount is zero we don't need to add fees
-    if (totalAmount == 0) return ( _amounts, _receivers );
+    if (totalAmount == 0) return (_amounts, _receivers);
 
     uint256 feeAmount = _calculateFeeAmount(
       nvmConfig.getNetworkFee(),
@@ -236,7 +204,7 @@ contract AssetsRegistry is Initializable, IAsset {
     );
 
     uint256 _length = _amounts.length;
-    
+
     uint256[] memory amountsWithFees = new uint256[](_length + 1);
     for (uint256 i; i < _amounts.length; i++) amountsWithFees[i] = _amounts[i];
     amountsWithFees[_length] = feeAmount;
@@ -245,10 +213,14 @@ contract AssetsRegistry is Initializable, IAsset {
     for (uint256 i; i < _receivers.length; i++) receiversWithFees[i] = _receivers[i];
     receiversWithFees[_length] = nvmConfig.getFeeReceiver();
 
-    return ( amountsWithFees, receiversWithFees );
+    return (amountsWithFees, receiversWithFees);
   }
 
-  function _calculateFeeAmount(uint256 _feeAmount, uint256 _totalAmount, uint256 _feeDenominator) internal pure returns (uint256) {
+  function _calculateFeeAmount(
+    uint256 _feeAmount,
+    uint256 _totalAmount,
+    uint256 _feeDenominator
+  ) internal pure returns (uint256) {
     return (_feeAmount * _totalAmount) / _feeDenominator;
   }
 }

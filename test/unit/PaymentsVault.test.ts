@@ -12,8 +12,7 @@ describe('PaymentsVault', function () {
   // We define a fixture to reuse the same setup in every test.
   async function deployInstance() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, governor, depositor, withdrawer, receiver] =
-      await hre.viem.getWalletClients()
+    const [owner, governor, depositor, withdrawer, receiver] = await hre.viem.getWalletClients()
 
     // Deploy NVMConfig first
     const { nvmConfig } = await hre.ignition.deploy(NVMConfigModule)
@@ -25,30 +24,24 @@ describe('PaymentsVault', function () {
     })
 
     // Deploy MockERC20
-    const mockERC20 = await hre.viem.deployContract('MockERC20', [
-      'Mock Token',
-      'MTK',
-    ])
+    const mockERC20 = await hre.viem.deployContract('MockERC20', ['Mock Token', 'MTK'])
 
     // Get roles
     const DEPOSITOR_ROLE = await paymentsVault.read.DEPOSITOR_ROLE()
     const WITHDRAW_ROLE = await paymentsVault.read.WITHDRAW_ROLE()
 
     // Grant roles
-    await nvmConfig.write.grantRole(
-      [DEPOSITOR_ROLE, depositor.account.address],
-      { account: owner.account },
-    )
-    await nvmConfig.write.grantRole(
-      [WITHDRAW_ROLE, withdrawer.account.address],
-      { account: owner.account },
-    )
+    await nvmConfig.write.grantRole([DEPOSITOR_ROLE, depositor.account.address], {
+      account: owner.account,
+    })
+    await nvmConfig.write.grantRole([WITHDRAW_ROLE, withdrawer.account.address], {
+      account: owner.account,
+    })
 
     // Mint some tokens to depositor
-    await mockERC20.write.mint(
-      [depositor.account.address, 1000n * 10n ** 18n],
-      { account: owner.account },
-    )
+    await mockERC20.write.mint([depositor.account.address, 1000n * 10n ** 18n], {
+      account: owner.account,
+    })
 
     const publicClient = await hre.viem.getPublicClient()
 
@@ -78,8 +71,7 @@ describe('PaymentsVault', function () {
 
   describe('Native Token Operations', function () {
     it('Should allow depositor to deposit native token', async function () {
-      const { paymentsVault, depositor, publicClient } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, depositor, publicClient } = await loadFixture(deployInstance)
 
       const depositAmount = 100000000000000000n // 0.1 ETH
       const txHash = await paymentsVault.write.depositNativeToken({
@@ -92,11 +84,7 @@ describe('PaymentsVault', function () {
       expect(balance).to.equal(depositAmount)
 
       // Verify event
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        paymentsVault.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, paymentsVault.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ReceivedNativeToken')
       expect(logs[0].args.from).to.equalIgnoreCase(depositor.account.address)
@@ -116,8 +104,9 @@ describe('PaymentsVault', function () {
     })
 
     it('Should allow withdrawer to withdraw native token', async function () {
-      const { paymentsVault, depositor, withdrawer, receiver, publicClient } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, depositor, withdrawer, receiver, publicClient } = await loadFixture(
+        deployInstance,
+      )
 
       // First deposit
       const depositAmount = 100000000000000000n // 0.1 ETH
@@ -146,16 +135,10 @@ describe('PaymentsVault', function () {
       const receiverBalanceAfter = await publicClient.getBalance({
         address: receiver.account.address,
       })
-      expect(receiverBalanceAfter - receiverBalanceBefore).to.equal(
-        withdrawAmount,
-      )
+      expect(receiverBalanceAfter - receiverBalanceBefore).to.equal(withdrawAmount)
 
       // Verify event
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        paymentsVault.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, paymentsVault.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('WithdrawNativeToken')
       expect(logs[0].args.from).to.equalIgnoreCase(withdrawer.account.address)
@@ -164,8 +147,7 @@ describe('PaymentsVault', function () {
     })
 
     it('Should reject native token withdrawal from non-withdrawer', async function () {
-      const { paymentsVault, depositor, receiver } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, depositor, receiver } = await loadFixture(deployInstance)
 
       // First deposit
       const depositAmount = 100000000000000000n // 0.1 ETH
@@ -177,18 +159,18 @@ describe('PaymentsVault', function () {
       // Try to withdraw
       const withdrawAmount = 50000000000000000n // 0.05 ETH
       await expect(
-        paymentsVault.write.withdrawNativeToken(
-          [withdrawAmount, receiver.account.address],
-          { account: depositor.account },
-        ),
+        paymentsVault.write.withdrawNativeToken([withdrawAmount, receiver.account.address], {
+          account: depositor.account,
+        }),
       ).to.be.rejectedWith('InvalidRole')
     })
   })
 
   describe('ERC20 Token Operations', function () {
     it('Should allow depositor to deposit ERC20 token', async function () {
-      const { paymentsVault, mockERC20, depositor, publicClient } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, mockERC20, depositor, publicClient } = await loadFixture(
+        deployInstance,
+      )
 
       const depositAmount = 100n * 10n ** 18n // 100 tokens
 
@@ -204,23 +186,16 @@ describe('PaymentsVault', function () {
       )
 
       // Verify event
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        paymentsVault.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, paymentsVault.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ReceivedERC20')
-      expect(logs[0].args.erc20TokenAddress).to.equalIgnoreCase(
-        mockERC20.address,
-      )
+      expect(logs[0].args.erc20TokenAddress).to.equalIgnoreCase(mockERC20.address)
       expect(logs[0].args.from).to.equalIgnoreCase(depositor.account.address)
       expect(logs[0].args.amount).to.equal(depositAmount)
     })
 
     it('Should reject ERC20 token deposit from non-depositor', async function () {
-      const { paymentsVault, mockERC20, withdrawer } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, mockERC20, withdrawer } = await loadFixture(deployInstance)
 
       const depositAmount = 100n * 10n ** 18n // 100 tokens
 
@@ -233,14 +208,8 @@ describe('PaymentsVault', function () {
     })
 
     it('Should emit event when withdrawer attempts to withdraw ERC20 token', async function () {
-      const {
-        paymentsVault,
-        mockERC20,
-        depositor,
-        withdrawer,
-        receiver,
-        publicClient,
-      } = await loadFixture(deployInstance)
+      const { paymentsVault, mockERC20, depositor, withdrawer, receiver, publicClient } =
+        await loadFixture(deployInstance)
 
       const depositAmount = 100n * 10n ** 18n // 100 tokens
 
@@ -250,9 +219,7 @@ describe('PaymentsVault', function () {
       })
 
       // Check vault balance
-      const vaultBalance = await mockERC20.read.balanceOf([
-        paymentsVault.address,
-      ])
+      const vaultBalance = await mockERC20.read.balanceOf([paymentsVault.address])
       expect(vaultBalance).to.equal(depositAmount)
 
       // Withdraw
@@ -267,20 +234,12 @@ describe('PaymentsVault', function () {
         )
 
         // Verify event
-        const logs = await getTxParsedLogs(
-          publicClient,
-          txHash,
-          paymentsVault.abi,
-        )
+        const logs = await getTxParsedLogs(publicClient, txHash, paymentsVault.abi)
         expect(logs.length).to.be.greaterThanOrEqual(1)
         expect(logs[0].eventName).to.equalIgnoreCase('WithdrawERC20')
-        expect(logs[0].args.erc20TokenAddress).to.equalIgnoreCase(
-          mockERC20.address,
-        )
+        expect(logs[0].args.erc20TokenAddress).to.equalIgnoreCase(mockERC20.address)
         expect(logs[0].args.from).to.equalIgnoreCase(withdrawer.account.address)
-        expect(logs[0].args.receiver).to.equalIgnoreCase(
-          receiver.account.address,
-        )
+        expect(logs[0].args.receiver).to.equalIgnoreCase(receiver.account.address)
         expect(logs[0].args.amount).to.equal(withdrawAmount)
       } catch (error: any) {
         // The transaction might fail due to the contract's design issue,
@@ -290,8 +249,7 @@ describe('PaymentsVault', function () {
     })
 
     it('Should reject ERC20 token withdrawal from non-withdrawer', async function () {
-      const { paymentsVault, mockERC20, depositor, receiver } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, mockERC20, depositor, receiver } = await loadFixture(deployInstance)
 
       const depositAmount = 100n * 10n ** 18n // 100 tokens
 
@@ -332,13 +290,10 @@ describe('PaymentsVault', function () {
     })
 
     it('Should correctly report ERC20 token balance', async function () {
-      const { paymentsVault, mockERC20, depositor } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, mockERC20, depositor } = await loadFixture(deployInstance)
 
       // Initial balance should be 0
-      let balance = await paymentsVault.read.getBalanceERC20([
-        mockERC20.address,
-      ])
+      let balance = await paymentsVault.read.getBalanceERC20([mockERC20.address])
       expect(balance).to.equal(0n)
 
       // Transfer some tokens to the vault
@@ -355,8 +310,7 @@ describe('PaymentsVault', function () {
 
   describe('Receive Function', function () {
     it('Should accept native token via receive function from depositor', async function () {
-      const { paymentsVault, depositor, publicClient } =
-        await loadFixture(deployInstance)
+      const { paymentsVault, depositor, publicClient } = await loadFixture(deployInstance)
 
       const depositAmount = 100000000000000000n // 0.1 ETH
 

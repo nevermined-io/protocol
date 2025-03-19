@@ -21,8 +21,7 @@ describe('AssetsRegistry', function () {
     //   [],
     //   {},
     // )
-    const { nvmConfig, assetsRegistry } =
-      await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry } = await hre.ignition.deploy(FullDeploymentModule)
     const publicClient = await hre.viem.getPublicClient()
 
     return {
@@ -35,8 +34,7 @@ describe('AssetsRegistry', function () {
 
   describe('Deployment', function () {
     it('Should deploy and initialize correctly', async function () {
-      const { assetsRegistry, owner, userAccount, publicClient } =
-        await loadFixture(deployInstance)
+      const { assetsRegistry, owner, userAccount, publicClient } = await loadFixture(deployInstance)
     })
   })
 
@@ -69,18 +67,13 @@ describe('AssetsRegistry', function () {
     })
 
     it('I can generate the hash for a Plan', async () => {
-      const txHash = await assetsRegistry.write.register(
-        [didSeed, url, [generateId()]],
-        { account: owner.account },
-      )
+      const txHash = await assetsRegistry.write.register([didSeed, url, [generateId()]], {
+        account: owner.account,
+      })
 
       expect(txHash).to.be.a.string
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        assetsRegistry.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, assetsRegistry.abi)
       expect(logs.length).to.be.equal(1)
       expect(logs[0].eventName).to.equalIgnoreCase('AssetRegistered')
     })
@@ -153,19 +146,17 @@ describe('AssetsRegistry', function () {
 
     it('I can not register a plan without fees included', async () => {
       await expect(
-        assetsRegistry.write.createPlan(
-          [priceConfig, creditsConfig, nftAddress],
-          { account: owner.account },
-        ),
+        assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftAddress], {
+          account: owner.account,
+        }),
       ).to.be.rejectedWith('NeverminedFeesNotIncluded')
     })
 
     it('I can check if payments distribution are included', async () => {
-      const areFeesIncluded =
-        await assetsRegistry.read.areNeverminedFeesIncluded([
-          priceConfig.amounts,
-          priceConfig.receivers,
-        ])
+      const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([
+        priceConfig.amounts,
+        priceConfig.receivers,
+      ])
       expect(areFeesIncluded).to.be.false
     })
 
@@ -180,11 +171,10 @@ describe('AssetsRegistry', function () {
       console.log(result)
       console.log('FEES AFTER: ', _amounts, _receivers)
 
-      const areFeesIncluded =
-        await assetsRegistry.read.areNeverminedFeesIncluded([
-          _amounts,
-          _receivers,
-        ])
+      const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([
+        _amounts,
+        _receivers,
+      ])
 
       expect(areFeesIncluded).to.be.true
       priceConfig.amounts = _amounts
@@ -199,11 +189,7 @@ describe('AssetsRegistry', function () {
 
       expect(txHash).to.be.a.string
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        assetsRegistry.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, assetsRegistry.abi)
       expect(logs.length).to.be.equal(1)
       expect(logs[0].eventName).to.equalIgnoreCase('PlanRegistered')
       planId = logs[0].args.planId
@@ -217,23 +203,13 @@ describe('AssetsRegistry', function () {
 
     it('I can register an asset with a plan at once', async () => {
       const txHash = await assetsRegistry.write.registerAssetAndPlan(
-        [
-          generateId(),
-          'https://nevermined.io',
-          priceConfig,
-          creditsConfig,
-          nftAddress,
-        ],
+        [generateId(), 'https://nevermined.io', priceConfig, creditsConfig, nftAddress],
         { account: owner.account },
       )
 
       expect(txHash).to.be.a.string
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        assetsRegistry.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, assetsRegistry.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       did = logs[0].args.did
     })

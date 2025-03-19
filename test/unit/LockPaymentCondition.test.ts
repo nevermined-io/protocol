@@ -23,19 +23,11 @@ describe('LockPaymentCondition', function () {
     const [owner, governor, template, user] = await hre.viem.getWalletClients()
 
     // Deploy full module
-    const {
-      nvmConfig,
-      assetsRegistry,
-      agreementsStore,
-      paymentsVault,
-      lockPaymentCondition,
-    } = await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry, agreementsStore, paymentsVault, lockPaymentCondition } =
+      await hre.ignition.deploy(FullDeploymentModule)
 
     // Deploy MockERC20
-    const mockERC20 = await hre.viem.deployContract('MockERC20', [
-      'Mock Token',
-      'MTK',
-    ])
+    const mockERC20 = await hre.viem.deployContract('MockERC20', ['Mock Token', 'MTK'])
 
     // Grant template role to the template account
     await nvmConfig.write.grantTemplate([template.account.address], {
@@ -49,10 +41,9 @@ describe('LockPaymentCondition', function () {
 
     // Grant depositor role to the LockPaymentCondition contract in PaymentsVault
     const depositorRole = await paymentsVault.read.DEPOSITOR_ROLE()
-    await nvmConfig.write.setParameter(
-      [depositorRole, lockPaymentCondition.address],
-      { account: governor.account },
-    )
+    await nvmConfig.write.setParameter([depositorRole, lockPaymentCondition.address], {
+      account: governor.account,
+    })
 
     // Mint some tokens to user
     await mockERC20.write.mint([user.account.address, 1000n * 10n ** 18n], {
@@ -81,9 +72,7 @@ describe('LockPaymentCondition', function () {
       const { lockPaymentCondition } = await loadFixture(deployInstance)
       // Verify initialization by checking contract name
       const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      expect(contractName).to.equal(
-        await lockPaymentCondition.read.NVM_CONTRACT_NAME(),
-      )
+      expect(contractName).to.equal(await lockPaymentCondition.read.NVM_CONTRACT_NAME())
     })
   })
 
@@ -94,14 +83,8 @@ describe('LockPaymentCondition', function () {
     let conditionId: `0x${string}`
 
     beforeEach(async function () {
-      const {
-        assetsRegistry,
-        agreementsStore,
-        lockPaymentCondition,
-        owner,
-        user,
-        template,
-      } = await loadFixture(deployInstance)
+      const { assetsRegistry, agreementsStore, lockPaymentCondition, owner, user, template } =
+        await loadFixture(deployInstance)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
@@ -165,13 +148,7 @@ describe('LockPaymentCondition', function () {
 
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [
-          testConditionId,
-          testAgreementId,
-          testDid,
-          testPlanId,
-          user.account.address,
-        ],
+        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
         { account: template.account, value: totalAmount },
       )
 
@@ -187,11 +164,7 @@ describe('LockPaymentCondition', function () {
       expect(vaultBalance).to.equal(totalAmount)
 
       // Verify event logs
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        agreementsStore.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ConditionUpdated')
       expect(logs[0].args.agreementId).to.equal(testAgreementId)
@@ -282,20 +255,13 @@ describe('LockPaymentCondition', function () {
       await mockERC20.write.mint([user.account.address, totalAmount], {
         account: user.account,
       })
-      await mockERC20.write.approve(
-        [lockPaymentCondition.address, totalAmount],
-        { account: user.account },
-      )
+      await mockERC20.write.approve([lockPaymentCondition.address, totalAmount], {
+        account: user.account,
+      })
 
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [
-          testConditionId,
-          testAgreementId,
-          testDid,
-          testPlanId,
-          user.account.address,
-        ],
+        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
         { account: template.account },
       )
 
@@ -307,17 +273,11 @@ describe('LockPaymentCondition', function () {
       expect(conditionState).to.equal(2) // Fulfilled
 
       // Verify vault balance
-      const vaultBalance = await paymentsVault.read.getBalanceERC20([
-        mockERC20.address,
-      ])
+      const vaultBalance = await paymentsVault.read.getBalanceERC20([mockERC20.address])
       expect(vaultBalance).to.equal(totalAmount)
 
       // Verify event logs
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        agreementsStore.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ConditionUpdated')
       expect(logs[0].args.agreementId).to.equal(testAgreementId)
@@ -333,14 +293,8 @@ describe('LockPaymentCondition', function () {
     let conditionId: `0x${string}`
 
     beforeEach(async function () {
-      const {
-        assetsRegistry,
-        agreementsStore,
-        lockPaymentCondition,
-        owner,
-        user,
-        template,
-      } = await loadFixture(deployInstance)
+      const { assetsRegistry, agreementsStore, lockPaymentCondition, owner, user, template } =
+        await loadFixture(deployInstance)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
@@ -378,8 +332,7 @@ describe('LockPaymentCondition', function () {
     })
 
     it('Should reject if agreement does not exist', async function () {
-      const { lockPaymentCondition, template, user } =
-        await loadFixture(deployInstance)
+      const { lockPaymentCondition, template, user } = await loadFixture(deployInstance)
 
       // Try to fulfill condition with non-existent agreement
       const fakeAgreementId = ('0x' + '1'.repeat(64)) as `0x${string}`
@@ -393,13 +346,8 @@ describe('LockPaymentCondition', function () {
     })
 
     it('Should reject if asset does not exist', async function () {
-      const {
-        lockPaymentCondition,
-        agreementsStore,
-        assetsRegistry,
-        template,
-        user,
-      } = await loadFixture(deployInstance)
+      const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
+        await loadFixture(deployInstance)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
@@ -420,15 +368,7 @@ describe('LockPaymentCondition', function () {
 
       // Register agreement
       await agreementsStore.write.register(
-        [
-          realAgreementId,
-          user.account.address,
-          realDid,
-          realPlanId,
-          [],
-          [],
-          [],
-        ],
+        [realAgreementId, user.account.address, realDid, realPlanId, [], [], []],
         { account: template.account },
       )
 
@@ -444,26 +384,15 @@ describe('LockPaymentCondition', function () {
 
       await expect(
         lockPaymentCondition.write.fulfill(
-          [
-            realConditionId,
-            realAgreementId,
-            fakeDid,
-            realPlanId,
-            user.account.address,
-          ],
+          [realConditionId, realAgreementId, fakeDid, realPlanId, user.account.address],
           { account: template.account, value: 100n },
         ),
       ).to.be.rejectedWith('AssetNotFound')
     })
 
     it('Should reject if plan does not exist', async function () {
-      const {
-        lockPaymentCondition,
-        agreementsStore,
-        assetsRegistry,
-        template,
-        user,
-      } = await loadFixture(deployInstance)
+      const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
+        await loadFixture(deployInstance)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
@@ -484,15 +413,7 @@ describe('LockPaymentCondition', function () {
 
       // Register agreement
       await agreementsStore.write.register(
-        [
-          realAgreementId,
-          user.account.address,
-          realDid,
-          realPlanId,
-          [],
-          [],
-          [],
-        ],
+        [realAgreementId, user.account.address, realDid, realPlanId, [], [], []],
         { account: template.account },
       )
 
@@ -508,26 +429,15 @@ describe('LockPaymentCondition', function () {
 
       await expect(
         lockPaymentCondition.write.fulfill(
-          [
-            realConditionId,
-            realAgreementId,
-            realDid,
-            fakePlanId,
-            user.account.address,
-          ],
+          [realConditionId, realAgreementId, realDid, fakePlanId, user.account.address],
           { account: template.account, value: 100n },
         ),
       ).to.be.rejectedWith('PlanNotFound')
     })
 
     it('Should reject if payment amount is incorrect', async function () {
-      const {
-        lockPaymentCondition,
-        agreementsStore,
-        assetsRegistry,
-        template,
-        user,
-      } = await loadFixture(deployInstance)
+      const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
+        await loadFixture(deployInstance)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
@@ -548,15 +458,7 @@ describe('LockPaymentCondition', function () {
 
       // Register agreement
       await agreementsStore.write.register(
-        [
-          realAgreementId,
-          user.account.address,
-          realDid,
-          realPlanId,
-          [],
-          [],
-          [],
-        ],
+        [realAgreementId, user.account.address, realDid, realPlanId, [], [], []],
         { account: template.account },
       )
 
@@ -574,27 +476,15 @@ describe('LockPaymentCondition', function () {
       // Try to fulfill condition with incorrect payment amount
       await expect(
         lockPaymentCondition.write.fulfill(
-          [
-            realConditionId,
-            realAgreementId,
-            realDid,
-            realPlanId,
-            user.account.address,
-          ],
+          [realConditionId, realAgreementId, realDid, realPlanId, user.account.address],
           { account: template.account, value: totalAmount - 1n },
         ),
       ).to.be.rejectedWith('InvalidTransactionAmount')
     })
 
     it('Should reject unsupported price types', async function () {
-      const {
-        lockPaymentCondition,
-        assetsRegistry,
-        agreementsStore,
-        template,
-        owner,
-        user,
-      } = await loadFixture(deployInstance)
+      const { lockPaymentCondition, assetsRegistry, agreementsStore, template, owner, user } =
+        await loadFixture(deployInstance)
 
       // Create price config with FIXED_FIAT_PRICE
       const priceConfig: any = {
@@ -615,23 +505,14 @@ describe('LockPaymentCondition', function () {
 
       // Register asset and plan with FIXED_FIAT_PRICE
       const didSeed = generateId()
-      const newDid = await assetsRegistry.read.hashDID([
-        didSeed,
-        owner.account.address,
-      ])
+      const newDid = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
 
       // Create credits config
       const creditsConfig = createCreditsConfig()
 
       // Register asset and plan
       await assetsRegistry.write.registerAssetAndPlan(
-        [
-          didSeed,
-          'https://nevermined.io',
-          priceConfig,
-          creditsConfig,
-          zeroAddress,
-        ],
+        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
         { account: owner.account },
       )
 
@@ -662,13 +543,7 @@ describe('LockPaymentCondition', function () {
       // Try to fulfill condition with FIXED_FIAT_PRICE
       await expect(
         lockPaymentCondition.write.fulfill(
-          [
-            newConditionId,
-            newAgreementId,
-            newDid,
-            newPlanId,
-            user.account.address,
-          ],
+          [newConditionId, newAgreementId, newDid, newPlanId, user.account.address],
           { account: template.account },
         ),
       ).to.be.rejectedWith('UnsupportedPriceTypeOption')

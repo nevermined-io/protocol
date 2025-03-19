@@ -3,20 +3,16 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {IAsset} from '../interfaces/IAsset.sol';
-import {IVault} from '../interfaces/IVault.sol';
-import {TemplateCondition} from './TemplateCondition.sol';
-import {TokenUtils} from '../utils/TokenUtils.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
+import { IVault } from '../interfaces/IVault.sol';
+import { TemplateCondition } from './TemplateCondition.sol';
+import { TokenUtils } from '../utils/TokenUtils.sol';
 
-contract LockPaymentCondition is
-  Initializable,
-  ReentrancyGuardUpgradeable,
-  TemplateCondition
-{
+contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');
 
   INVMConfig internal nvmConfig;
@@ -54,8 +50,7 @@ contract LockPaymentCondition is
     address _senderAddress
   ) external payable nonReentrant {
     // 0. Validate if the account calling this function is a registered template
-    if (!nvmConfig.isTemplate(msg.sender))
-      revert INVMConfig.OnlyTemplate(msg.sender);
+    if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
     // 1. Check if the agreementId is registered in the AssetsRegistry
     if (!agreementStore.agreementExists(_agreementId))
@@ -63,8 +58,7 @@ contract LockPaymentCondition is
 
     // 2. Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    if (!assetsRegistry.planExists(_planId))
-      revert IAsset.PlanNotFound(_planId);
+    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // 3. Check if the plan config (token, amount) is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
@@ -72,34 +66,18 @@ contract LockPaymentCondition is
     if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
       // Check if the lengths of amounts and receivers are the same
       if (plan.price.amounts.length != plan.price.receivers.length)
-        revert IncorrectPaymentDistribution(
-          plan.price.amounts,
-          plan.price.receivers
-        );
+        revert IncorrectPaymentDistribution(plan.price.amounts, plan.price.receivers);
       // Check if the amounts and receivers include the Nevermined fees
-      if (
-        !assetsRegistry.areNeverminedFeesIncluded(
-          plan.price.amounts,
-          plan.price.receivers
-        )
-      )
-        revert IAsset.NeverminedFeesNotIncluded(
-          plan.price.amounts,
-          plan.price.receivers
-        );
+      if (!assetsRegistry.areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers))
+        revert IAsset.NeverminedFeesNotIncluded(plan.price.amounts, plan.price.receivers);
 
-      uint256 amountToTransfer = TokenUtils.calculateAmountSum(
-        plan.price.amounts
-      );
+      uint256 amountToTransfer = TokenUtils.calculateAmountSum(plan.price.amounts);
       if (plan.price.tokenAddress == address(0)) {
         // Native token payment
         if (amountToTransfer > 0) {
           if (msg.value != amountToTransfer)
-            revert TokenUtils.InvalidTransactionAmount(
-              msg.value,
-              amountToTransfer
-            );
-          vault.depositNativeToken{value: amountToTransfer}();
+            revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
+          vault.depositNativeToken{ value: amountToTransfer }();
         }
         // TokenUtils.transferNativeToken(
         //   payable(address(vault)),
@@ -117,11 +95,7 @@ contract LockPaymentCondition is
             amountToTransfer
           );
           // Record the deposit in the vault
-          vault.depositERC20(
-            plan.price.tokenAddress,
-            amountToTransfer,
-            _senderAddress
-          );
+          vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
         }
         // TokenUtils.transferERC20(
         //   _senderAddress,

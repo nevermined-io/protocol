@@ -46,8 +46,5 @@ interface INVMConfig {
 
   function isOwner(address _address) external view returns (bool);
 
-  function hasRole(
-    address _address,
-    bytes32 _role
-  ) external view returns (bool);
+  function hasRole(address _address, bytes32 _role) external view returns (bool);
 }

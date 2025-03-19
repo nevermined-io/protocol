@@ -41,9 +41,7 @@ interface IAgreement {
     uint256 lastUpdated;
   }
 
-  function getAgreement(
-    bytes32 _agreementId
-  ) external view returns (Agreement memory);
+  function getAgreement(bytes32 _agreementId) external view returns (Agreement memory);
 
   function getConditionState(
     bytes32 _agreementId,

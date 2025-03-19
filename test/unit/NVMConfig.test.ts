@@ -30,8 +30,7 @@ describe('NVMConfig', function () {
 
   describe('Deployment', function () {
     it('Should deploy and initialize correctly', async function () {
-      const { nvmConfig, owner, governor, publicClient } =
-        await loadFixture(deployInstance)
+      const { nvmConfig, owner, governor, publicClient } = await loadFixture(deployInstance)
       // const hash = await nvmConfig.write.initialize(
       //   [owner.account.address, governor.account.address],
       //   { account: owner.account },
@@ -60,18 +59,13 @@ describe('NVMConfig', function () {
     })
 
     it('Fees can be changed by a governor account', async () => {
-      const txHash = await nvmConfig.write.setNetworkFees(
-        [100n, governor.account.address],
-        {
-          account: governor.account,
-        },
-      )
+      const txHash = await nvmConfig.write.setNetworkFees([100n, governor.account.address], {
+        account: governor.account,
+      })
       expect(txHash).to.be.a.string
 
       expect(await nvmConfig.read.getNetworkFee()).to.equal(100n)
-      expect(await nvmConfig.read.getFeeReceiver()).to.equalIgnoreCase(
-        governor.account.address,
-      )
+      expect(await nvmConfig.read.getFeeReceiver()).to.equalIgnoreCase(governor.account.address)
 
       console.log('txHash:', txHash)
       const logs = await getTxParsedLogs(publicClient, txHash, nvmConfig.abi)
@@ -125,12 +119,9 @@ describe('NVMConfig', function () {
     it('Params can be set by a governor account', async () => {
       console.log('paramName:', paramName)
       console.log('paramValue:', paramValue)
-      const txHash = await nvmConfig.write.setParameter(
-        [paramName, paramValue],
-        {
-          account: governor.account,
-        },
-      )
+      const txHash = await nvmConfig.write.setParameter([paramName, paramValue], {
+        account: governor.account,
+      })
       expect(txHash).to.be.a.string
       const _value = await nvmConfig.read.getParameter([paramName])
       expect(_value[0]).to.equal(paramValue)
@@ -165,24 +156,15 @@ describe('NVMConfig', function () {
     })
     it('The owner grants governor permissions', async () => {
       const governorAddress = newGovernor.account.address
-      const txHash = await config.nvmConfig.write.grantGovernor(
-        [governorAddress],
-        {
-          account: config.owner.account,
-        },
-      )
+      const txHash = await config.nvmConfig.write.grantGovernor([governorAddress], {
+        account: config.owner.account,
+      })
 
-      const isGovernor = await config.nvmConfig.read.isGovernor([
-        governorAddress,
-      ])
+      const isGovernor = await config.nvmConfig.read.isGovernor([governorAddress])
       expect(isGovernor).to.be.true
 
       console.log('txHash:', txHash)
-      const logs = await getTxParsedLogs(
-        config.publicClient,
-        txHash,
-        config.nvmConfig.abi,
-      )
+      const logs = await getTxParsedLogs(config.publicClient, txHash, config.nvmConfig.abi)
       expect(logs.length).to.be.greaterThanOrEqual(2)
       expect(logs[1].eventName).to.equalIgnoreCase('ConfigPermissionsChange')
     })
@@ -209,11 +191,8 @@ describe('NVMConfig', function () {
         account: config.owner.account,
       })
 
-      const isGovernor = await config.nvmConfig.read.isGovernor([
-        governorAddress,
-      ])
+      const isGovernor = await config.nvmConfig.read.isGovernor([governorAddress])
       expect(isGovernor).to.be.false
     })
   })
-
 })

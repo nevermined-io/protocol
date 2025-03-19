@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {INVMConfig} from './interfaces/INVMConfig.sol';
-import {AccessControlUpgradeable} from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import { INVMConfig } from './interfaces/INVMConfig.sol';
+import { AccessControlUpgradeable } from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 /**
  * @title Nevermined Config contract
@@ -28,7 +28,6 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @notice Role granted to Smart Contracts registered as NVM Conditions (they can fulfill conditions)
    */
   bytes32 public constant CONTRACT_CONDITION_ROLE = keccak256('NVM_CONTRACT_CONDITION');
-
 
   /**
    * The struct that represents a parameter in the Nevermined Config contract
@@ -57,11 +56,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param parameter the hash of the name of the parameter changed
    * @param value the new value of the parameter
    */
-  event NeverminedConfigChange(
-    address indexed whoChanged,
-    bytes32 indexed parameter,
-    bytes value
-  );
+  event NeverminedConfigChange(address indexed whoChanged, bytes32 indexed parameter, bytes value);
 
   /**
    * Event emitted when some permissions are granted or revoked
@@ -73,7 +68,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     address indexed addressPermissions,
     bytes32 indexed permissions,
     bool grantPermissions
-  ); 
+  );
 
   ///////////////////////////////////////////////////////////////////////////////////////
   /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
@@ -87,8 +82,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
   // See `marketplaceFee`
   address public feeReceiver;
 
-  uint256 constant public FEE_DENOMINATOR = 1000000;
-
+  uint256 public constant FEE_DENOMINATOR = 1000000;
 
   /**
    * Initialization function
@@ -100,7 +94,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
-    
+
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -250,11 +244,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
 
     networkFee = _networkFee;
     feeReceiver = _feeReceiver;
-    emit NeverminedConfigChange(
-      msg.sender,
-      keccak256('networkFee'),
-      abi.encodePacked(_networkFee)
-    );
+    emit NeverminedConfigChange(msg.sender, keccak256('networkFee'), abi.encodePacked(_networkFee));
     emit NeverminedConfigChange(
       msg.sender,
       keccak256('feeReceiver'),
@@ -294,11 +284,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
 
   function getParameter(
     bytes32 _paramName
-  )
-    external
-    view
-    returns (bytes memory value, bool isActive, uint256 lastUpdated)
-  {
+  ) external view returns (bytes memory value, bool isActive, uint256 lastUpdated) {
     return (
       configParams[_paramName].value,
       configParams[_paramName].isActive,
@@ -306,17 +292,11 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     );
   }
 
-  function disableParameter(
-    bytes32 _paramName
-  ) external virtual onlyGovernor(msg.sender) {
+  function disableParameter(bytes32 _paramName) external virtual onlyGovernor(msg.sender) {
     if (configParams[_paramName].isActive) {
       configParams[_paramName].isActive = false;
       configParams[_paramName].lastUpdated = block.timestamp;
-      emit NeverminedConfigChange(
-        msg.sender,
-        _paramName,
-        configParams[_paramName].value
-      );
+      emit NeverminedConfigChange(msg.sender, _paramName, configParams[_paramName].value);
     }
   }
 

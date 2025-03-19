@@ -3,29 +3,26 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
-import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import { IERC2981 } from '@openzeppelin/contracts/interfaces/IERC2981.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
 
 abstract contract NFT1155Base is ERC1155Upgradeable {
   /**
    * @notice Role allowing to mint credits
    */
-  bytes32 public constant CREDITS_MINTER_ROLE =
-    keccak256('CREDITS_MINTER_ROLE');
+  bytes32 public constant CREDITS_MINTER_ROLE = keccak256('CREDITS_MINTER_ROLE');
 
   /**
    * @notice Role allowing to burn credits
    */
-  bytes32 public constant CREDITS_BURNER_ROLE =
-    keccak256('CREDITS_BURNER_ROLE');
+  bytes32 public constant CREDITS_BURNER_ROLE = keccak256('CREDITS_BURNER_ROLE');
 
   /**
    * @notice Role allowing to transfer credits
    * @dev This role is not used in the current implementation
    */
-  bytes32 public constant CREDITS_TRANSFER_ROLE =
-    keccak256('CREDITS_TRANSFER_ROLE');
+  bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
 
   INVMConfig internal nvmConfig;
 
@@ -34,12 +31,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable {
   /// @param role The role required to call this function
   error InvalidRole(address sender, bytes32 role);
 
-  function mint(
-    address _to,
-    uint256 _id,
-    uint256 _value,
-    bytes memory _data
-  ) public virtual {
+  function mint(address _to, uint256 _id, uint256 _value, bytes memory _data) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
       revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
 
@@ -98,9 +90,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable {
     revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
   }
 
-  function supportsInterface(
-    bytes4 interfaceId
-  ) public view virtual override returns (bool) {
+  function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
     return
       ERC1155Upgradeable.supportsInterface(interfaceId) ||
       interfaceId == type(IERC2981).interfaceId;

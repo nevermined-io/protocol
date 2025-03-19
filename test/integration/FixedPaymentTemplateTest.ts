@@ -40,10 +40,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     _deployment = await loadFixture(deployModuleFixture)
 
     // Deploy MockERC20 for ERC20 tests
-    mockERC20 = await hre.viem.deployContract('MockERC20', [
-      'Test Token',
-      'TST',
-    ])
+    mockERC20 = await hre.viem.deployContract('MockERC20', ['Test Token', 'TST'])
 
     // Mint tokens to bob for testing
     await mockERC20.write.mint([bob.account.address, 1000n * 10n ** 18n], {
@@ -52,9 +49,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
     console.log(`NVM Config: ${_deployment.nvmConfig.address}`)
     console.log(`Assets Registry: ${_deployment.assetsRegistry.address}`)
-    console.log(
-      `Fixed Payment Template: ${_deployment.fixedPaymentTemplate.address}`,
-    )
+    console.log(`Fixed Payment Template: ${_deployment.fixedPaymentTemplate.address}`)
   })
 
   describe('Native Token Payment Flow', function () {
@@ -114,35 +109,24 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     it('Bob can create an agreement using native token', async () => {
       // Get the plan to determine payment amount
       const plan = await _deployment.assetsRegistry.read.getPlan([planId])
-      const totalAmount = plan.price.amounts.reduce(
-        (a: bigint, b: bigint) => a + b,
-        0n,
-      )
+      const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
       const agreementIdSeed = generateId()
-      const txHash =
-        await _deployment.fixedPaymentTemplate.write.createAgreement(
-          [agreementIdSeed, did, planId, []],
-          { account: bob.account, value: totalAmount },
-        )
+      const txHash = await _deployment.fixedPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, []],
+        { account: bob.account, value: totalAmount },
+      )
 
       expect(txHash).to.be.a('string').to.startWith('0x')
 
       // Verify events from transaction
-      const logs = await getTxParsedLogs(
-        publicClient,
-        txHash,
-        _deployment.agreementsStore.abi,
-      )
+      const logs = await getTxParsedLogs(publicClient, txHash, _deployment.agreementsStore.abi)
 
       expect(logs.length).to.be.greaterThan(0)
     })
 
     it('We can check the credits of Bob', async () => {
-      const balance = await _deployment.nftCredits.read.balanceOf([
-        bob.account.address,
-        did,
-      ])
+      const balance = await _deployment.nftCredits.read.balanceOf([bob.account.address, did])
 
       console.log('Credits Balance:', balance)
       expect(balance > 0n).to.be.true
@@ -207,15 +191,9 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     })
 
     it('We can check the ERC20 balances before agreement', async () => {
-      aliceERC20BalanceBefore = await mockERC20.read.balanceOf([
-        alice.account.address,
-      ])
-      bobERC20BalanceBefore = await mockERC20.read.balanceOf([
-        bob.account.address,
-      ])
-      vaultERC20BalanceBefore = await mockERC20.read.balanceOf([
-        _deployment.paymentsVault.address,
-      ])
+      aliceERC20BalanceBefore = await mockERC20.read.balanceOf([alice.account.address])
+      bobERC20BalanceBefore = await mockERC20.read.balanceOf([bob.account.address])
+      vaultERC20BalanceBefore = await mockERC20.read.balanceOf([_deployment.paymentsVault.address])
 
       console.log('Alice ERC20 Balance Before:', aliceERC20BalanceBefore)
       console.log('Bob ERC20 Balance Before:', bobERC20BalanceBefore)
@@ -226,57 +204,38 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     it('Bob can create an agreement using ERC20 token', async () => {
       // Get the plan to determine payment amount
       const plan = await _deployment.assetsRegistry.read.getPlan([planId])
-      const totalAmount = plan.price.amounts.reduce(
-        (a: bigint, b: bigint) => a + b,
-        0n,
-      )
+      const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
       // Approve tokens for LockPaymentCondition
-      await mockERC20.write.approve(
-        [_deployment.lockPaymentCondition.address, totalAmount],
-        {
-          account: bob.account,
-        },
-      )
+      await mockERC20.write.approve([_deployment.lockPaymentCondition.address, totalAmount], {
+        account: bob.account,
+      })
 
       // Also approve tokens for PaymentsVault (needed for DistributePaymentsCondition)
-      await mockERC20.write.approve(
-        [_deployment.paymentsVault.address, totalAmount],
-        {
-          account: bob.account,
-        },
-      )
+      await mockERC20.write.approve([_deployment.paymentsVault.address, totalAmount], {
+        account: bob.account,
+      })
 
       const agreementIdSeed = generateId()
-      const txHash =
-        await _deployment.fixedPaymentTemplate.write.createAgreement(
-          [agreementIdSeed, did, planId, []],
-          { account: bob.account },
-        )
+      const txHash = await _deployment.fixedPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, []],
+        { account: bob.account },
+      )
 
       expect(txHash).to.be.a('string').to.startWith('0x')
     })
 
     it('We can check the credits of Bob for ERC20 payment', async () => {
-      const balance = await _deployment.nftCredits.read.balanceOf([
-        bob.account.address,
-        did,
-      ])
+      const balance = await _deployment.nftCredits.read.balanceOf([bob.account.address, did])
 
       console.log('Credits Balance for ERC20 payment:', balance)
       expect(balance > 0n).to.be.true
     })
 
     it('We can check the ERC20 balances after agreement', async () => {
-      aliceERC20BalanceAfter = await mockERC20.read.balanceOf([
-        alice.account.address,
-      ])
-      bobERC20BalanceAfter = await mockERC20.read.balanceOf([
-        bob.account.address,
-      ])
-      vaultERC20BalanceAfter = await mockERC20.read.balanceOf([
-        _deployment.paymentsVault.address,
-      ])
+      aliceERC20BalanceAfter = await mockERC20.read.balanceOf([alice.account.address])
+      bobERC20BalanceAfter = await mockERC20.read.balanceOf([bob.account.address])
+      vaultERC20BalanceAfter = await mockERC20.read.balanceOf([_deployment.paymentsVault.address])
 
       console.log('Alice ERC20 Balance After:', aliceERC20BalanceAfter)
       console.log('Bob ERC20 Balance After:', bobERC20BalanceAfter)
@@ -312,10 +271,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     it('Should reject if agreement already exists', async () => {
       // Get the plan to determine payment amount
       const plan = await _deployment.assetsRegistry.read.getPlan([planId])
-      const totalAmount = plan.price.amounts.reduce(
-        (a: bigint, b: bigint) => a + b,
-        0n,
-      )
+      const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
       // Create a unique agreement ID seed
       const agreementIdSeed = generateId()
@@ -328,10 +284,10 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       // Try to create the same agreement again
       await expect(
-        _deployment.fixedPaymentTemplate.write.createAgreement(
-          [agreementIdSeed, did, planId, []],
-          { account: bob.account, value: totalAmount },
-        ),
+        _deployment.fixedPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, []], {
+          account: bob.account,
+          value: totalAmount,
+        }),
       ).to.be.rejectedWith(/AgreementAlreadyRegistered/)
     })
 
@@ -364,10 +320,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       // Get the plan to determine payment amount
       const plan = await _deployment.assetsRegistry.read.getPlan([planId])
-      const totalAmount = plan.price.amounts.reduce(
-        (a: bigint, b: bigint) => a + b,
-        0n,
-      )
+      const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
       // Try with incorrect amount (less than required)
       await expect(
@@ -389,11 +342,10 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       }
 
       // Add Nevermined fees
-      const result =
-        await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
-          unsupportedPriceConfig.amounts,
-          unsupportedPriceConfig.receivers,
-        ])
+      const result = await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
+        unsupportedPriceConfig.amounts,
+        unsupportedPriceConfig.receivers,
+      ])
       unsupportedPriceConfig.amounts = [...result[0]]
       unsupportedPriceConfig.receivers = [...result[1]]
 
@@ -402,10 +354,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       // Register asset with unsupported price type
       const didSeed = generateId()
-      const newDid = await _deployment.assetsRegistry.read.hashDID([
-        didSeed,
-        alice.account.address,
-      ])
+      const newDid = await _deployment.assetsRegistry.read.hashDID([didSeed, alice.account.address])
 
       await _deployment.assetsRegistry.write.registerAssetAndPlan(
         [
