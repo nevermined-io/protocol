@@ -1,17 +1,18 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
-import { expect } from 'chai'
+import chai, { expect } from 'chai'
 import hre from 'hardhat'
 import { toHex, zeroAddress, keccak256, stringToBytes } from 'viem'
 import { getTxParsedLogs } from '../common/utils'
 import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
+import chaiString from 'chai-string'
+
+// Configure chai plugins
+chai.use(chaiString)
 
 // Generate a random bytes32 value
 function generateId(): `0x${string}` {
   return keccak256(stringToBytes(Math.random().toString()))
 }
-
-var chai = require('chai')
-chai.use(require('chai-string'))
 
 describe('LockPaymentCondition', function () {
   // We define a fixture to reuse the same setup in every test.
