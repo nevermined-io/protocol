@@ -30,7 +30,8 @@ library TokenUtils {
   ) public {
     if (_amount > 0) {
       IERC20 token = IERC20(_tokenAddress);
-      token.approve(_receiverAddress, _amount);
+      // We don't need to approve here since the approval should be done by the sender
+      // before calling this function
       token.transferFrom(_senderAddress, _receiverAddress, _amount);
     }
   }
