@@ -4,7 +4,6 @@
 pragma solidity ^0.8.28;
 
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined NFT1155Credits V2 contract

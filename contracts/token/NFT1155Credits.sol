@@ -35,7 +35,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
   error InvalidRole(address sender, bytes32 role);
 
   function initialize(address _nvmConfigAddress, string memory _name, string memory _symbol) public virtual initializer {
-    ERC1155Upgradeable.__ERC1155_init("");
+    ERC1155Upgradeable.__ERC1155_init('');
     nvmConfig = INVMConfig(_nvmConfigAddress);
   }
 
