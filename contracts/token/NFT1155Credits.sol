@@ -10,7 +10,8 @@ import {NFT1155Base} from './NFT1155Base.sol';
 
 contract NFT1155Credits is NFT1155Base {
 
-  function initialize(address _nvmConfigAddress) public virtual initializer {
+  function initialize(address _nvmConfigAddress, string memory _name, string memory _symbol) public virtual initializer {
+    ERC1155Upgradeable.__ERC1155_init('');
     nvmConfig = INVMConfig(_nvmConfigAddress);
   }
 
