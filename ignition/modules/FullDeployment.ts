@@ -120,60 +120,35 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	/////////////////// CORE CONTRACTS //////////////////////////////////
 	// Assets Registry
 	m.call(assetsRegistry, 'initialize', [nvmConfig])	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_ASSETS_REGISTRY, assetsRegistry, 1], 
-		{ from: governor, id: 'AssetsRegistry_registerContract' })
 
 	// AgreementsStore
 	m.call(agreementsStore, 'initialize', [nvmConfig])	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_AGREEMENTS_STORE, agreementsStore, 1], 
-		{ from: governor, id: 'AgreementsStore_registerContract' })
 
 	// Payments Vault
 	m.call(paymentsVault, 'initialize', [nvmConfig], { from: owner })	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_PAYMENTS_VAULT, paymentsVault, 1], 
-		{ from: governor, id: 'PaymentsVault_registerContract' })
 
 	/////////////////// NFT CONTRACTS //////////////////////////////////
-
 	// NFT1155Credits
 	m.call(nftCredits, 'initialize', [nvmConfig], { from: owner })	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_NFT1155CREDITS, nftCredits, 1], 
-		{ from: governor, id: 'NFT1155Credits_registerContract' })
 
 
 	/////////////////// CONDITIONS //////////////////////////////////
 	// LockPaymentCondition
 	m.call(lockPaymentCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore, paymentsVault])	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_LOCKPAYMENT_CONDITION, lockPaymentCondition, 1], 
-		{ from: governor, id: 'LockPaymentCondition_registerContract' })
 	m.call(nvmConfig, 'grantCondition', [lockPaymentCondition], { from: governor , id: 'grantCondition_lockPayment' })
 
 	// TransferCreditsCondition
 	m.call(transferCreditsCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore])	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_TRANSFERCREDITS_CONDITION, transferCreditsCondition, 1], 
-		{ from: governor, id: 'TransferCreditsCondition_registerContract' })
 	m.call(nvmConfig, 'grantCondition', [transferCreditsCondition], { from: governor , id: 'grantCondition_transferCredits' })
 
 	// DistributePaymentsCondition
 	m.call(distributePaymentsCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore, paymentsVault])	
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-		[HASH_DISTRIBUTEPAYMENTS_CONDITION, distributePaymentsCondition, 1], 
-		{ from: governor, id: 'DistributePaymentsCondition_registerContract' })
 	m.call(nvmConfig, 'grantCondition', [distributePaymentsCondition], { from: governor , id: 'grantCondition_distributePayments' })
 
 
 	/////////////////// TEMPLATES //////////////////////////////////
 	// Fixed Payment Template
 	m.call(fixedPaymentTemplate, 'initialize', [fixedPaymentTemplate, agreementsStore, lockPaymentCondition, transferCreditsCondition, distributePaymentsCondition])
-	m.call(nvmConfig, 'registerContract(bytes32,address,uint256)', 
-	 	[HASH_FIXED_PAYMENT_TEMPLATE, fixedPaymentTemplate, 1], 
-	 	{ from: governor, id: 'FixedPaymentTemplate_registerContract' })
 	m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
 
 
@@ -202,14 +177,9 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 })
 
 const FullDeploymentModule = buildModule("FullDeploymentModule", (m) => {
-	return m.useModule(DeploymentOfContractsModule)
-
-	// console.log(nvmConfig)
-	// return { nvmConfig, paymentsVault, assetsRegistry, agreementsStore, fixedPaymentTemplate }
+	return m.useModule(DeploymentOfContractsModule)	
 })
 
-// const registerContract = (_name: string, _address: string, _version = 0) => {
-// 	matchMedia.call(nvmConfig, 'registerContract', [sha3(_name), assetsRegistry])
-// }
+
 
 export { NVMConfigModule, FullDeploymentModule }

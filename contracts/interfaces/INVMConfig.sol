@@ -24,11 +24,6 @@ interface INVMConfig {
   /// @param _address The _address given as parameter
   error InvalidAddress(address _address);
 
-  /// The contract version provided (_newVersion) is not higher than the latest version (_latestVersion)
-  /// @param _newVersion The _newVersion given as parameter
-  /// @param _latestVersion The _latestVersion of the contract already registered
-  error InvalidContractVersion(uint256 _newVersion, uint256 _latestVersion);
-
   /// Only a valid registered template address can call this function, but `sender` is not part of the list of registered Templates
   /// @param sender The address of the account calling this function
   error OnlyTemplate(address sender);
