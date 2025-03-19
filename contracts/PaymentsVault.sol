@@ -101,8 +101,8 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
       revert InvalidRole(msg.sender, WITHDRAW_ROLE);
     
     IERC20 token = IERC20(_erc20TokenAddress);
-    token.approve(_receiver, _amount);
-    token.transferFrom(address(this), _receiver, _amount);
+    // Use transfer instead of transferFrom since we're sending from our own balance
+    token.transfer(_receiver, _amount);
     
     emit WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);    
   }
