@@ -17,6 +17,6 @@ jobs:
           node-version: '18.x'
           cache: 'yarn'
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install
       - name: Run upgradeability tests
         run: yarn test:upgrades
