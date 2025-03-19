@@ -1,6 +1,11 @@
 import { createPublicClient, createWalletClient, http } from 'viem';
 import { mnemonicToAccount } from 'viem/accounts';
-import { hardhat } from 'viem/chains';
+import { 
+  mainnet, 
+  sepolia, 
+  hardhat, 
+  Chain 
+} from 'viem/chains';
 
 // ABI for the ProxyAdmin contract's upgradeAndCall function
 const proxyAdminABI = [
@@ -17,7 +22,24 @@ const proxyAdminABI = [
   }
 ];
 
+// Map of supported networks
+const NETWORKS: Record<string, Chain> = {
+  mainnet,
+  sepolia,
+  hardhat
+};
+
 async function main() {
+  // Get the network from command line arguments
+  const networkName = process.env.NETWORK || 'hardhat';
+  const network = NETWORKS[networkName];
+  
+  if (!network) {
+    throw new Error(`Unsupported network: ${networkName}. Supported networks are: ${Object.keys(NETWORKS).join(', ')}`);
+  }
+  
+  console.log(`Using network: ${networkName}`);
+  
   // Get the mnemonic seed phrase from environment
   const mnemonic = process.env.MNEMONIC;
   if (!mnemonic) {
@@ -29,12 +51,12 @@ async function main() {
 
   // Create clients
   const publicClient = createPublicClient({
-    chain: hardhat,
+    chain: network,
     transport: http()
   });
   
   const walletClient = createWalletClient({
-    chain: hardhat,
+    chain: network,
     transport: http(),
     account
   });
@@ -93,7 +115,25 @@ async function main() {
   }
 }
 
-// Execute the upgrade
+// Parse command line arguments for network
+function parseArgs() {
+  // Check if NETWORK is already set in environment
+  if (process.env.NETWORK) {
+    return;
+  }
+  
+  // Otherwise look for --network flag in command line arguments
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--network' && i + 1 < args.length) {
+      process.env.NETWORK = args[i + 1];
+      break;
+    }
+  }
+}
+
+// Parse arguments and execute the upgrade
+parseArgs();
 main()
   .then(() => process.exit(0))
   .catch((error) => {
