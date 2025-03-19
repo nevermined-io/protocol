@@ -30,13 +30,16 @@ export async function getTxParsedLogs(
  * @param creatorAddress The address of the asset creator
  * @returns Price configuration object
  */
-export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `0x${string}`): any {
+export function createPriceConfig(
+  tokenAddress: `0x${string}`,
+  creatorAddress: `0x${string}`,
+): any {
   return {
     priceType: 0, // FIXED_PRICE
     tokenAddress: tokenAddress,
     amounts: [100n],
     receivers: [creatorAddress],
-    contractAddress: '0x0000000000000000000000000000000000000000'
+    contractAddress: '0x0000000000000000000000000000000000000000',
   }
 }
 
@@ -50,7 +53,7 @@ export function createCreditsConfig(): any {
     durationSecs: 0n,
     amount: 100n,
     minAmount: 1n,
-    maxAmount: 1n
+    maxAmount: 1n,
   }
 }
 
@@ -66,30 +69,41 @@ export async function registerAssetAndPlan(
   assetsRegistry: any,
   tokenAddress: `0x${string}`,
   creator: any,
-  creatorAddress: `0x${string}`
-): Promise<{ did: `0x${string}`, planId: `0x${string}` }> {
+  creatorAddress: `0x${string}`,
+  nftAddress?: `0x${string}`,
+): Promise<{ did: `0x${string}`; planId: `0x${string}` }> {
   const didSeed = generateId()
   const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
-  
+
   const priceConfig = createPriceConfig(tokenAddress, creatorAddress)
-  
+
   const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
     priceConfig.amounts,
-    priceConfig.receivers
+    priceConfig.receivers,
   ])
   priceConfig.amounts = [...result[0]]
   priceConfig.receivers = [...result[1]]
-  
+
   const creditsConfig = createCreditsConfig()
-  
+
+  // Use provided NFT address or default to zero address
+  const nftAddressToUse =
+    nftAddress || '0x0000000000000000000000000000000000000000'
+
   await assetsRegistry.write.registerAssetAndPlan(
-    [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, '0x0000000000000000000000000000000000000000'],
-    { account: creator.account }
+    [
+      didSeed,
+      'https://nevermined.io',
+      priceConfig,
+      creditsConfig,
+      nftAddressToUse,
+    ],
+    { account: creator.account },
   )
-  
+
   const asset = await assetsRegistry.read.getAsset([did])
   const planId = asset.plans[0]
-  
+
   return { did, planId }
 }
 
@@ -109,18 +123,24 @@ export async function createAgreement(
   did: `0x${string}`,
   planId: `0x${string}`,
   user: any,
-  template: any
-): Promise<{ agreementId: `0x${string}`, conditionId: `0x${string}` }> {
+  template: any,
+): Promise<{ agreementId: `0x${string}`; conditionId: `0x${string}` }> {
   const agreementSeed = generateId()
-  const agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-  
+  const agreementId = await agreementsStore.read.hashAgreementId([
+    agreementSeed,
+    user.account.address,
+  ])
+
   const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-  const conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-  
+  const conditionId = await lockPaymentCondition.read.hashConditionId([
+    agreementId,
+    contractName,
+  ])
+
   await agreementsStore.write.register(
     [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-    { account: template.account }
+    { account: template.account },
   )
-  
+
   return { agreementId, conditionId }
 }
