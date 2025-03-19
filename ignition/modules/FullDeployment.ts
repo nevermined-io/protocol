@@ -197,7 +197,7 @@ const NFT1155CreditsModule = buildModule("NFT1155CreditsModule", (m) => {
 	const nftCredits = m.contractAt("NFT1155Credits", nftCreditsProxy, { id: "NFT1155CreditsProxyInstance" })
 	
 	// Initialize the contract through the proxy
-	m.call(nftCredits, "initialize", [nvmConfig])
+	m.call(nftCredits, "initialize", [nvmConfig, 'Nevermined Credits', 'NVMC'])
 	
 	return { nftCredits, nftCreditsImpl, nftCreditsProxy }
 })
