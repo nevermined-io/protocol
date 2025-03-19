@@ -12,7 +12,6 @@ const GOVERNOR_ACCOUNT_INDEX = (process.env.GOVERNOR_ACCOUNT_INDEX || 1) as numb
 const NVM_FEE_AMOUNT = (process.env.NVM_FEE_AMOUNT || 10000) as number // 1% by default
 const NVM_FEE_RECEIVER = process.env.NVM_FEE_RECEIVER
 
-
 const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
@@ -259,7 +258,6 @@ const TemplatesDeploymentModule = buildModule("TemplatesDeploymentModule", (m) =
 })
 
 const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (m) => {
-
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
 	
@@ -323,7 +321,5 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 const FullDeploymentModule = buildModule("FullDeploymentModule", (m) => {
 	return m.useModule(DeploymentOfContractsModule)	
 })
-
-
 
 export { NVMConfigModule, FullDeploymentModule }
