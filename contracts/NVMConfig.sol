@@ -73,22 +73,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     address indexed addressPermissions,
     bytes32 indexed permissions,
     bool grantPermissions
-  );
-
-  /**
-   * Event emitted when a contract is registered in the Nevermined Config contract
-   * @param registeredBy the address registering the new contract
-   * @param name the name of the contract registered
-   * @param contractAddress the address of the contract registered
-   * @param version The version of the contract registered
-   */
-  event ContractRegistered(
-    address indexed registeredBy,
-    bytes32 indexed name,
-    address indexed contractAddress,
-    uint256 version
-  );
-  
+  ); 
 
   ///////////////////////////////////////////////////////////////////////////////////////
   /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
@@ -339,59 +324,4 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     return configParams[_paramName].isActive;
   }
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  /////// DNS FUNCTIONS /////////////////////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////////////
-
-  function registerContract(
-    bytes32 _name,
-    address _address    
-  ) public virtual onlyGovernor(msg.sender) {
-    uint256 latestVersion = this.getContractLatestVersion(keccak256(abi.encode(_name)));
-    this.registerContract(_name, _address, latestVersion + 1);
-  }
-
-  function registerContract(
-    bytes32 _name,
-    address _address,
-    uint256 _version    
-  ) public virtual onlyGovernor(msg.sender) {
-
-    if (_address == address(0)) {
-      revert InvalidAddress(_address);
-    }
-    uint256 latestVersion = this.getContractLatestVersion(_name);
-    if (_version <= latestVersion) {
-      revert InvalidContractVersion(_version, latestVersion);
-    }
-
-    bytes32 _id = keccak256(abi.encode(_name, _version));
-    contractsRegistry[_id] = _address;
-    contractsLatestVersion[keccak256(abi.encode(_name))] = _version;
-    emit ContractRegistered(msg.sender, _name, _address, _version);
-  }
-
-  function resolveContract(
-    bytes32 _name   
-  ) external view returns (address contractAddress)
-  {
-    uint256 latestVersion = this.getContractLatestVersion(keccak256(abi.encode(_name)));
-    return this.resolveContract(_name, latestVersion);    
-  }
-
-  function resolveContract(
-    bytes32 _name,
-    uint256 _version    
-  ) external view returns (address contractAddress)
-  {
-    bytes32 _id = keccak256(abi.encode(_name, _version));
-    return contractsRegistry[_id];
-  }
-
-  function getContractLatestVersion(
-    bytes32 _name
-  ) external view returns (uint256 version)
-  {
-    return contractsLatestVersion[keccak256(abi.encode(_name))];
-  }
 }
