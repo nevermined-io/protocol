@@ -60,23 +60,94 @@ m.call(contract, "initialize", [/* initialization parameters */]);
 
 ## Using the Upgrade Script
 
-The repository includes an upgrade script that simplifies the process:
+The repository includes a flexible upgrade script (`scripts/upgrade-contracts.ts`) that supports both single contract upgrades and batch upgrades from a configuration file.
+
+### Single Contract Upgrade
+
+You can upgrade a single contract using command-line arguments or environment variables:
 
 ```bash
-# Set the required environment variables
-export PRIVATE_KEY=0x...
+# Using command-line arguments
+npx hardhat run scripts/upgrade-contracts.ts -- \
+  --proxy 0x123... \
+  --implementation 0x456... \
+  --network sepolia
+
+# Using environment variables
+export MNEMONIC="your twelve word seed phrase here"
 export PROXY_ADMIN_ADDRESS=0x...
 export PROXY_ADDRESS=0x...
 export NEW_IMPLEMENTATION_ADDRESS=0x...
 export INITIALIZATION_DATA=0x  # Optional, use if you need to call a function during upgrade
+export NETWORK=sepolia  # Optional, defaults to hardhat
 
 # Run the upgrade script
-yarn upgrade --network <network-name>
+yarn upgrade
 ```
+
+### Batch Contract Upgrade
+
+For upgrading multiple contracts at once, you can use a configuration file:
+
+```bash
+# Create a configuration file (upgrade-config.json)
+{
+  "NVMConfig": {
+    "proxyAddress": "0x123...",
+    "newImplementationAddress": "0x456...",
+    "initializationData": "0x"  # Optional
+  },
+  "AssetsRegistry": {
+    "proxyAddress": "0x789...",
+    "newImplementationAddress": "0xabc...",
+    "initializationData": "0x"  # Optional
+  }
+  # Add more contracts as needed
+}
+
+# Run the batch upgrade
+npx hardhat run scripts/upgrade-contracts.ts -- \
+  --config ./upgrade-config.json \
+  --network sepolia
+
+# Or using environment variables
+export MNEMONIC="your twelve word seed phrase here"
+export PROXY_ADMIN_ADDRESS=0x...
+export UPGRADE_CONFIG_PATH=./upgrade-config.json
+export NETWORK=sepolia
+
+yarn upgrade
+```
+
+### Command-Line Options
+
+The upgrade script supports the following options:
+
+| Option | Description |
+|--------|-------------|
+| `--proxy` | Proxy contract address (for single contract upgrade) |
+| `--implementation` | New implementation address (for single contract upgrade) |
+| `--data` | Initialization data (optional, for single contract upgrade) |
+| `--config` | Path to JSON config file (for multiple contract upgrade) |
+| `--network` | Network to use (default: hardhat) |
+
+### Environment Variables
+
+Alternatively, you can use these environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `PROXY_ADDRESS` | Same as `--proxy` |
+| `NEW_IMPLEMENTATION_ADDRESS` | Same as `--implementation` |
+| `INITIALIZATION_DATA` | Same as `--data` |
+| `UPGRADE_CONFIG_PATH` | Same as `--config` |
+| `NETWORK` | Same as `--network` |
+| `MNEMONIC` | Mnemonic seed phrase for account (required) |
+| `PROXY_ADMIN_ADDRESS` | ProxyAdmin contract address (required) |
 
 The script will:
 1. Connect to the specified network
-2. Use the provided private key to sign the transaction
+2. Use the provided mnemonic to derive the account for signing transactions
 3. Call the ProxyAdmin's upgradeAndCall function to update the proxy
 4. Verify the implementation address was updated correctly
 
