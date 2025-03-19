@@ -286,31 +286,18 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	const { fixedPaymentTemplate } = m.useModule(TemplatesDeploymentModule)	
 	
 	/////////////////// CORE CONTRACTS //////////////////////////////////
-	// Assets Registry
-	m.call(assetsRegistry, 'initialize', [nvmConfig])	
-
-	// AgreementsStore
-	m.call(agreementsStore, 'initialize', [nvmConfig])	
-
-	// Payments Vault
-	m.call(paymentsVault, 'initialize', [nvmConfig], { from: owner })	
+	// These contracts are already initialized in their respective modules
+	// No need to initialize them again here
 
 	/////////////////// NFT CONTRACTS //////////////////////////////////
-	// NFT1155Credits
-	m.call(nftCredits, 'initialize', [nvmConfig], { from: owner })	
+	// NFT1155Credits is already initialized in its module
 
 
 	/////////////////// CONDITIONS //////////////////////////////////
-	// LockPaymentCondition
-	m.call(lockPaymentCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore, paymentsVault])	
+	// Conditions are already initialized in their respective modules
+	// Just grant permissions here
 	m.call(nvmConfig, 'grantCondition', [lockPaymentCondition], { from: governor , id: 'grantCondition_lockPayment' })
-
-	// TransferCreditsCondition
-	m.call(transferCreditsCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore])	
 	m.call(nvmConfig, 'grantCondition', [transferCreditsCondition], { from: governor , id: 'grantCondition_transferCredits' })
-
-	// DistributePaymentsCondition
-	m.call(distributePaymentsCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore, paymentsVault])	
 	m.call(nvmConfig, 'grantCondition', [distributePaymentsCondition], { from: governor , id: 'grantCondition_distributePayments' })
 
 
