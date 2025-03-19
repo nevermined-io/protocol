@@ -42,6 +42,10 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _planId,
     bytes[] memory _params
   ) external payable {
+    // Validate inputs
+    if (_seed == bytes32(0)) revert('Invalid seed');
+    if (_did == bytes32(0)) revert('Invalid DID');
+    if (_planId == bytes32(0)) revert('Invalid plan ID');
     // STEPS:
     // 0. Calculate agreementId
     bytes32 agreementId = keccak256(
@@ -148,7 +152,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _planId,
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
-  ) public {
+  ) internal {
     // bytes32[] memory _requiredConditons = new bytes32[](2);
     // _requiredConditons[0] = _lockPaymentCondition;
     // _requiredConditons[1] = _transferCondition;

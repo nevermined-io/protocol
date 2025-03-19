@@ -18,7 +18,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
    * @notice Role allowing to burn credits
    */
   bytes32 public constant CREDITS_BURNER_ROLE =
-    keccak256('CREDITS_MINTER_ROLE');
+    keccak256('CREDITS_BURNER_ROLE');
 
   /**
    * @notice Role allowing to transfer credits

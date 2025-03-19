@@ -34,7 +34,6 @@ contract TransferCreditsCondition is
     agreementStore = IAgreement(_agreementStoreAddress);
   }
 
-
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
@@ -64,6 +63,13 @@ contract TransferCreditsCondition is
     // 3. Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
 
+    // FULFILL THE CONDITION first (before external calls)
+    agreementStore.updateConditionStatus(
+      _agreementId,
+      _conditionId,
+      IAgreement.ConditionState.Fulfilled
+    );
+
     NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
     nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
     // TODO: Implement the logic
@@ -72,12 +78,5 @@ contract TransferCreditsCondition is
     // ELSE IF plan.credits.creditsType == FIXED
     // ELSE IF plan.credits.creditsType == DYNAMIC
     // ELSE revert
-
-    // FULFILL THE CONDITION
-    agreementStore.updateConditionStatus(
-      _agreementId,
-      _conditionId,
-      IAgreement.ConditionState.Fulfilled
-    );
   }
 }
