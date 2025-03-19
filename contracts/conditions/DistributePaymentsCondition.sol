@@ -70,6 +70,13 @@ contract DistributePaymentsCondition is
     ) revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
 
     // 2. Check if the required conditions (LockPayment) are already fulfilled
+    // FULFILL THE CONDITION first (before external calls)
+    agreementStore.updateConditionStatus(
+      _agreementId,
+      _conditionId,
+      IAgreement.ConditionState.Fulfilled
+    );
+
     if (
       agreementStore.getConditionState(_agreementId, _releaseCondition) ==
       IAgreement.ConditionState.Fulfilled
@@ -103,13 +110,6 @@ contract DistributePaymentsCondition is
           _originalSender
         );
     }
-
-    // FULFILL THE CONDITION
-    agreementStore.updateConditionStatus(
-      _agreementId,
-      _conditionId,
-      IAgreement.ConditionState.Fulfilled
-    );
   }
 
   function _distributeNativeTokenPayments(

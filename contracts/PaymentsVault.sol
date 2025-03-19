@@ -80,10 +80,11 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
   {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) revert InvalidRole(msg.sender, WITHDRAW_ROLE);
     
+    // Emit event before external call to follow checks-effects-interactions pattern
+    emit WithdrawNativeToken(msg.sender, _receiver, _amount);
+    
     (bool sent, ) = _receiver.call{value: _amount}('');
     if (!sent) revert FailedToSendNativeToken();
-
-    emit WithdrawNativeToken(msg.sender, _receiver, _amount);    
   }
 
   function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) 
