@@ -3,22 +3,21 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {IAsset} from '../interfaces/IAsset.sol';
-import {IVault} from '../interfaces/IVault.sol';
-import {TemplateCondition} from './TemplateCondition.sol';
-import {TokenUtils} from '../utils/TokenUtils.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
+import { IVault } from '../interfaces/IVault.sol';
+import { TemplateCondition } from './TemplateCondition.sol';
+import { TokenUtils } from '../utils/TokenUtils.sol';
 
 contract DistributePaymentsCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
   TemplateCondition
 {
-  bytes32 public constant NVM_CONTRACT_NAME =
-    keccak256('DistributePaymentsCondition');
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256('DistributePaymentsCondition');
 
   INVMConfig internal nvmConfig;
   IAsset internal assetsRegistry;
@@ -47,19 +46,14 @@ contract DistributePaymentsCondition is
     bytes32 _releaseCondition
   ) external payable nonReentrant {
     // 0. Validate if the account calling this function is a registered template
-    if (!nvmConfig.isTemplate(msg.sender))
-      revert INVMConfig.OnlyTemplate(msg.sender);
+    if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
-    IAgreement.Agreement memory agreement = agreementStore.getAgreement(
-      _agreementId
-    );
-    if (agreement.lastUpdated == 0)
-      revert IAgreement.AgreementNotFound(_agreementId);
+    IAgreement.Agreement memory agreement = agreementStore.getAgreement(_agreementId);
+    if (agreement.lastUpdated == 0) revert IAgreement.AgreementNotFound(_agreementId);
 
     // 1. Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    if (!assetsRegistry.planExists(_planId))
-      revert IAsset.PlanNotFound(_planId);
+    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // 3. Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
@@ -82,16 +76,9 @@ contract DistributePaymentsCondition is
       IAgreement.ConditionState.Fulfilled
     ) {
       if (plan.price.tokenAddress == address(0))
-        _distributeNativeTokenPayments(
-          plan.price.amounts,
-          plan.price.receivers
-        );
+        _distributeNativeTokenPayments(plan.price.amounts, plan.price.receivers);
       else
-        _distributeERC20Payments(
-          plan.price.tokenAddress,
-          plan.price.amounts,
-          plan.price.receivers
-        );
+        _distributeERC20Payments(plan.price.tokenAddress, plan.price.amounts, plan.price.receivers);
     } else {
       // SOME CONDITIONS ABORTED
       // Distribute the payments to the who locked the payment
@@ -103,12 +90,7 @@ contract DistributePaymentsCondition is
 
       if (plan.price.tokenAddress == address(0))
         _distributeNativeTokenPayments(_amountToRefund, _originalSender);
-      else
-        _distributeERC20Payments(
-          plan.price.tokenAddress,
-          _amountToRefund,
-          _originalSender
-        );
+      else _distributeERC20Payments(plan.price.tokenAddress, _amountToRefund, _originalSender);
     }
   }
 

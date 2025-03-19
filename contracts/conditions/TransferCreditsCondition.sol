@@ -3,21 +3,16 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {IAsset} from '../interfaces/IAsset.sol';
-import {TemplateCondition} from './TemplateCondition.sol';
-import {NFT1155Credits} from '../token/NFT1155Credits.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
+import { TemplateCondition } from './TemplateCondition.sol';
+import { NFT1155Credits } from '../token/NFT1155Credits.sol';
 
-contract TransferCreditsCondition is
-  Initializable,
-  ReentrancyGuardUpgradeable,
-  TemplateCondition
-{
-  bytes32 public constant NVM_CONTRACT_NAME =
-    keccak256('TransferCreditsCondition');
+contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition {
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
 
   INVMConfig internal nvmConfig;
   IAsset internal assetsRegistry;
@@ -43,22 +38,15 @@ contract TransferCreditsCondition is
     address _receiverAddress
   ) external payable nonReentrant {
     // 0. Validate if the account calling this function is a registered template
-    if (!nvmConfig.isTemplate(msg.sender))
-      revert INVMConfig.OnlyTemplate(msg.sender);
+    if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
     // 1. Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    if (!assetsRegistry.planExists(_planId))
-      revert IAsset.PlanNotFound(_planId);
+    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // 2. Check if the required conditions (LockPayment) are already fulfilled
-    if (
-      !agreementStore.areConditionsFulfilled(
-        _agreementId,
-        _conditionId,
-        _requiredConditions
-      )
-    ) revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
+    if (!agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions))
+      revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
 
     // 3. Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);

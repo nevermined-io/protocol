@@ -3,13 +3,13 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {AgreementsStore} from './AgreementsStore.sol';
-import {BaseTemplate} from './BaseTemplate.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {LockPaymentCondition} from '../conditions/LockPaymentCondition.sol';
-import {TransferCreditsCondition} from '../conditions/TransferCreditsCondition.sol';
-import {DistributePaymentsCondition} from '../conditions/DistributePaymentsCondition.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { AgreementsStore } from './AgreementsStore.sol';
+import { BaseTemplate } from './BaseTemplate.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { LockPaymentCondition } from '../conditions/LockPaymentCondition.sol';
+import { TransferCreditsCondition } from '../conditions/TransferCreditsCondition.sol';
+import { DistributePaymentsCondition } from '../conditions/DistributePaymentsCondition.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
@@ -31,9 +31,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     agreementStore = AgreementsStore(_agreementStoreAddress);
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-    distributePaymentsCondition = DistributePaymentsCondition(
-      _distributePaymentsCondition
-    );
+    distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
   }
 
   function createAgreement(
@@ -53,9 +51,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     );
 
     // 1. Check if the agreement is already registered
-    IAgreement.Agreement memory agreement = agreementStore.getAgreement(
-      agreementId
-    );
+    IAgreement.Agreement memory agreement = agreementStore.getAgreement(agreementId);
 
     if (agreement.lastUpdated != 0) {
       revert IAgreement.AgreementAlreadyRegistered(agreementId);
@@ -91,14 +87,7 @@ contract FixedPaymentTemplate is BaseTemplate {
 
     // 3. Lock the payment
     _lockPayment(conditionIds[0], agreementId, _did, _planId, msg.sender);
-    _transferPlan(
-      conditionIds[1],
-      agreementId,
-      _did,
-      _planId,
-      conditionIds[0],
-      msg.sender
-    );
+    _transferPlan(conditionIds[1], agreementId, _did, _planId, conditionIds[0], msg.sender);
     _distributePayments(
       conditionIds[2],
       agreementId,
@@ -116,7 +105,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _planId,
     address _senderAddress
   ) internal {
-    lockPaymentCondition.fulfill{value: msg.value}(
+    lockPaymentCondition.fulfill{ value: msg.value }(
       _conditionId,
       _agreementId,
       _did,

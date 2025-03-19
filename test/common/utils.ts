@@ -14,11 +14,7 @@ export async function getTxEvents(publicClient: any, txHash: string) {
   return receipt.logs
 }
 
-export async function getTxParsedLogs(
-  publicClient: any,
-  txHash: string,
-  abi: any,
-) {
+export async function getTxParsedLogs(publicClient: any, txHash: string, abi: any) {
   const logs = await getTxEvents(publicClient, txHash)
   if (logs.length > 0) return parseEventLogs({ abi, logs }) as any[]
   return []
@@ -30,10 +26,7 @@ export async function getTxParsedLogs(
  * @param creatorAddress The address of the asset creator
  * @returns Price configuration object
  */
-export function createPriceConfig(
-  tokenAddress: `0x${string}`,
-  creatorAddress: `0x${string}`,
-): any {
+export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `0x${string}`): any {
   return {
     priceType: 0, // FIXED_PRICE
     tokenAddress: tokenAddress,
@@ -87,17 +80,10 @@ export async function registerAssetAndPlan(
   const creditsConfig = createCreditsConfig()
 
   // Use provided NFT address or default to zero address
-  const nftAddressToUse =
-    nftAddress || '0x0000000000000000000000000000000000000000'
+  const nftAddressToUse = nftAddress || '0x0000000000000000000000000000000000000000'
 
   await assetsRegistry.write.registerAssetAndPlan(
-    [
-      didSeed,
-      'https://nevermined.io',
-      priceConfig,
-      creditsConfig,
-      nftAddressToUse,
-    ],
+    [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftAddressToUse],
     { account: creator.account },
   )
 
@@ -132,10 +118,7 @@ export async function createAgreement(
   ])
 
   const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-  const conditionId = await lockPaymentCondition.read.hashConditionId([
-    agreementId,
-    contractName,
-  ])
+  const conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
 
   await agreementsStore.write.register(
     [agreementId, user.account.address, did, planId, [conditionId], [0], []],

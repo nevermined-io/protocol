@@ -3,9 +3,9 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
 
 contract AgreementsStore is Initializable, IAgreement {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
@@ -20,10 +20,7 @@ contract AgreementsStore is Initializable, IAgreement {
    * @param agreementId the unique identifier of the agreement
    * @param creator the address of the account storing the agreement
    */
-  event AgreementRegistered(
-    bytes32 indexed agreementId,
-    address indexed creator
-  );
+  event AgreementRegistered(bytes32 indexed agreementId, address indexed creator);
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
@@ -38,8 +35,7 @@ contract AgreementsStore is Initializable, IAgreement {
     ConditionState[] memory _conditionStates,
     bytes[] memory _params
   ) public {
-    if (!nvmConfig.isTemplate(msg.sender))
-      revert INVMConfig.OnlyTemplate(msg.sender);
+    if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
     if (agreements[_agreementId].lastUpdated != 0) {
       revert AgreementAlreadyRegistered(_agreementId);
@@ -91,9 +87,7 @@ contract AgreementsStore is Initializable, IAgreement {
     revert IAgreement.ConditionIdNotFound(_conditionId);
   }
 
-  function getAgreement(
-    bytes32 _agreementId
-  ) external view returns (Agreement memory) {
+  function getAgreement(bytes32 _agreementId) external view returns (Agreement memory) {
     return agreements[_agreementId];
   }
 
@@ -106,8 +100,7 @@ contract AgreementsStore is Initializable, IAgreement {
       revert AgreementNotFound(_agreementId);
     }
     for (uint256 i = 0; i < agreement.conditionStates.length; i++) {
-      if (agreement.conditionIds[i] == _conditionId)
-        return agreement.conditionStates[i];
+      if (agreement.conditionIds[i] == _conditionId) return agreement.conditionStates[i];
     }
     revert ConditionIdNotFound(_conditionId);
   }
@@ -159,10 +152,7 @@ contract AgreementsStore is Initializable, IAgreement {
    * @param _creator address of the creator of the Agreement
    * @return the new agreementId created
    */
-  function hashAgreementId(
-    bytes32 _seed,
-    address _creator
-  ) public pure returns (bytes32) {
+  function hashAgreementId(bytes32 _seed, address _creator) public pure returns (bytes32) {
     return keccak256(abi.encode(_seed, _creator));
   }
 }
