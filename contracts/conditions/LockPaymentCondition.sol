@@ -88,12 +88,17 @@ contract LockPaymentCondition is
           plan.price.receivers
         );
 
-      uint256 amountToTransfer = TokenUtils.calculateAmountSum(plan.price.amounts);
+      uint256 amountToTransfer = TokenUtils.calculateAmountSum(
+        plan.price.amounts
+      );
       if (plan.price.tokenAddress == address(0)) {
         // Native token payment
         if (amountToTransfer > 0) {
           if (msg.value != amountToTransfer)
-            revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
+            revert TokenUtils.InvalidTransactionAmount(
+              msg.value,
+              amountToTransfer
+            );
           vault.depositNativeToken{value: amountToTransfer}();
         }
         // TokenUtils.transferNativeToken(
@@ -103,12 +108,21 @@ contract LockPaymentCondition is
         // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
       } else {
         // ERC20 deposit
-        if (amountToTransfer > 0)
+        if (amountToTransfer > 0) {
+          // Transfer tokens from sender to vault using TokenUtils
+          TokenUtils.transferERC20(
+            _senderAddress,
+            address(vault),
+            plan.price.tokenAddress,
+            amountToTransfer
+          );
+          // Record the deposit in the vault
           vault.depositERC20(
             plan.price.tokenAddress,
             amountToTransfer,
             _senderAddress
           );
+        }
         // TokenUtils.transferERC20(
         //   _senderAddress,
         //   address(vault),

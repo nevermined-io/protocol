@@ -56,6 +56,18 @@ contract AgreementsStore is Initializable, IAgreement {
     emit AgreementRegistered(_agreementId, _agreementCreator);
   }
 
+  /**
+   * @notice Event that is emitted when a condition status is updated
+   * @param agreementId the unique identifier of the agreement
+   * @param conditionId the unique identifier of the condition
+   * @param state the new state of the condition
+   */
+  event ConditionUpdated(
+    bytes32 indexed agreementId,
+    bytes32 indexed conditionId,
+    ConditionState state
+  );
+
   function updateConditionStatus(
     bytes32 _agreementId,
     bytes32 _conditionId,
@@ -72,6 +84,7 @@ contract AgreementsStore is Initializable, IAgreement {
     for (uint256 i = 0; i < agreement.conditionIds.length; i++) {
       if (agreement.conditionIds[i] == _conditionId) {
         agreement.conditionStates[i] = _state;
+        emit ConditionUpdated(_agreementId, _conditionId, _state);
         return;
       }
     }
