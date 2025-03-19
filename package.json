@@ -18,7 +18,7 @@
 		"deploy": "npx hardhat ignition deploy --parameters ignition/parameters.json ignition/modules/FullDeployment.ts",
 		"deploy:local": "yarn deploy --network localhost ",
 		"deploy:sepolia": "yarn deploy sepolia ",
-		"upgrade": "npx hardhat run scripts/upgrade-unified.ts",
+		"upgrade": "npx hardhat run scripts/upgrade-contracts.ts",
 		"prepare": "husky install",
 		"postinstall": "husky install",
 		"prepack": "pinst --disable",
