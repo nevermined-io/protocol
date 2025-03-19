@@ -215,5 +215,4 @@ describe('NVMConfig', function () {
       expect(isGovernor).to.be.false
     })
   })
-
 })
