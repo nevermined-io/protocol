@@ -14,6 +14,92 @@ function generateId(): `0x${string}` {
   return keccak256(stringToBytes(Math.random().toString()))
 }
 
+// Helper function to create a price config
+function createPriceConfig(tokenAddress: `0x${string}`, receiver: `0x${string}`): any {
+  return {
+    priceType: 0, // FIXED_PRICE
+    tokenAddress,
+    amounts: [100n],
+    receivers: [receiver],
+    contractAddress: zeroAddress
+  }
+}
+
+// Helper function to create a credits config
+function createCreditsConfig(): any {
+  return {
+    creditsType: 1, // FIXED
+    durationSecs: 0n,
+    amount: 100n,
+    minAmount: 1n,
+    maxAmount: 1n
+  }
+}
+
+// Helper function to register an asset and plan
+async function registerAssetAndPlan(
+  assetsRegistry: any,
+  tokenAddress: `0x${string}`,
+  creator: any,
+  creatorAddress: `0x${string}`
+): Promise<{ did: `0x${string}`, planId: `0x${string}` }> {
+  // Register asset and plan
+  const didSeed = generateId()
+  const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
+  
+  // Create price config
+  const priceConfig = createPriceConfig(tokenAddress, creatorAddress)
+  
+  // Add Nevermined fees
+  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+    priceConfig.amounts,
+    priceConfig.receivers
+  ])
+  priceConfig.amounts = [...result[0]]
+  priceConfig.receivers = [...result[1]]
+  
+  // Create credits config
+  const creditsConfig = createCreditsConfig()
+  
+  // Register asset and plan
+  await assetsRegistry.write.registerAssetAndPlan(
+    [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
+    { account: creator.account }
+  )
+  
+  // Get plan ID
+  const asset = await assetsRegistry.read.getAsset([did])
+  const planId = asset.plans[0]
+  
+  return { did, planId }
+}
+
+// Helper function to create an agreement
+async function createAgreement(
+  agreementsStore: any,
+  lockPaymentCondition: any,
+  did: `0x${string}`,
+  planId: `0x${string}`,
+  user: any,
+  template: any
+): Promise<{ agreementId: `0x${string}`, conditionId: `0x${string}` }> {
+  // Create agreement
+  const agreementSeed = generateId()
+  const agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
+  
+  // Generate condition ID
+  const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
+  const conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
+  
+  // Register agreement with condition ID
+  await agreementsStore.write.register(
+    [agreementId, user.account.address, did, planId, [conditionId], [0], []],
+    { account: template.account }
+  )
+  
+  return { agreementId, conditionId }
+}
+
 describe('LockPaymentCondition', function () {
   // We define a fixture to reuse the same setup in every test.
   async function deployInstance() {
@@ -76,129 +162,41 @@ describe('LockPaymentCondition', function () {
       const { assetsRegistry, agreementsStore, lockPaymentCondition, owner, user, template } = await loadFixture(deployInstance)
       
       // Register asset and plan
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
-      
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [owner.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: owner.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, owner, owner.account.address)
+      did = assetData.did
+      planId = assetData.planId
       
       // Create agreement
-      const agreementSeed = generateId()
-      agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-      
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-      
-      // Register agreement with condition ID
-      await agreementsStore.write.register(
-        [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-        { account: template.account }
-      )
+      const agreementData = await createAgreement(agreementsStore, lockPaymentCondition, did, planId, user, template)
+      agreementId = agreementData.agreementId
+      conditionId = agreementData.conditionId
     })
     
     it('Should fulfill condition with native token payment', async function () {
       const { lockPaymentCondition, agreementsStore, paymentsVault, assetsRegistry, template, user, publicClient } = await loadFixture(deployInstance)
       
-      // Register asset and plan
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, user.account.address])
-      
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [user.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: user.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      // Register asset and plan with user as creator
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, user, user.account.address)
+      const testDid = assetData.did
+      const testPlanId = assetData.planId
       
       // Create agreement
-      const agreementSeed = generateId()
-      agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-      
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-      
-      // Register agreement with condition ID
-      await agreementsStore.write.register(
-        [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-        { account: template.account }
-      )
+      const agreementData = await createAgreement(agreementsStore, lockPaymentCondition, testDid, testPlanId, user, template)
+      const testAgreementId = agreementData.agreementId
+      const testConditionId = agreementData.conditionId
       
       // Get plan to determine payment amount
-      const plan = await assetsRegistry.read.getPlan([planId])
+      const plan = await assetsRegistry.read.getPlan([testPlanId])
       const totalAmount = plan.price.amounts.reduce((a, b) => a + b, 0n)
       
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [conditionId, agreementId, did, planId, user.account.address],
+        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
         { account: template.account, value: totalAmount }
       )
       
       // Verify condition state
-      const conditionState = await agreementsStore.read.getConditionState([agreementId, conditionId])
+      const conditionState = await agreementsStore.read.getConditionState([testAgreementId, testConditionId])
       expect(conditionState).to.equal(2) // Fulfilled
       
       // Verify vault balance
@@ -209,8 +207,8 @@ describe('LockPaymentCondition', function () {
       const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ConditionUpdated')
-      expect(logs[0].args.agreementId).to.equal(agreementId)
-      expect(logs[0].args.conditionId).to.equal(conditionId)
+      expect(logs[0].args.agreementId).to.equal(testAgreementId)
+      expect(logs[0].args.conditionId).to.equal(testConditionId)
       expect(logs[0].args.state).to.equal(2) // Fulfilled
     })
   })
@@ -224,120 +222,32 @@ describe('LockPaymentCondition', function () {
     beforeEach(async function () {
       const { assetsRegistry, agreementsStore, lockPaymentCondition, mockERC20, owner, user, template } = await loadFixture(deployInstance)
       
-      // Register asset and plan
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
-      
-      // Create price config with ERC20 token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: mockERC20.address,
-        amounts: [100n],
-        receivers: [owner.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: owner.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      // Register asset and plan with ERC20 token
+      const assetData = await registerAssetAndPlan(assetsRegistry, mockERC20.address, owner, owner.account.address)
+      did = assetData.did
+      planId = assetData.planId
       
       // Create agreement
-      const agreementSeed = generateId()
-      agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-      
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-      
-      // Register agreement with condition ID
-      await agreementsStore.write.register(
-        [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-        { account: template.account }
-      )
+      const agreementData = await createAgreement(agreementsStore, lockPaymentCondition, did, planId, user, template)
+      agreementId = agreementData.agreementId
+      conditionId = agreementData.conditionId
     })
     
     it('Should fulfill condition with ERC20 token payment', async function () {
       const { lockPaymentCondition, agreementsStore, paymentsVault, mockERC20, assetsRegistry, template, user, publicClient } = await loadFixture(deployInstance)
       
-      // Register asset and plan
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, user.account.address])
-      
-      // Create price config with ERC20 token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: mockERC20.address,
-        amounts: [100n],
-        receivers: [user.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: user.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      // Register asset and plan with user as creator
+      const assetData = await registerAssetAndPlan(assetsRegistry, mockERC20.address, user, user.account.address)
+      const testDid = assetData.did
+      const testPlanId = assetData.planId
       
       // Create agreement
-      const agreementSeed = generateId()
-      agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-      
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-      
-      // Register agreement with condition ID
-      await agreementsStore.write.register(
-        [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-        { account: template.account }
-      )
+      const agreementData = await createAgreement(agreementsStore, lockPaymentCondition, testDid, testPlanId, user, template)
+      const testAgreementId = agreementData.agreementId
+      const testConditionId = agreementData.conditionId
       
       // Get plan to determine payment amount
-      const plan = await assetsRegistry.read.getPlan([planId])
+      const plan = await assetsRegistry.read.getPlan([testPlanId])
       const totalAmount = plan.price.amounts.reduce((a, b) => a + b, 0n)
       
       // Mint tokens for user and approve for LockPaymentCondition contract
@@ -346,12 +256,12 @@ describe('LockPaymentCondition', function () {
       
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [conditionId, agreementId, did, planId, user.account.address],
+        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
         { account: template.account }
       )
       
       // Verify condition state
-      const conditionState = await agreementsStore.read.getConditionState([agreementId, conditionId])
+      const conditionState = await agreementsStore.read.getConditionState([testAgreementId, testConditionId])
       expect(conditionState).to.equal(2) // Fulfilled
       
       // Verify vault balance
@@ -362,8 +272,8 @@ describe('LockPaymentCondition', function () {
       const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
       expect(logs.length).to.be.greaterThanOrEqual(1)
       expect(logs[0].eventName).to.equalIgnoreCase('ConditionUpdated')
-      expect(logs[0].args.agreementId).to.equal(agreementId)
-      expect(logs[0].args.conditionId).to.equal(conditionId)
+      expect(logs[0].args.agreementId).to.equal(testAgreementId)
+      expect(logs[0].args.conditionId).to.equal(testConditionId)
       expect(logs[0].args.state).to.equal(2) // Fulfilled
     })
   })
@@ -378,58 +288,14 @@ describe('LockPaymentCondition', function () {
       const { assetsRegistry, agreementsStore, lockPaymentCondition, owner, user, template } = await loadFixture(deployInstance)
       
       // Register asset and plan
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
-      
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [owner.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: owner.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, owner, owner.account.address)
+      did = assetData.did
+      planId = assetData.planId
       
       // Create agreement
-      const agreementSeed = generateId()
-      agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-      
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-      
-      // Register agreement with condition ID
-      await agreementsStore.write.register(
-        [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-        { account: template.account }
-      )
+      const agreementData = await createAgreement(agreementsStore, lockPaymentCondition, did, planId, user, template)
+      agreementId = agreementData.agreementId
+      conditionId = agreementData.conditionId
     })
     
     it('Should reject if caller is not a template', async function () {
@@ -462,46 +328,11 @@ describe('LockPaymentCondition', function () {
       const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } = await loadFixture(deployInstance)
       
       // Register asset and plan
-      const didSeed = generateId()
-      const realDid = await assetsRegistry.read.hashDID([didSeed, user.account.address])
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, user, user.account.address)
+      const realDid = assetData.did
+      const realPlanId = assetData.planId
       
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [user.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: user.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([realDid])
-      const realPlanId = asset.plans[0]
-      
-      // Create agreement
+      // Create agreement with empty condition IDs
       const agreementSeed = generateId()
       const realAgreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
       
@@ -530,46 +361,11 @@ describe('LockPaymentCondition', function () {
       const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } = await loadFixture(deployInstance)
       
       // Register asset and plan
-      const didSeed = generateId()
-      const realDid = await assetsRegistry.read.hashDID([didSeed, user.account.address])
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, user, user.account.address)
+      const realDid = assetData.did
+      const realPlanId = assetData.planId
       
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [user.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: user.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([realDid])
-      const realPlanId = asset.plans[0]
-      
-      // Create agreement
+      // Create agreement with empty condition IDs
       const agreementSeed = generateId()
       const realAgreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
       
@@ -598,46 +394,11 @@ describe('LockPaymentCondition', function () {
       const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } = await loadFixture(deployInstance)
       
       // Register asset and plan
-      const didSeed = generateId()
-      const realDid = await assetsRegistry.read.hashDID([didSeed, user.account.address])
+      const assetData = await registerAssetAndPlan(assetsRegistry, zeroAddress, user, user.account.address)
+      const realDid = assetData.did
+      const realPlanId = assetData.planId
       
-      // Create price config with native token
-      const priceConfig: any = {
-        priceType: 0, // FIXED_PRICE
-        tokenAddress: zeroAddress,
-        amounts: [100n],
-        receivers: [user.account.address],
-        contractAddress: zeroAddress
-      }
-      
-      // Add Nevermined fees
-      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers
-      ])
-      priceConfig.amounts = [...result[0]]
-      priceConfig.receivers = [...result[1]]
-      
-      // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
-      
-      // Register asset and plan
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-        { account: user.account }
-      )
-      
-      // Get plan ID
-      const asset = await assetsRegistry.read.getAsset([realDid])
-      const realPlanId = asset.plans[0]
-      
-      // Create agreement
+      // Create agreement with empty condition IDs
       const agreementSeed = generateId()
       const realAgreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
       
@@ -667,10 +428,6 @@ describe('LockPaymentCondition', function () {
     it('Should reject unsupported price types', async function () {
       const { lockPaymentCondition, assetsRegistry, agreementsStore, template, owner, user } = await loadFixture(deployInstance)
       
-      // Register asset and plan with FIXED_FIAT_PRICE
-      const didSeed = generateId()
-      const newDid = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
-      
       // Create price config with FIXED_FIAT_PRICE
       const priceConfig: any = {
         priceType: 1, // FIXED_FIAT_PRICE
@@ -688,14 +445,12 @@ describe('LockPaymentCondition', function () {
       priceConfig.amounts = [...result[0]]
       priceConfig.receivers = [...result[1]]
       
+      // Register asset and plan with FIXED_FIAT_PRICE
+      const didSeed = generateId()
+      const newDid = await assetsRegistry.read.hashDID([didSeed, owner.account.address])
+      
       // Create credits config
-      const creditsConfig = {
-        creditsType: 1, // FIXED
-        durationSecs: 0n,
-        amount: 100n,
-        minAmount: 1n,
-        maxAmount: 1n
-      }
+      const creditsConfig = createCreditsConfig()
       
       // Register asset and plan
       await assetsRegistry.write.registerAssetAndPlan(
