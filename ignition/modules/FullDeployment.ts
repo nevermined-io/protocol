@@ -48,7 +48,7 @@ const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	)
 	
 	// Create a contract instance that points to the proxy but uses the ABI of the implementation
-	const nvmConfig = m.contractAt("NVMConfig", nvmConfigProxy)
+	const nvmConfig = m.contractAt("NVMConfig", nvmConfigProxy, { id: "NVMConfigProxyInstance" })
 	
 	// Initialize the contract through the proxy
 	m.call(nvmConfig, "initialize", [owner, governor])
@@ -92,7 +92,7 @@ const AssetsRegistryModule = buildModule("AssetsRegistryModule", (m) => {
 	)
 	
 	// Create a contract instance that points to the proxy but uses the ABI of the implementation
-	const assetsRegistry = m.contractAt("AssetsRegistry", assetsRegistryProxy)
+	const assetsRegistry = m.contractAt("AssetsRegistry", assetsRegistryProxy, { id: "AssetsRegistryProxyInstance" })
 	
 	// Initialize the contract through the proxy
 	m.call(assetsRegistry, "initialize", [nvmConfig])
@@ -126,7 +126,7 @@ const AgreementsStoreModule = buildModule("AgreementsStoreModule", (m) => {
 	)
 	
 	// Create a contract instance that points to the proxy but uses the ABI of the implementation
-	const agreementsStore = m.contractAt("AgreementsStore", agreementsStoreProxy)
+	const agreementsStore = m.contractAt("AgreementsStore", agreementsStoreProxy, { id: "AgreementsStoreProxyInstance" })
 	
 	// Initialize the contract through the proxy
 	m.call(agreementsStore, "initialize", [nvmConfig])
@@ -160,7 +160,7 @@ const PaymentsVaultModule = buildModule("PaymentsVaultModule", (m) => {
 	)
 	
 	// Create a contract instance that points to the proxy but uses the ABI of the implementation
-	const paymentsVault = m.contractAt("PaymentsVault", paymentsVaultProxy)
+	const paymentsVault = m.contractAt("PaymentsVault", paymentsVaultProxy, { id: "PaymentsVaultProxyInstance" })
 	
 	// Initialize the contract through the proxy
 	m.call(paymentsVault, "initialize", [nvmConfig])
@@ -194,7 +194,7 @@ const NFT1155CreditsModule = buildModule("NFT1155CreditsModule", (m) => {
 	)
 	
 	// Create a contract instance that points to the proxy but uses the ABI of the implementation
-	const nftCredits = m.contractAt("NFT1155Credits", nftCreditsProxy)
+	const nftCredits = m.contractAt("NFT1155Credits", nftCreditsProxy, { id: "NFT1155CreditsProxyInstance" })
 	
 	// Initialize the contract through the proxy
 	m.call(nftCredits, "initialize", [nvmConfig])
