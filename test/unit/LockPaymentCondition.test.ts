@@ -1,104 +1,20 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import chai, { expect } from 'chai'
 import hre from 'hardhat'
-import { toHex, zeroAddress, keccak256, stringToBytes } from 'viem'
-import { getTxParsedLogs } from '../common/utils'
+import { zeroAddress } from 'viem'
+import { 
+  getTxParsedLogs, 
+  generateId, 
+  createPriceConfig, 
+  createCreditsConfig, 
+  registerAssetAndPlan, 
+  createAgreement 
+} from '../common/utils'
 import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
 import chaiString from 'chai-string'
 
 // Configure chai plugins
 chai.use(chaiString)
-
-// Generate a random bytes32 value
-function generateId(): `0x${string}` {
-  return keccak256(stringToBytes(Math.random().toString()))
-}
-
-// Helper function to create a price config
-function createPriceConfig(tokenAddress: `0x${string}`, receiver: `0x${string}`): any {
-  return {
-    priceType: 0, // FIXED_PRICE
-    tokenAddress,
-    amounts: [100n],
-    receivers: [receiver],
-    contractAddress: zeroAddress
-  }
-}
-
-// Helper function to create a credits config
-function createCreditsConfig(): any {
-  return {
-    creditsType: 1, // FIXED
-    durationSecs: 0n,
-    amount: 100n,
-    minAmount: 1n,
-    maxAmount: 1n
-  }
-}
-
-// Helper function to register an asset and plan
-async function registerAssetAndPlan(
-  assetsRegistry: any,
-  tokenAddress: `0x${string}`,
-  creator: any,
-  creatorAddress: `0x${string}`
-): Promise<{ did: `0x${string}`, planId: `0x${string}` }> {
-  // Register asset and plan
-  const didSeed = generateId()
-  const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
-  
-  // Create price config
-  const priceConfig = createPriceConfig(tokenAddress, creatorAddress)
-  
-  // Add Nevermined fees
-  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    priceConfig.amounts,
-    priceConfig.receivers
-  ])
-  priceConfig.amounts = [...result[0]]
-  priceConfig.receivers = [...result[1]]
-  
-  // Create credits config
-  const creditsConfig = createCreditsConfig()
-  
-  // Register asset and plan
-  await assetsRegistry.write.registerAssetAndPlan(
-    [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, zeroAddress],
-    { account: creator.account }
-  )
-  
-  // Get plan ID
-  const asset = await assetsRegistry.read.getAsset([did])
-  const planId = asset.plans[0]
-  
-  return { did, planId }
-}
-
-// Helper function to create an agreement
-async function createAgreement(
-  agreementsStore: any,
-  lockPaymentCondition: any,
-  did: `0x${string}`,
-  planId: `0x${string}`,
-  user: any,
-  template: any
-): Promise<{ agreementId: `0x${string}`, conditionId: `0x${string}` }> {
-  // Create agreement
-  const agreementSeed = generateId()
-  const agreementId = await agreementsStore.read.hashAgreementId([agreementSeed, user.account.address])
-  
-  // Generate condition ID
-  const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-  const conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
-  
-  // Register agreement with condition ID
-  await agreementsStore.write.register(
-    [agreementId, user.account.address, did, planId, [conditionId], [0], []],
-    { account: template.account }
-  )
-  
-  return { agreementId, conditionId }
-}
 
 describe('LockPaymentCondition', function () {
   // We define a fixture to reuse the same setup in every test.
