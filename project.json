@@ -1,0 +1,31 @@
+{
+  "name": "contracts-exp",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/contracts-exp/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "options": {
+        "outputPath": "dist/packages/contracts-exp",
+        "tsConfig": "packages/contracts-exp/tsconfig.lib.json",
+        "packageJson": "packages/contracts-exp/package.json",
+        "main": "packages/contracts-exp/src/index.ts"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "options": {
+        "lintFilePatterns": ["packages/contracts-exp/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["coverage/packages/contracts-exp"],
+      "options": {
+        "jestConfig": "packages/contracts-exp/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  }
+}
