@@ -3,6 +3,7 @@
 				"clean": "npx hardhat clean",
 				"test": "npx hardhat test $(find test/unit -name '*.*s')",
 				"test:integration": "npx hardhat test $(find test/integration -name '*.*s')",
+				"test:upgrades": "npx hardhat test $(find test/upgradeability -name '*.*s')",
 				"test:gas": "REPORT_GAS=true npx hardhat test $(find test/unit -name '*.*s')",
 				"chain": "npx hardhat node",
 				"coverage": "SOLIDITY_COVERAGE=true npx hardhat coverage",
