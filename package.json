@@ -19,6 +19,7 @@
 		"deploy:local": "yarn deploy --network localhost ",
 		"deploy:sepolia": "yarn deploy sepolia ",
 		"upgrade": "npx hardhat run scripts/upgrade.ts",
+		"upgrade:all": "npx hardhat run scripts/upgrade-all.ts",
 		"prepare": "husky install",
 		"postinstall": "husky install",
 		"prepack": "pinst --disable",
