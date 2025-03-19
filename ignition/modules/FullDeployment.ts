@@ -12,17 +12,6 @@ const NVM_FEE_AMOUNT = (process.env.NVM_FEE_AMOUNT || 10000) as number // 1% by 
 const NVM_FEE_RECEIVER = process.env.NVM_FEE_RECEIVER
 
 
-const HASH_ASSETS_REGISTRY = sha3('AssetsRegistry')
-const HASH_AGREEMENTS_STORE = sha3('AgreementsStore')
-const HASH_PAYMENTS_VAULT = sha3('PaymentsVault')
-const HASH_NFT1155CREDITS = sha3('NFT1155Credits')
-const HASH_LOCKPAYMENT_CONDITION = sha3('LockPaymentCondition')
-const HASH_TRANSFERCREDITS_CONDITION = sha3('TransferCreditsCondition')
-const HASH_DISTRIBUTEPAYMENTS_CONDITION = sha3('DistributePaymentsCondition')
-const HASH_FIXED_PAYMENT_TEMPLATE = sha3('FixedPaymentTemplate')
-
-
-
 const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
