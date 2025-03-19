@@ -1,5 +1,5 @@
 import { createPublicClient, createWalletClient, http } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
+import { mnemonicToAccount } from 'viem/accounts';
 import { hardhat } from 'viem/chains';
 
 // ABI for the ProxyAdmin contract's upgradeAndCall function
@@ -18,13 +18,13 @@ const proxyAdminABI = [
 ];
 
 async function main() {
-  // Get the private key from environment
-  const privateKey = process.env.PRIVATE_KEY;
-  if (!privateKey) {
-    throw new Error("PRIVATE_KEY environment variable not set");
+  // Get the mnemonic seed phrase from environment
+  const mnemonic = process.env.MNEMONIC;
+  if (!mnemonic) {
+    throw new Error("MNEMONIC environment variable not set");
   }
   
-  const account = privateKeyToAccount(privateKey as `0x${string}`);
+  const account = mnemonicToAccount(mnemonic);
   console.log("Upgrading contracts with the account:", account.address);
 
   // Create clients
