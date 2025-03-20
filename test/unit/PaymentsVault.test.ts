@@ -104,9 +104,8 @@ describe('PaymentsVault', function () {
     })
 
     it('Should allow withdrawer to withdraw native token', async function () {
-      const { paymentsVault, depositor, withdrawer, receiver, publicClient } = await loadFixture(
-        deployInstance,
-      )
+      const { paymentsVault, depositor, withdrawer, receiver, publicClient } =
+        await loadFixture(deployInstance)
 
       // First deposit
       const depositAmount = 100000000000000000n // 0.1 ETH
@@ -168,9 +167,8 @@ describe('PaymentsVault', function () {
 
   describe('ERC20 Token Operations', function () {
     it('Should allow depositor to deposit ERC20 token', async function () {
-      const { paymentsVault, mockERC20, depositor, publicClient } = await loadFixture(
-        deployInstance,
-      )
+      const { paymentsVault, mockERC20, depositor, publicClient } =
+        await loadFixture(deployInstance)
 
       const depositAmount = 100n * 10n ** 18n // 100 tokens
 

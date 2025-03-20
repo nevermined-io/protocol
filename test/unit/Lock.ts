@@ -99,9 +99,8 @@ describe.skip('Lock', function () {
 
     describe('Events', function () {
       it('Should emit an event on withdrawals', async function () {
-        const { lock, unlockTime, lockedAmount, publicClient } = await loadFixture(
-          deployOneYearLockFixture,
-        )
+        const { lock, unlockTime, lockedAmount, publicClient } =
+          await loadFixture(deployOneYearLockFixture)
 
         await time.increaseTo(unlockTime)
 
