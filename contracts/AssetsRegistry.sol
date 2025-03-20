@@ -177,7 +177,6 @@ contract AssetsRegistry is Initializable, IAsset {
       if (_receivers[i] == feeReceiver) {
         _feeReceiverIncluded = true;
         _receiverIndex = i;
-        break; // Exit loop once found
       }
     }
     if (!_feeReceiverIncluded) return false;
