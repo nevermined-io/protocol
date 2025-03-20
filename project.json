@@ -14,9 +14,10 @@
       }
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
+      "executor": "nx:run-commands",
       "options": {
-        "lintFilePatterns": ["packages/contracts-exp/**/*.ts"]
+        "command": "yarn format && yarn lint",
+        "cwd": "packages/contracts-exp"
       }
     },
     "test": {
