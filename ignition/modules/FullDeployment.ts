@@ -287,6 +287,12 @@ const DeploymentOfContractsModule = buildModule(
     const { distributePaymentsCondition } = m.useModule(DistributePaymentsConditionModule)
     const { fixedPaymentTemplate } = m.useModule(TemplatesDeploymentModule)
     
+    /////////////////// CONDITIONS //////////////////////////////////
+    // Grant condition permissions to all conditions
+    m.call(nvmConfig, 'grantCondition', [lockPaymentCondition], { from: governor, id: 'grantCondition_lockPayment' })
+    m.call(nvmConfig, 'grantCondition', [transferCreditsCondition], { from: governor, id: 'grantCondition_transferCredits' })
+    m.call(nvmConfig, 'grantCondition', [distributePaymentsCondition], { from: governor, id: 'grantCondition_distributePayments' })
+
     /////////////////// TEMPLATES //////////////////////////////////
     // Fixed Payment Template
     m.call(fixedPaymentTemplate, 'initialize', [
