@@ -44,7 +44,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     if (_seed == bytes32(0)) revert InvalidSeed(_seed);
     if (_did == bytes32(0)) revert InvalidDID(_did);
     if (_planId == bytes32(0)) revert InvalidPlanId(_planId);
-    
+
     // Calculate agreementId
     bytes32 agreementId = keccak256(
       abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _params)
@@ -56,7 +56,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     if (agreement.lastUpdated != 0) {
       revert IAgreement.AgreementAlreadyRegistered(agreementId);
     }
-    
+
     // Register the agreement in the AgreementsStore
     bytes32[] memory conditionIds = new bytes32[](3);
     conditionIds[0] = lockPaymentCondition.hashConditionId(
@@ -70,7 +70,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     conditionIds[2] = distributePaymentsCondition.hashConditionId(
       agreementId,
       distributePaymentsCondition.NVM_CONTRACT_NAME()
-    );    
+    );
 
     agreementStore.register(
       agreementId,
@@ -139,7 +139,6 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
   ) internal {
-
     distributePaymentsCondition.fulfill(
       _conditionId,
       _agreementId,
