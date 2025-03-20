@@ -37,18 +37,18 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
     bytes32[] memory _requiredConditions,
     address _receiverAddress
   ) external payable nonReentrant {
-    // 0. Validate if the account calling this function is a registered template
+    // Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
-    // 1. Check if the DID & Plan are registered in the AssetsRegistry
+    // Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
     if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
-    // 2. Check if the required conditions (LockPayment) are already fulfilled
+    // Check if the required conditions (LockPayment) are already fulfilled
     if (!agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions))
       revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
 
-    // 3. Check if the plan credits config is correct
+    // Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
 
     // FULFILL THE CONDITION first (before external calls)

@@ -45,17 +45,17 @@ contract DistributePaymentsCondition is
     bytes32 _lockCondition,
     bytes32 _releaseCondition
   ) external payable nonReentrant {
-    // 0. Validate if the account calling this function is a registered template
+    // Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
     IAgreement.Agreement memory agreement = agreementStore.getAgreement(_agreementId);
     if (agreement.lastUpdated == 0) revert IAgreement.AgreementNotFound(_agreementId);
 
-    // 1. Check if the DID & Plan are registered in the AssetsRegistry
+    // Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
     if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
-    // 3. Check if the plan credits config is correct
+    // Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
 
     if (
@@ -63,7 +63,7 @@ contract DistributePaymentsCondition is
       IAgreement.ConditionState.Fulfilled
     ) revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
 
-    // 2. Check if the required conditions (LockPayment) are already fulfilled
+    // Check if the required conditions (LockPayment) are already fulfilled
     // FULFILL THE CONDITION first (before external calls)
     agreementStore.updateConditionStatus(
       _agreementId,

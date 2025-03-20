@@ -49,18 +49,18 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
     bytes32 _planId,
     address _senderAddress
   ) external payable nonReentrant {
-    // 0. Validate if the account calling this function is a registered template
+    // Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
-    // 1. Check if the agreementId is registered in the AssetsRegistry
+    // Check if the agreementId is registered in the AssetsRegistry
     if (!agreementStore.agreementExists(_agreementId))
       revert IAgreement.AgreementNotFound(_agreementId);
 
-    // 2. Check if the DID & Plan are registered in the AssetsRegistry
+    // Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
     if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
-    // 3. Check if the plan config (token, amount) is correct
+    // Check if the plan config (token, amount) is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
 
     if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
@@ -92,12 +92,6 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
           vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
         }
       }
-      // TokenUtils.transferERC20(
-      //   _senderAddress,
-      //   address(vault),
-      //   plan.price.tokenAddress,
-      //   calculateAmountSum(plan.price.amounts)
-      // );
 
       // FULFILL THE CONDITION
       agreementStore.updateConditionStatus(

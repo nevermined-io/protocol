@@ -4,7 +4,6 @@
 pragma solidity ^0.8.28;
 
 import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-// import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { AgreementsStore } from './AgreementsStore.sol';
 
 abstract contract BaseTemplate is Initializable {
@@ -12,15 +11,15 @@ abstract contract BaseTemplate is Initializable {
 
   address internal assetsRegistryAddress;
 
-  function __createAgreementAndLockPayment(
-    bytes32 _seed,
-    bytes32 _did,
-    bytes32 _planId
-  ) public payable {
-    // STEPS:
-    // 1. Check if the agreement is already registered
-    // 2. Register the agreement in the AgreementsStore
-    // 3. Lock the payment
-    //agreementStore.register(_seed, _did, _planId);
-  }
+  /// The `seed` of the agreementId provided is not valid
+  /// @param seed The seed provided to generate the agreementId
+  error InvalidSeed(bytes32 seed);
+
+  /// The `did` provided is not valid
+  /// @param did The unique identifier of the asset related to the agreement being created
+  error InvalidDID(bytes32 did);
+
+  /// The `planId` provided is not valid
+  /// @param planId The unique identifier of the plan being used in the agreement
+  error InvalidPlanId(bytes32 planId);
 }

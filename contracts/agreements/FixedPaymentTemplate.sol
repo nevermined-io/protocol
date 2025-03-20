@@ -41,24 +41,23 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes[] memory _params
   ) external payable {
     // Validate inputs
-    if (_seed == bytes32(0)) revert('Invalid seed');
-    if (_did == bytes32(0)) revert('Invalid DID');
-    if (_planId == bytes32(0)) revert('Invalid plan ID');
-    // STEPS:
-    // 0. Calculate agreementId
+    if (_seed == bytes32(0)) revert InvalidSeed(_seed);
+    if (_did == bytes32(0)) revert InvalidDID(_did);
+    if (_planId == bytes32(0)) revert InvalidPlanId(_planId);
+    
+    // Calculate agreementId
     bytes32 agreementId = keccak256(
       abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _params)
     );
 
-    // 1. Check if the agreement is already registered
+    // Check if the agreement is already registered
     IAgreement.Agreement memory agreement = agreementStore.getAgreement(agreementId);
 
     if (agreement.lastUpdated != 0) {
       revert IAgreement.AgreementAlreadyRegistered(agreementId);
     }
-
-    // LockPaymentCondition.NVM_CONTRACT_NAME
-    // 2. Register the agreement in the AgreementsStore
+    
+    // Register the agreement in the AgreementsStore
     bytes32[] memory conditionIds = new bytes32[](3);
     conditionIds[0] = lockPaymentCondition.hashConditionId(
       agreementId,
@@ -71,9 +70,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     conditionIds[2] = distributePaymentsCondition.hashConditionId(
       agreementId,
       distributePaymentsCondition.NVM_CONTRACT_NAME()
-    );
-
-    // IAgreement.ConditionState[] memory _conditionStates = new IAgreement.ConditionState[](3);
+    );    
 
     agreementStore.register(
       agreementId,
@@ -85,7 +82,7 @@ contract FixedPaymentTemplate is BaseTemplate {
       _params
     );
 
-    // 3. Lock the payment
+    // Lock the payment
     _lockPayment(conditionIds[0], agreementId, _did, _planId, msg.sender);
     _transferPlan(conditionIds[1], agreementId, _did, _planId, conditionIds[0], msg.sender);
     _distributePayments(
@@ -142,9 +139,6 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
   ) internal {
-    // bytes32[] memory _requiredConditons = new bytes32[](2);
-    // _requiredConditons[0] = _lockPaymentCondition;
-    // _requiredConditons[1] = _transferCondition;
 
     distributePaymentsCondition.fulfill(
       _conditionId,
