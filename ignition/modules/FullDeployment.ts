@@ -194,6 +194,40 @@ const NFT1155CreditsModule = buildModule('NFT1155CreditsModule', (m) => {
   return { nftCredits, nftCreditsImpl, nftCreditsProxy }
 })
 
+const NFT1155ExpirableCreditsModule = buildModule('NFT1155ExpirableCreditsModule', (m) => {
+  const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
+  
+  // Deploy the implementation contract
+  const nftExpirableCreditsImpl = m.contract('NFT1155ExpirableCredits', [], { from: owner })
+  
+  // Get the ProxyAdmin
+  const { proxyAdmin } = m.useModule(ProxyAdminModule)
+  
+  // Get the NVMConfig
+  const { nvmConfig } = m.useModule(NVMConfigModule)
+  
+  // Deploy the proxy with the implementation
+  // Use empty bytes for initialization data - we'll initialize separately
+  const emptyData = '0x'
+  const nftExpirableCreditsProxy = m.contract(
+    'TransparentUpgradeableProxy',
+    [
+      nftExpirableCreditsImpl,
+      proxyAdmin,
+      emptyData
+    ],
+    { from: owner }
+  )
+  
+  // Create a contract instance that points to the proxy but uses the ABI of the implementation
+  const nftExpirableCredits = m.contractAt('NFT1155ExpirableCredits', nftExpirableCreditsProxy, { id: 'NFT1155ExpirableCreditsProxyInstance' })
+  
+  // Initialize the contract through the proxy
+  m.call(nftExpirableCredits, 'initialize', [nvmConfig, 'Nevermined Expirable Credits', 'NVMEC'])
+  
+  return { nftExpirableCredits, nftExpirableCreditsImpl, nftExpirableCreditsProxy }
+})
+
 const LockPaymentConditionModule = buildModule(
   'LockPaymentConditionModule',
   (m) => {
@@ -282,6 +316,7 @@ const DeploymentOfContractsModule = buildModule(
     const { agreementsStore } = m.useModule(AgreementsStoreModule)
     const { paymentsVault } = m.useModule(PaymentsVaultModule)
     const { nftCredits } = m.useModule(NFT1155CreditsModule)
+    const { nftExpirableCredits } = m.useModule(NFT1155ExpirableCreditsModule)
     const { lockPaymentCondition } = m.useModule(LockPaymentConditionModule)
     const { transferCreditsCondition } = m.useModule(TransferCreditsConditionModule)
     const { distributePaymentsCondition } = m.useModule(DistributePaymentsConditionModule)
@@ -315,12 +350,17 @@ const DeploymentOfContractsModule = buildModule(
     const CREDITS_MINTER_ROLE = m.staticCall(nftCredits, 'CREDITS_MINTER_ROLE', [])
     m.call(nvmConfig, 'grantRole', [CREDITS_MINTER_ROLE, transferCreditsCondition], { from: owner, id: 'grantRole_minter_transferCredits' })
     
+    // Grant Mint permissions to transferNFTCondition on NFT1155ExpirableCredits contracts
+    const EXPIRABLE_CREDITS_MINTER_ROLE = m.staticCall(nftExpirableCredits, 'CREDITS_MINTER_ROLE', [])
+    m.call(nvmConfig, 'grantRole', [EXPIRABLE_CREDITS_MINTER_ROLE, transferCreditsCondition], { from: owner, id: 'grantRole_minter_transferExpirableCredits' })
+    
     return { 
       nvmConfig,
       assetsRegistry,
       agreementsStore,
       paymentsVault,
       nftCredits,
+      nftExpirableCredits,
       lockPaymentCondition,
       transferCreditsCondition,
       distributePaymentsCondition,
