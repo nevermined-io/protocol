@@ -72,21 +72,15 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
         revert IAsset.NeverminedFeesNotIncluded(plan.price.amounts, plan.price.receivers);
 
       uint256 amountToTransfer = TokenUtils.calculateAmountSum(plan.price.amounts);
-      if (plan.price.tokenAddress == address(0)) {
-        // Native token payment
-        if (amountToTransfer > 0) {
+      // Only process payment if amount is greater than zero
+      if (amountToTransfer > 0) {
+        if (plan.price.tokenAddress == address(0)) {
+          // Native token payment
           if (msg.value != amountToTransfer)
             revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
           vault.depositNativeToken{ value: amountToTransfer }();
-        }
-        // TokenUtils.transferNativeToken(
-        //   payable(address(vault)),
-        //   calculateAmountSum(plan.price.amounts)
-        // );
-        // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
-      } else {
-        // ERC20 deposit
-        if (amountToTransfer > 0) {
+        } else {
+          // ERC20 deposit
           // Transfer tokens from sender to vault using TokenUtils
           TokenUtils.transferERC20(
             _senderAddress,
@@ -97,6 +91,7 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
           // Record the deposit in the vault
           vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
         }
+      }
         // TokenUtils.transferERC20(
         //   _senderAddress,
         //   address(vault),

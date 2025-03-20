@@ -98,7 +98,8 @@ contract DistributePaymentsCondition is
     uint256[] memory _amounts,
     address[] memory _receivers
   ) internal {
-    for (uint256 i = 0; i < _receivers.length; i++) {
+    uint256 length = _receivers.length;
+    for (uint256 i = 0; i < length; i++) {
       vault.withdrawNativeToken(_amounts[i], _receivers[i]);
     }
   }
@@ -108,7 +109,8 @@ contract DistributePaymentsCondition is
     uint256[] memory _amounts,
     address[] memory _receivers
   ) internal {
-    for (uint256 i = 0; i < _receivers.length; i++) {
+    uint256 length = _receivers.length;
+    for (uint256 i = 0; i < length; i++) {
       vault.withdrawERC20(_erc20TokenAddress, _amounts[i], _receivers[i]);
     }
   }

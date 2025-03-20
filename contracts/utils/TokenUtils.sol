@@ -52,7 +52,12 @@ library TokenUtils {
 
   function calculateAmountSum(uint256[] memory _amounts) public pure returns (uint256) {
     uint256 _totalAmount;
-    for (uint256 i; i < _amounts.length; i++) _totalAmount += _amounts[i];
+    uint256 length = _amounts.length;
+    for (uint256 i; i < length; i++) {
+      unchecked {
+        _totalAmount += _amounts[i];
+      }
+    }
     return _totalAmount;
   }
 
@@ -96,12 +101,14 @@ library TokenUtils {
     uint256[] memory amountsWithFee = new uint256[](length + 1);
     address[] memory receiversWithFee = new address[](length + 1);
 
-    for (uint256 i = 0; i < length; i++) {
-      amountsWithFee[i] = _amounts[i];
-      receiversWithFee[i] = _receivers[i];
+    unchecked {
+      for (uint256 i = 0; i < length; i++) {
+        amountsWithFee[i] = _amounts[i];
+        receiversWithFee[i] = _receivers[i];
+      }
+      amountsWithFee[length] = feeAmount;
+      receiversWithFee[length] = _feeReceiver;
     }
-    amountsWithFee[length] = feeAmount;
-    receiversWithFee[length] = _feeReceiver;
     return (amountsWithFee, receiversWithFee);
   }
 }

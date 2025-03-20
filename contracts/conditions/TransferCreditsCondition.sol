@@ -58,8 +58,11 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
       IAgreement.ConditionState.Fulfilled
     );
 
-    NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
-    nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
+    // Only mint if amount is greater than zero
+    if (plan.credits.amount > 0) {
+      NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
+      nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
+    }
     // TODO: Implement the logic
     // LOAD NFT1155(plan.nftAddress)
     // IF plan.credits.creditsType == EXPIRABLE
