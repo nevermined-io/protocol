@@ -18,8 +18,9 @@ describe('AgreementsStore', function () {
     //   [],
     //   {},
     // )
-    const { nvmConfig, assetsRegistry, agreementsStore } =
-      await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry, agreementsStore } = await hre.ignition.deploy(
+      FullDeploymentModule,
+    )
     const publicClient = await hre.viem.getPublicClient()
 
     return {
