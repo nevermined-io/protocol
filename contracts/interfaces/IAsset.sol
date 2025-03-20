@@ -120,6 +120,10 @@ interface IAsset {
   /// @param receivers The distribution of the payment amounts receivers
   error NeverminedFeesNotIncluded(uint256[] amounts, address[] receivers);
 
+  /// The `creditsType` given as parameter is not supported
+  /// @param creditsType The type of credits
+  error InvalidCreditsType(CreditsType creditsType);
+
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
   function assetExists(bytes32 _did) external view returns (bool);

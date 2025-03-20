@@ -10,6 +10,7 @@ import { IAgreement } from '../interfaces/IAgreement.sol';
 import { IAsset } from '../interfaces/IAsset.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { NFT1155Credits } from '../token/NFT1155Credits.sol';
+import { NFT1155ExpirableCredits } from '../token/NFT1155ExpirableCredits.sol';
 
 contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
@@ -60,14 +61,21 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
 
     // Only mint if amount is greater than zero
     if (plan.credits.amount > 0) {
-      NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
-      nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
+      if (plan.credits.creditsType == IAsset.CreditsType.EXPIRABLE) {
+        NFT1155ExpirableCredits nft1155 = NFT1155ExpirableCredits(plan.nftAddress);
+        nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, plan.credits.durationSecs , '');
+
+      } else if (plan.credits.creditsType == IAsset.CreditsType.FIXED) {
+        NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
+        nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
+        
+      } else if (plan.credits.creditsType == IAsset.CreditsType.DYNAMIC) {
+        revert IAsset.InvalidCreditsType(plan.credits.creditsType);
+      } else {
+        revert IAsset.InvalidCreditsType(plan.credits.creditsType);
+      }
+      
     }
-    // TODO: Implement the logic
-    // LOAD NFT1155(plan.nftAddress)
-    // IF plan.credits.creditsType == EXPIRABLE
-    // ELSE IF plan.credits.creditsType == FIXED
-    // ELSE IF plan.credits.creditsType == DYNAMIC
-    // ELSE revert
+
   }
 }
