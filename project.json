@@ -20,12 +20,17 @@
         "cwd": "packages/contracts-exp"
       }
     },
-    "test": {
-      "executor": "@nx/jest:jest",
-      "outputs": ["coverage/packages/contracts-exp"],
+    "eslint": {
+      "executor": "@nx/eslint:lint",
       "options": {
-        "jestConfig": "packages/contracts-exp/jest.config.ts",
-        "passWithNoTests": true
+        "lintFilePatterns": ["packages/contracts-exp/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "yarn test",
+        "cwd": "packages/contracts-exp"
       }
     }
   }
