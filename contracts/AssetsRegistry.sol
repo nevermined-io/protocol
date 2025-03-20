@@ -159,15 +159,22 @@ contract AssetsRegistry is Initializable, IAsset {
     if (nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)) return true;
 
     uint256 totalAmount = 0;
-    for (uint256 i; i < _amounts.length; i++) totalAmount += _amounts[i];
+    uint256 amountsLength = _amounts.length;
+    for (uint256 i; i < amountsLength; i++) {
+      unchecked {
+        totalAmount += _amounts[i];
+      }
+    }
 
     if (totalAmount == 0) return true;
 
     bool _feeReceiverIncluded = false;
     uint256 _receiverIndex = 0;
+    address feeReceiver = nvmConfig.getFeeReceiver();
+    uint256 receiversLength = _receivers.length;
 
-    for (uint256 i = 0; i < _receivers.length; i++) {
-      if (_receivers[i] == nvmConfig.getFeeReceiver()) {
+    for (uint256 i = 0; i < receiversLength; i++) {
+      if (_receivers[i] == feeReceiver) {
         _feeReceiverIncluded = true;
         _receiverIndex = i;
       }
@@ -192,7 +199,12 @@ contract AssetsRegistry is Initializable, IAsset {
     if (this.areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
 
     uint256 totalAmount = 0;
-    for (uint256 i; i < _amounts.length; i++) totalAmount += _amounts[i];
+    uint256 amountsLength = _amounts.length;
+    for (uint256 i; i < amountsLength; i++) {
+      unchecked {
+        totalAmount += _amounts[i];
+      }
+    }
 
     // If the total amount is zero we don't need to add fees
     if (totalAmount == 0) return (_amounts, _receivers);
@@ -203,14 +215,20 @@ contract AssetsRegistry is Initializable, IAsset {
       nvmConfig.getFeeDenominator()
     );
 
-    uint256 _length = _amounts.length;
+    uint256 _length = amountsLength;
 
     uint256[] memory amountsWithFees = new uint256[](_length + 1);
-    for (uint256 i; i < _amounts.length; i++) amountsWithFees[i] = _amounts[i];
+    for (uint256 i; i < _length; i++) {
+      unchecked {
+        amountsWithFees[i] = _amounts[i];
+      }
+    }
     amountsWithFees[_length] = feeAmount;
 
     address[] memory receiversWithFees = new address[](_length + 1);
-    for (uint256 i; i < _receivers.length; i++) receiversWithFees[i] = _receivers[i];
+    for (uint256 i; i < _length; i++) {
+      receiversWithFees[i] = _receivers[i];
+    }
     receiversWithFees[_length] = nvmConfig.getFeeReceiver();
 
     return (amountsWithFees, receiversWithFees);

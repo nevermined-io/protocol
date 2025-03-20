@@ -67,8 +67,11 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
     // Emit event before external call to follow checks-effects-interactions pattern
     emit WithdrawNativeToken(msg.sender, _receiver, _amount);
 
-    (bool sent, ) = _receiver.call{ value: _amount }('');
-    if (!sent) revert FailedToSendNativeToken();
+    // Skip transfer if amount is 0
+    if (_amount > 0) {
+      (bool sent, ) = _receiver.call{ value: _amount }('');
+      if (!sent) revert FailedToSendNativeToken();
+    }
   }
 
   function depositERC20(
@@ -89,11 +92,15 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE))
       revert InvalidRole(msg.sender, WITHDRAW_ROLE);
 
-    IERC20 token = IERC20(_erc20TokenAddress);
-    // Use transfer instead of transferFrom since we're sending from our own balance
-    token.transfer(_receiver, _amount);
-
+    // Emit event before external call to follow checks-effects-interactions pattern
     emit WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);
+
+    // Skip transfer if amount is 0
+    if (_amount > 0) {
+      IERC20 token = IERC20(_erc20TokenAddress);
+      // Use transfer instead of transferFrom since we're sending from our own balance
+      token.transfer(_receiver, _amount);
+    }
   }
 
   function getBalanceNativeToken() external view returns (uint256 balance) {
