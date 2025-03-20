@@ -92,13 +92,12 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
           vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
         }
       }
-        // TokenUtils.transferERC20(
-        //   _senderAddress,
-        //   address(vault),
-        //   plan.price.tokenAddress,
-        //   calculateAmountSum(plan.price.amounts)
-        // );
-      }
+      // TokenUtils.transferERC20(
+      //   _senderAddress,
+      //   address(vault),
+      //   plan.price.tokenAddress,
+      //   calculateAmountSum(plan.price.amounts)
+      // );
 
       // FULFILL THE CONDITION
       agreementStore.updateConditionStatus(
