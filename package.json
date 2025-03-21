@@ -1,5 +1,6 @@
 {
   "name": "contracts-exp",
+  "version": "0.0.1",
   "scripts": {
     "clean": "npx hardhat clean",
     "test": "npx hardhat test $(find test/unit -name '*.*s')",
