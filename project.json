@@ -12,26 +12,6 @@
         "packageJson": "packages/contracts-exp/package.json",
         "main": "packages/contracts-exp/src/index.ts"
       }
-    },
-    "lint": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "yarn format && yarn lint",
-        "cwd": "packages/contracts-exp"
-      }
-    },
-    "eslint": {
-      "executor": "@nx/eslint:lint",
-      "options": {
-        "lintFilePatterns": ["packages/contracts-exp/**/*.ts"]
-      }
-    },
-    "test": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "yarn test",
-        "cwd": "packages/contracts-exp"
-      }
     }
   }
 }
