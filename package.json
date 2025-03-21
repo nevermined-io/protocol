@@ -1,4 +1,5 @@
 {
+  "name": "contracts-exp",
   "scripts": {
     "clean": "npx hardhat clean",
     "test": "npx hardhat test $(find test/unit -name '*.*s')",
