@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import hre from 'hardhat'
 import { generateId, getTxParsedLogs } from '../common/utils'
 import { zeroAddress } from 'viem'
-import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 
 var chai = require('chai')
 chai.use(require('chai-string'))

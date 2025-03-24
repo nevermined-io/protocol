@@ -2,8 +2,8 @@ import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpe
 import { expect } from 'chai'
 import hre from 'hardhat'
 import { generateId, getTxParsedLogs } from '../common/utils'
-import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
 import { stringToHex } from 'viem'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 
 var chai = require('chai')
 chai.use(require('chai-string'))

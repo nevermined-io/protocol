@@ -10,8 +10,8 @@ import {
   registerAssetAndPlan,
   createAgreement,
 } from '../common/utils'
-import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
 import chaiString from 'chai-string'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 
 // Configure chai plugins
 chai.use(chaiString)
