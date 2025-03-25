@@ -16,7 +16,7 @@ contract DeployNFTContracts is Script, DeployConfig {
         // Deploy NFT1155Credits
         vm.startBroadcast(deployerPrivateKey);
         NFT1155Credits nftCredits = new NFT1155Credits();
-        nftCredits.initialize(nvmConfigAddress);
+        nftCredits.initialize(nvmConfigAddress, "Nevermined Credits", "NMCR");
         vm.stopBroadcast();
         
         // Register NFT1155Credits in NVMConfig (called by governor)

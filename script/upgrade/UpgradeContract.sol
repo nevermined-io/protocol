@@ -16,8 +16,12 @@ contract UpgradeContract is Script {
         uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
-        // Get the current version of the contract
-        uint256 currentVersion = nvmConfig.getContractVersion(contractName);
+        // Get the current version of the contract using direct call
+        (bool success, bytes memory data) = nvmConfigAddress.call(
+            abi.encodeWithSignature("getContractVersion(bytes32)", contractName)
+        );
+        require(success, "Failed to get contract version");
+        uint256 currentVersion = abi.decode(data, (uint256));
         
         // Register the new implementation with an incremented version
         vm.startBroadcast(governorPrivateKey);

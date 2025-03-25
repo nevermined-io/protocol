@@ -20,7 +20,8 @@ contract ManagePermissions is Script, DeployConfig {
         uint256 ownerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
         
         // Get contract instances
-        PaymentsVault paymentsVault = PaymentsVault(paymentsVaultAddress);
+        address payable paymentsVaultPayable = payable(paymentsVaultAddress);
+        PaymentsVault paymentsVault = PaymentsVault(paymentsVaultPayable);
         NFT1155Credits nftCredits = NFT1155Credits(nftCreditsAddress);
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
