@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { ignition } from 'hardhat'
 import { expect } from 'chai'
-import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 import hre from 'hardhat'
 import {
   generateId,
@@ -82,8 +82,8 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Credits Config:', creditsConfig)
     expect(priceConfig.amounts.length).to.be.equal(2)
     expect(priceConfig.receivers.length).to.be.equal(2)
-    nftAddress = _deployment.nftCredits.address
-    console.log('NFT115Credits Address:', nftAddress)
+    nftAddress = _deployment.nftExpirableCredits.address
+    console.log('NFT1155ExpirableCredits Address:', nftAddress)
     expect(nftAddress).to.be.a('string').to.startWith('0x')
   })
 
@@ -164,7 +164,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftCredits.read.balanceOf([
+    const balance = await _deployment.nftExpirableCredits.read.balanceOf([
       bob.account.address,
       did,
     ])
@@ -194,7 +194,7 @@ describe('IT: Expirable Credits e2e flow', function () {
 
   it('Credits expire after their duration', async () => {
     // First verify Bob has credits
-    const balanceBefore = await _deployment.nftCredits.read.balanceOf([
+    const balanceBefore = await _deployment.nftExpirableCredits.read.balanceOf([
       bob.account.address,
       did,
     ])
