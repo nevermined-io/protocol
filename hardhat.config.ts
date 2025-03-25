@@ -3,6 +3,8 @@ import '@nomicfoundation/hardhat-toolbox-viem'
 import '@nomiclabs/hardhat-solhint'
 import '@openzeppelin/hardhat-upgrades'
 import '@nomicfoundation/hardhat-ignition'
+import '@nomicfoundation/hardhat-foundry'
+
 
 const MNEMONIC =
   process.env.MNEMONIC ||
