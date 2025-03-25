@@ -11,72 +11,31 @@ import {PaymentsVault} from "../../contracts/PaymentsVault.sol";
 
 contract DeployCoreContracts is Script, DeployConfig {
     function run(address nvmConfigAddress) public returns (AssetsRegistry, AgreementsStore, PaymentsVault) {
-        // Derive keys from mnemonic
-        string memory mnemonic = vm.envString("MNEMONIC");
-        uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 governorIndex = vm.envUint("GOVERNOR_INDEX");
-        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
-        uint256 governorKey = uint256(vm.createKey(mnemonic, governorIndex));
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
+        
+        // Get the current sender address to use as owner
+        owner = msg.sender;
+        
+        // For governor operations, you would need to run a separate command with the governor index
+        // This script assumes the owner is deploying the contracts
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy AssetsRegistry
-        vm.startBroadcast(ownerKey);
         AssetsRegistry assetsRegistry = new AssetsRegistry();
         assetsRegistry.initialize(nvmConfigAddress);
-        vm.stopBroadcast();
-        
-        // Register AssetsRegistry in NVMConfig (called by governor)
-        // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
-        (bool success, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "registerContract(bytes32,address,uint256)",
-                Constants.HASH_ASSETS_REGISTRY,
-                address(assetsRegistry),
-                1
-            )
-        );
-        require(success, "Failed to register AssetsRegistry");
-        vm.stopBroadcast();
         
         // Deploy AgreementsStore
-        vm.startBroadcast(ownerKey);
         AgreementsStore agreementsStore = new AgreementsStore();
         agreementsStore.initialize(nvmConfigAddress);
-        vm.stopBroadcast();
-        
-        // Register AgreementsStore in NVMConfig (called by governor)
-        // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
-        (bool success2, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "registerContract(bytes32,address,uint256)",
-                Constants.HASH_AGREEMENTS_STORE,
-                address(agreementsStore),
-                1
-            )
-        );
-        require(success2, "Failed to register AgreementsStore");
-        vm.stopBroadcast();
         
         // Deploy PaymentsVault
-        vm.startBroadcast(ownerKey);
         PaymentsVault paymentsVault = new PaymentsVault();
         paymentsVault.initialize(nvmConfigAddress);
-        vm.stopBroadcast();
         
-        // Register PaymentsVault in NVMConfig (called by governor)
-        // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
-        (bool success3, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "registerContract(bytes32,address,uint256)",
-                Constants.HASH_PAYMENTS_VAULT,
-                address(paymentsVault),
-                1
-            )
-        );
-        require(success3, "Failed to register PaymentsVault");
+        // Note: For registering contracts in NVMConfig, you would need to run a separate command
+        // with the governor's mnemonic index, as that requires governor privileges
+        
         vm.stopBroadcast();
         
         return (assetsRegistry, agreementsStore, paymentsVault);

@@ -8,11 +8,11 @@ import {DeployConfig} from "./DeployConfig.sol";
 
 contract DeployLibraries is Script, DeployConfig {
     function run() public returns (address) {
-        // Derive owner key from mnemonic
-        string memory mnemonic = vm.envString("MNEMONIC");
-        uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
-        vm.startBroadcast(ownerKey);
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
+        
+        // Get the current sender address to use as owner
+        owner = msg.sender;
         
         // Deploy TokenUtils library - libraries are deployed differently
         // We can't instantiate libraries with 'new', so we'll use a low-level approach

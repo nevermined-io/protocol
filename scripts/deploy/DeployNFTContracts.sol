@@ -9,32 +9,23 @@ import {NFT1155Credits} from "../../contracts/token/NFT1155Credits.sol";
 
 contract DeployNFTContracts is Script, DeployConfig {
     function run(address nvmConfigAddress) public returns (NFT1155Credits) {
-        // Derive keys from mnemonic
-        string memory mnemonic = vm.envString("MNEMONIC");
-        uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 governorIndex = vm.envUint("GOVERNOR_INDEX");
-        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
-        uint256 governorKey = uint256(vm.createKey(mnemonic, governorIndex));
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
+        
+        // Get the current sender address to use as owner
+        owner = msg.sender;
+        
+        // For governor operations, you would need to run a separate command with the governor index
+        // This script assumes the owner is deploying the contracts
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy NFT1155Credits
-        vm.startBroadcast(ownerKey);
         NFT1155Credits nftCredits = new NFT1155Credits();
         nftCredits.initialize(nvmConfigAddress, "Nevermined Credits", "NMCR");
-        vm.stopBroadcast();
         
-        // Register NFT1155Credits in NVMConfig (called by governor)
-        // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
-        (bool success, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "registerContract(bytes32,address,uint256)",
-                Constants.HASH_NFT1155CREDITS,
-                address(nftCredits),
-                1
-            )
-        );
-        require(success, "Failed to register NFT1155Credits");
+        // Note: For registering contracts in NVMConfig, you would need to run a separate command
+        // with the governor's mnemonic index, as that requires governor privileges
+        
         vm.stopBroadcast();
         
         return nftCredits;

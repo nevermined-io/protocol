@@ -15,16 +15,17 @@ contract DeployTemplates is Script, DeployConfig {
         address transferCreditsConditionAddress,
         address distributePaymentsConditionAddress
     ) public returns (FixedPaymentTemplate) {
-        // Derive keys from mnemonic
-        string memory mnemonic = vm.envString("MNEMONIC");
-        uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 governorIndex = vm.envUint("GOVERNOR_INDEX");
-        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
-        uint256 governorKey = uint256(vm.createKey(mnemonic, governorIndex));
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
+        
+        // Get the current sender address to use as owner
+        owner = msg.sender;
+        
+        // For governor operations, you would need to run a separate command with the governor index
+        // This script assumes the owner is deploying the contracts
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy FixedPaymentTemplate
-        vm.startBroadcast(ownerKey);
         FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
         fixedPaymentTemplate.initialize(
             nvmConfigAddress,
@@ -33,29 +34,10 @@ contract DeployTemplates is Script, DeployConfig {
             transferCreditsConditionAddress,
             distributePaymentsConditionAddress
         );
-        vm.stopBroadcast();
         
-        // Register FixedPaymentTemplate in NVMConfig (called by governor)
-        // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
-        (bool success1, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "registerContract(bytes32,address,uint256)",
-                Constants.HASH_FIXED_PAYMENT_TEMPLATE,
-                address(fixedPaymentTemplate),
-                1
-            )
-        );
-        require(success1, "Failed to register FixedPaymentTemplate");
+        // Note: For registering contracts in NVMConfig, you would need to run a separate command
+        // with the governor's mnemonic index, as that requires governor privileges
         
-        // Using direct call for grantTemplate since it's not in the interface
-        (bool success2, ) = nvmConfigAddress.call(
-            abi.encodeWithSignature(
-                "grantTemplate(address)",
-                address(fixedPaymentTemplate)
-            )
-        );
-        require(success2, "Failed to grant template role to FixedPaymentTemplate");
         vm.stopBroadcast();
         
         return fixedPaymentTemplate;

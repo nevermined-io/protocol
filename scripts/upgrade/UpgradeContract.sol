@@ -13,7 +13,6 @@ contract UpgradeContract is Script {
     ) public {
         require(newImplementation != address(0), "New implementation address cannot be zero");
         
-        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Get the current version of the contract using direct call
@@ -24,7 +23,8 @@ contract UpgradeContract is Script {
         uint256 currentVersion = abi.decode(data, (uint256));
         
         // Register the new implementation with an incremented version using direct call
-        vm.startBroadcast(governorPrivateKey);
+        // Uses the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
         (bool success2, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",

@@ -17,19 +17,17 @@ contract ManagePermissions is Script, DeployConfig {
         address distributePaymentsConditionAddress,
         address transferCreditsConditionAddress
     ) public {
-        // Derive owner key from mnemonic
-        string memory mnemonic = vm.envString("MNEMONIC");
-        uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        vm.startBroadcast();
+        
+        // Get the current sender address to use as owner
+        owner = msg.sender;
         
         // Get contract instances
         address payable paymentsVaultPayable = payable(paymentsVaultAddress);
         PaymentsVault paymentsVault = PaymentsVault(paymentsVaultPayable);
         NFT1155Credits nftCredits = NFT1155Credits(nftCreditsAddress);
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
-        
-        // Grant permissions
-        vm.startBroadcast(ownerKey);
         
         // Grant roles for PaymentsVault
         bytes32 DEPOSITOR_ROLE = paymentsVault.DEPOSITOR_ROLE();

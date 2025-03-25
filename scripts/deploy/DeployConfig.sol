@@ -10,34 +10,15 @@ contract DeployConfig is Script {
     address public feeReceiver;
     
     constructor() {
-        // Default values that will be overridden by environment variables if available
-        string memory defaultMnemonic = "test test test test test test test test test test test junk";
-        uint256 defaultOwnerIndex = 0;
-        uint256 defaultGovernorIndex = 1;
+        // Default values for network fee
         networkFee = 10000;        // 1% by default
         
-        // Override defaults with environment variables if set
-        string memory mnemonic = defaultMnemonic;
-        uint256 ownerIndex = defaultOwnerIndex;
-        uint256 governorIndex = defaultGovernorIndex;
+        // For owner and governor addresses, we'll get them from the broadcast signer
+        // when script is run with --mnemonics and --mnemonic-indexes
         
-        if (vm.envExists("MNEMONIC")) {
-            mnemonic = vm.envString("MNEMONIC");
-        }
-        
-        if (vm.envExists("OWNER_INDEX")) {
-            ownerIndex = vm.envUint("OWNER_INDEX");
-        }
-        
-        if (vm.envExists("GOVERNOR_INDEX")) {
-            governorIndex = vm.envUint("GOVERNOR_INDEX");
-        }
-        
-        // Derive addresses from mnemonic and indexes
-        uint256 ownerPrivateKey = uint256(vm.createKey(mnemonic, ownerIndex));
-        uint256 governorPrivateKey = uint256(vm.createKey(mnemonic, governorIndex));
-        owner = vm.addr(ownerPrivateKey);
-        governor = vm.addr(governorPrivateKey);
+        // Set owner and governor to default values that will be updated in the deploy script
+        owner = address(0);
+        governor = address(0);
         
         if (vm.envExists("NVM_FEE_AMOUNT")) {
             networkFee = vm.envUint("NVM_FEE_AMOUNT");
@@ -46,7 +27,7 @@ contract DeployConfig is Script {
         if (vm.envExists("NVM_FEE_RECEIVER")) {
             feeReceiver = vm.envAddress("NVM_FEE_RECEIVER");
         } else {
-            feeReceiver = owner;
+            feeReceiver = address(this); // Will be updated to the correct address in the deploy script
         }
     }
 }
