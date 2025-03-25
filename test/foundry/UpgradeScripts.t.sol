@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 
 import {Test, console} from 'forge-std/Test.sol';
 import {Script} from 'forge-std/Script.sol';
-import {Constants} from '../../script/Constants.sol';
+import {Constants} from '../../scripts/Constants.sol';
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
 
 // Import MockNVMConfig from DeploymentScripts.t.sol
