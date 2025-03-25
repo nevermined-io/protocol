@@ -32,13 +32,26 @@ contract DeployTemplates is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register FixedPaymentTemplate in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(
-            Constants.HASH_FIXED_PAYMENT_TEMPLATE,
-            address(fixedPaymentTemplate),
-            1
+        (bool success1, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_FIXED_PAYMENT_TEMPLATE,
+                address(fixedPaymentTemplate),
+                1
+            )
         );
-        nvmConfig.grantTemplate(address(fixedPaymentTemplate));
+        require(success1, "Failed to register FixedPaymentTemplate");
+        
+        // Using direct call for grantTemplate since it's not in the interface
+        (bool success2, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantTemplate(address)",
+                address(fixedPaymentTemplate)
+            )
+        );
+        require(success2, "Failed to grant template role to FixedPaymentTemplate");
         vm.stopBroadcast();
         
         return fixedPaymentTemplate;

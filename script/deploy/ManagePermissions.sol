@@ -30,12 +30,38 @@ contract ManagePermissions is Script, DeployConfig {
         // Grant roles for PaymentsVault
         bytes32 DEPOSITOR_ROLE = paymentsVault.DEPOSITOR_ROLE();
         bytes32 WITHDRAW_ROLE = paymentsVault.WITHDRAW_ROLE();
-        nvmConfig.grantRole(DEPOSITOR_ROLE, lockPaymentConditionAddress);
-        nvmConfig.grantRole(WITHDRAW_ROLE, distributePaymentsConditionAddress);
+        
+        // Using direct call for grantRole since it's not in the interface
+        (bool success1, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantRole(bytes32,address)",
+                DEPOSITOR_ROLE,
+                lockPaymentConditionAddress
+            )
+        );
+        require(success1, "Failed to grant DEPOSITOR_ROLE to LockPaymentCondition");
+        
+        (bool success2, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantRole(bytes32,address)",
+                WITHDRAW_ROLE,
+                distributePaymentsConditionAddress
+            )
+        );
+        require(success2, "Failed to grant WITHDRAW_ROLE to DistributePaymentsCondition");
         
         // Grant roles for NFT1155Credits
         bytes32 CREDITS_MINTER_ROLE = nftCredits.CREDITS_MINTER_ROLE();
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, transferCreditsConditionAddress);
+        
+        // Using direct call for grantRole since it's not in the interface
+        (bool success3, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantRole(bytes32,address)",
+                CREDITS_MINTER_ROLE,
+                transferCreditsConditionAddress
+            )
+        );
+        require(success3, "Failed to grant CREDITS_MINTER_ROLE to TransferCreditsCondition");
         
         vm.stopBroadcast();
     }

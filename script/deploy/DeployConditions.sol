@@ -37,13 +37,26 @@ contract DeployConditions is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register LockPaymentCondition in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(
-            Constants.HASH_LOCKPAYMENT_CONDITION,
-            address(lockPaymentCondition),
-            1
+        (bool success1, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_LOCKPAYMENT_CONDITION,
+                address(lockPaymentCondition),
+                1
+            )
         );
-        nvmConfig.grantCondition(address(lockPaymentCondition));
+        require(success1, "Failed to register LockPaymentCondition");
+        
+        // Using direct call for grantCondition since it's not in the interface
+        (bool success2, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantCondition(address)",
+                address(lockPaymentCondition)
+            )
+        );
+        require(success2, "Failed to grant condition role to LockPaymentCondition");
         vm.stopBroadcast();
         
         // Deploy TransferCreditsCondition
@@ -57,13 +70,26 @@ contract DeployConditions is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register TransferCreditsCondition in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(
-            Constants.HASH_TRANSFERCREDITS_CONDITION,
-            address(transferCreditsCondition),
-            1
+        (bool success3, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_TRANSFERCREDITS_CONDITION,
+                address(transferCreditsCondition),
+                1
+            )
         );
-        nvmConfig.grantCondition(address(transferCreditsCondition));
+        require(success3, "Failed to register TransferCreditsCondition");
+        
+        // Using direct call for grantCondition since it's not in the interface
+        (bool success4, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantCondition(address)",
+                address(transferCreditsCondition)
+            )
+        );
+        require(success4, "Failed to grant condition role to TransferCreditsCondition");
         vm.stopBroadcast();
         
         // Deploy DistributePaymentsCondition with TokenUtils library
@@ -78,13 +104,26 @@ contract DeployConditions is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register DistributePaymentsCondition in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(
-            Constants.HASH_DISTRIBUTEPAYMENTS_CONDITION,
-            address(distributePaymentsCondition),
-            1
+        (bool success5, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_DISTRIBUTEPAYMENTS_CONDITION,
+                address(distributePaymentsCondition),
+                1
+            )
         );
-        nvmConfig.grantCondition(address(distributePaymentsCondition));
+        require(success5, "Failed to register DistributePaymentsCondition");
+        
+        // Using direct call for grantCondition since it's not in the interface
+        (bool success6, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "grantCondition(address)",
+                address(distributePaymentsCondition)
+            )
+        );
+        require(success6, "Failed to grant condition role to DistributePaymentsCondition");
         vm.stopBroadcast();
         
         return (

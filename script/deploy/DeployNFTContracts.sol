@@ -20,8 +20,17 @@ contract DeployNFTContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register NFT1155Credits in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(Constants.HASH_NFT1155CREDITS, address(nftCredits), 1);
+        (bool success, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_NFT1155CREDITS,
+                address(nftCredits),
+                1
+            )
+        );
+        require(success, "Failed to register NFT1155Credits");
         vm.stopBroadcast();
         
         return nftCredits;

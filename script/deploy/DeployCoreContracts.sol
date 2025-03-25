@@ -22,8 +22,17 @@ contract DeployCoreContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register AssetsRegistry in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(Constants.HASH_ASSETS_REGISTRY, address(assetsRegistry), 1);
+        (bool success, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_ASSETS_REGISTRY,
+                address(assetsRegistry),
+                1
+            )
+        );
+        require(success, "Failed to register AssetsRegistry");
         vm.stopBroadcast();
         
         // Deploy AgreementsStore
@@ -33,8 +42,17 @@ contract DeployCoreContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register AgreementsStore in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(Constants.HASH_AGREEMENTS_STORE, address(agreementsStore), 1);
+        (bool success2, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_AGREEMENTS_STORE,
+                address(agreementsStore),
+                1
+            )
+        );
+        require(success2, "Failed to register AgreementsStore");
         vm.stopBroadcast();
         
         // Deploy PaymentsVault
@@ -44,8 +62,17 @@ contract DeployCoreContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Register PaymentsVault in NVMConfig (called by governor)
+        // Using direct call to NVMConfig since registerContract is not in the interface
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(Constants.HASH_PAYMENTS_VAULT, address(paymentsVault), 1);
+        (bool success3, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                Constants.HASH_PAYMENTS_VAULT,
+                address(paymentsVault),
+                1
+            )
+        );
+        require(success3, "Failed to register PaymentsVault");
         vm.stopBroadcast();
         
         return (assetsRegistry, agreementsStore, paymentsVault);
