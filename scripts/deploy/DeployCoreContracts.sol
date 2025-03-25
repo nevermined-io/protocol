@@ -11,19 +11,20 @@ import {PaymentsVault} from "../../contracts/PaymentsVault.sol";
 
 contract DeployCoreContracts is Script, DeployConfig {
     function run(address nvmConfigAddress) public returns (AssetsRegistry, AgreementsStore, PaymentsVault) {
-        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
-        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
+        // Derive keys from mnemonic
+        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
+        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy AssetsRegistry
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(ownerKey);
         AssetsRegistry assetsRegistry = new AssetsRegistry();
         assetsRegistry.initialize(nvmConfigAddress);
         vm.stopBroadcast();
         
         // Register AssetsRegistry in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorPrivateKey);
+        vm.startBroadcast(governorKey);
         (bool success, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",
@@ -36,14 +37,14 @@ contract DeployCoreContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Deploy AgreementsStore
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(ownerKey);
         AgreementsStore agreementsStore = new AgreementsStore();
         agreementsStore.initialize(nvmConfigAddress);
         vm.stopBroadcast();
         
         // Register AgreementsStore in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorPrivateKey);
+        vm.startBroadcast(governorKey);
         (bool success2, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",
@@ -56,14 +57,14 @@ contract DeployCoreContracts is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Deploy PaymentsVault
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast(ownerKey);
         PaymentsVault paymentsVault = new PaymentsVault();
         paymentsVault.initialize(nvmConfigAddress);
         vm.stopBroadcast();
         
         // Register PaymentsVault in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorPrivateKey);
+        vm.startBroadcast(governorKey);
         (bool success3, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",

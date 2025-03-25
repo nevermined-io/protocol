@@ -17,7 +17,8 @@ contract ManagePermissions is Script, DeployConfig {
         address distributePaymentsConditionAddress,
         address transferCreditsConditionAddress
     ) public {
-        uint256 ownerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        // Derive key from mnemonic
+        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
         
         // Get contract instances
         address payable paymentsVaultPayable = payable(paymentsVaultAddress);
@@ -26,7 +27,7 @@ contract ManagePermissions is Script, DeployConfig {
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Grant permissions
-        vm.startBroadcast(ownerPrivateKey);
+        vm.startBroadcast(ownerKey);
         
         // Grant roles for PaymentsVault
         bytes32 DEPOSITOR_ROLE = paymentsVault.DEPOSITOR_ROLE();

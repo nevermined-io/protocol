@@ -7,7 +7,7 @@ This guide provides step-by-step instructions for deploying and upgrading the Ne
 Before deploying the contracts, make sure you have the following:
 
 1. Foundry installed (forge, cast, anvil)
-2. Private keys for the owner and governor accounts
+2. Mnemonic phrase for wallet derivation
 3. RPC URL for the target network (local or Base Sepolia)
 4. Etherscan API key for contract verification (for Base Sepolia)
 
@@ -16,9 +16,10 @@ Before deploying the contracts, make sure you have the following:
 Create a `.env` file with the following variables:
 
 ```
-# Private keys (without 0x prefix)
-OWNER_PRIVATE_KEY=your_owner_private_key
-GOVERNOR_PRIVATE_KEY=your_governor_private_key
+# Mnemonic and indexes for wallet derivation
+MNEMONIC="your twelve word mnemonic phrase here"
+OWNER_INDEX=0    # Index for owner wallet derivation
+GOVERNOR_INDEX=1 # Index for governor wallet derivation
 
 # Network configuration
 BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
@@ -49,7 +50,7 @@ anvil
 
 ```bash
 mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url http://localhost:8545 --broadcast --private-key $OWNER_PRIVATE_KEY
+forge script scripts/deploy/DeployAll.sol --rpc-url http://localhost:8545 --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
 
 ### Base Sepolia Deployment
@@ -58,7 +59,7 @@ Deploy all contracts to Base Sepolia:
 
 ```bash
 mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --private-key $OWNER_PRIVATE_KEY
+forge script scripts/deploy/DeployAll.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
 
 ## Contract Verification
@@ -102,7 +103,7 @@ The Nevermined contracts follow an upgradeable pattern where new implementations
 
 ```bash
 # Example for deploying a new AssetsRegistry implementation
-forge create contracts/AssetsRegistry.sol:AssetsRegistry --rpc-url $RPC_URL --private-key $OWNER_PRIVATE_KEY
+forge create contracts/AssetsRegistry.sol:AssetsRegistry --rpc-url $RPC_URL --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
 
 2. Register the new implementation in NVMConfig:
@@ -112,7 +113,7 @@ forge create contracts/AssetsRegistry.sol:AssetsRegistry --rpc-url $RPC_URL --pr
 export CONTRACT_NAME=$(cast keccak "AssetsRegistry")
 
 # Register the new implementation
-forge script scripts/upgrade/UpgradeContract.sol --rpc-url $RPC_URL --broadcast --private-key $GOVERNOR_PRIVATE_KEY --sig "run(address,bytes32,address)" $NVM_CONFIG_ADDRESS $CONTRACT_NAME $NEW_IMPLEMENTATION_ADDRESS
+forge script scripts/upgrade/UpgradeContract.sol --rpc-url $RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sig "run(address,bytes32,address)" $NVM_CONFIG_ADDRESS $CONTRACT_NAME $NEW_IMPLEMENTATION_ADDRESS
 ```
 
 ## Deployment Verification Checklist
@@ -163,5 +164,5 @@ The deployment scripts write logs to the console and save deployment addresses t
 For more detailed debugging, you can use the `--verbosity` flag with forge:
 
 ```bash
-forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --private-key $OWNER_PRIVATE_KEY --verbosity 4
+forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX --verbosity 4
 ```
