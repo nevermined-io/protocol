@@ -11,8 +11,16 @@ contract DeployLibraries is Script, DeployConfig {
         uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
         
-        // Deploy TokenUtils library
-        address tokenUtilsAddress = address(new TokenUtils());
+        // Deploy TokenUtils library - libraries are deployed differently
+        // We can't instantiate libraries with 'new', so we'll use a low-level approach
+        bytes memory bytecode = type(TokenUtils).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked("TokenUtils", block.timestamp));
+        address tokenUtilsAddress;
+        
+        assembly {
+            tokenUtilsAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
+            if iszero(extcodesize(tokenUtilsAddress)) { revert(0, 0) }
+        }
         
         vm.stopBroadcast();
         
