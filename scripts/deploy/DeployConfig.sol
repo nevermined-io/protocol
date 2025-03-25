@@ -11,19 +11,31 @@ contract DeployConfig is Script {
     
     constructor() {
         // Default values that will be overridden by environment variables if available
-        owner = vm.addr(1);        // Default owner from private key 1
-        governor = vm.addr(2);      // Default governor from private key 2
+        string memory defaultMnemonic = "test test test test test test test test test test test junk";
+        uint256 defaultOwnerIndex = 0;
+        uint256 defaultGovernorIndex = 1;
         networkFee = 10000;        // 1% by default
-        feeReceiver = owner;       // Default fee receiver is owner
         
         // Override defaults with environment variables if set
-        if (vm.envExists("OWNER_PRIVATE_KEY")) {
-            owner = vm.addr(vm.envUint("OWNER_PRIVATE_KEY"));
+        string memory mnemonic = defaultMnemonic;
+        uint256 ownerIndex = defaultOwnerIndex;
+        uint256 governorIndex = defaultGovernorIndex;
+        
+        if (vm.envExists("MNEMONIC")) {
+            mnemonic = vm.envString("MNEMONIC");
         }
         
-        if (vm.envExists("GOVERNOR_PRIVATE_KEY")) {
-            governor = vm.addr(vm.envUint("GOVERNOR_PRIVATE_KEY"));
+        if (vm.envExists("OWNER_INDEX")) {
+            ownerIndex = vm.envUint("OWNER_INDEX");
         }
+        
+        if (vm.envExists("GOVERNOR_INDEX")) {
+            governorIndex = vm.envUint("GOVERNOR_INDEX");
+        }
+        
+        // Derive addresses from mnemonic and indexes
+        owner = vm.rememberKey(vm.deriveKey(mnemonic, ownerIndex));
+        governor = vm.rememberKey(vm.deriveKey(mnemonic, governorIndex));
         
         if (vm.envExists("NVM_FEE_AMOUNT")) {
             networkFee = vm.envUint("NVM_FEE_AMOUNT");
