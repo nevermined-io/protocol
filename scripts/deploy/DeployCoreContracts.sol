@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {Constants} from "../Constants.sol";
+import {Constants} from "../../scripts/Constants.sol";
 import {DeployConfig} from "./DeployConfig.sol";
 import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
 import {AssetsRegistry} from "../../contracts/AssetsRegistry.sol";
@@ -19,7 +19,8 @@ contract DeployCoreContracts is Script, DeployConfig {
         
         // For governor operations, you would need to run a separate command with the governor index
         // This script assumes the owner is deploying the contracts
-        INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
+        // Get NVMConfig instance if needed
+        // // INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy AssetsRegistry
         AssetsRegistry assetsRegistry = new AssetsRegistry();

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {Constants} from "../Constants.sol";
+import {Constants} from "../../scripts/Constants.sol";
 import {DeployConfig} from "./DeployConfig.sol";
 import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
 import {PaymentsVault} from "../../contracts/PaymentsVault.sol";
@@ -27,7 +27,8 @@ contract ManagePermissions is Script, DeployConfig {
         address payable paymentsVaultPayable = payable(paymentsVaultAddress);
         PaymentsVault paymentsVault = PaymentsVault(paymentsVaultPayable);
         NFT1155Credits nftCredits = NFT1155Credits(nftCreditsAddress);
-        INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
+        // Get NVMConfig instance if needed
+        // // INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Grant roles for PaymentsVault
         bytes32 DEPOSITOR_ROLE = paymentsVault.DEPOSITOR_ROLE();

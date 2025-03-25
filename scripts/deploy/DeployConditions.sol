@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
-import {Constants} from "../Constants.sol";
+import {Constants} from "../../scripts/Constants.sol";
 import {DeployConfig} from "./DeployConfig.sol";
 import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
 import {LockPaymentCondition} from "../../contracts/conditions/LockPaymentCondition.sol";
@@ -15,7 +15,7 @@ contract DeployConditions is Script, DeployConfig {
         address assetsRegistryAddress,
         address agreementsStoreAddress,
         address paymentsVaultAddress,
-        address tokenUtilsAddress
+        address /* tokenUtilsAddress */
     ) public returns (
         LockPaymentCondition,
         TransferCreditsCondition,
@@ -29,7 +29,8 @@ contract DeployConditions is Script, DeployConfig {
         
         // For governor operations, you would need to run a separate command with the governor index
         // This script assumes the owner is deploying the contracts
-        INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
+        // Get NVMConfig instance if needed
+        // // INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy LockPaymentCondition with TokenUtils library
         LockPaymentCondition lockPaymentCondition = new LockPaymentCondition();

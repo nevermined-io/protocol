@@ -14,8 +14,8 @@ contract DeployNVMConfig is Script, DeployConfig {
         address deployerAddress = msg.sender;
         owner = deployerAddress;
         
-        // Set governor address - in a real deployment, this would be a different address
-        // When running with --mnemonic-indexes, you would use a different index for governor
+        // For governor, we'll use a separate address in production
+        // For testing, you can use the same address by setting GOVERNOR_ADDRESS env var
         governor = vm.envOr("GOVERNOR_ADDRESS", deployerAddress);
         
         // Update fee receiver if not set
@@ -26,11 +26,12 @@ contract DeployNVMConfig is Script, DeployConfig {
         // Deploy NVMConfig
         NVMConfig nvmConfig = new NVMConfig();
         
-        // Initialize NVMConfig
+        // Initialize NVMConfig with owner and governor addresses
         nvmConfig.initialize(owner, governor);
         
-        // Set network fees
-        nvmConfig.setNetworkFees(networkFee, feeReceiver);
+        // Note: Setting network fees requires the governor role
+        // This should be done in a separate step after deployment
+        // using the governor's private key
         
         vm.stopBroadcast();
         

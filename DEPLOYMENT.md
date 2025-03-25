@@ -53,14 +53,44 @@ mkdir -p deployments
 forge script scripts/deploy/DeployAll.sol --rpc-url http://localhost:8545 --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
 
+3. Set network fees (requires governor role):
+
+```bash
+# Set network fees using the governor account
+forge script scripts/deploy/SetNetworkFees.sol --rpc-url http://localhost:8545 --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX
+```
+
 ### Base Sepolia Deployment
 
-Deploy all contracts to Base Sepolia:
+1. Deploy all contracts to Base Sepolia:
 
 ```bash
 mkdir -p deployments
 forge script scripts/deploy/DeployAll.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
+
+2. Set network fees (requires governor role):
+
+```bash
+# Set network fees using the governor account
+forge script scripts/deploy/SetNetworkFees.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX
+```
+
+### Understanding Mnemonic-Based Deployment
+
+The deployment scripts use Foundry's mnemonic-based key derivation system:
+
+1. When you run a script with `--mnemonics` and `--mnemonic-indexes` flags, Foundry automatically derives the private key from your mnemonic and specified index.
+
+2. The scripts use `vm.startBroadcast()` without parameters, which automatically uses the derived key from the command line arguments.
+
+3. For operations requiring different roles (owner vs governor):
+   - Deploy contracts with the owner account: `--mnemonic-indexes $OWNER_INDEX`
+   - Register contracts and grant permissions with the governor account: `--mnemonic-indexes $GOVERNOR_INDEX`
+
+4. The `msg.sender` in the script will be the address derived from your mnemonic and index.
+
+5. **Important**: Some operations like setting network fees require the governor role. These must be executed in separate steps using the governor's mnemonic index.
 
 ## Contract Verification
 
@@ -106,7 +136,7 @@ The Nevermined contracts follow an upgradeable pattern where new implementations
 forge create contracts/AssetsRegistry.sol:AssetsRegistry --rpc-url $RPC_URL --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
 ```
 
-2. Register the new implementation in NVMConfig:
+2. Register the new implementation in NVMConfig (must be done by the governor):
 
 ```bash
 # Get the contract name hash
@@ -145,15 +175,29 @@ The deployment scripts follow this order:
 
 This order ensures that all dependencies are properly set up before they are needed.
 
+## Two-Step Deployment Process
+
+The deployment is split into two main steps:
+
+1. **Contract Deployment (Owner)**: Deploy all contract implementations using the owner account.
+   ```bash
+   forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
+   ```
+
+2. **Contract Registration and Permissions (Governor)**: Register contracts in NVMConfig and grant necessary permissions using the governor account.
+   ```bash
+   forge script scripts/deploy/ManagePermissions.sol --rpc-url $RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sig "run(address,address,address,address,address,address)" $NVM_CONFIG_ADDRESS $PAYMENTS_VAULT_ADDRESS $NFT_CREDITS_ADDRESS $LOCK_PAYMENT_CONDITION_ADDRESS $DISTRIBUTE_PAYMENTS_CONDITION_ADDRESS $TRANSFER_CREDITS_CONDITION_ADDRESS
+   ```
+
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Transaction Reverted**: Check that you're using the correct private keys for the owner and governor accounts.
+1. **Transaction Reverted**: Check that you're using the correct mnemonic and indexes for the owner and governor accounts.
 
 2. **Contract Initialization Failed**: Make sure you're passing the correct parameters to the initialize functions.
 
-3. **Permission Denied**: Verify that the account calling the function has the required role.
+3. **Permission Denied**: Verify that the account calling the function has the required role. Remember that owner and governor are different roles with different permissions.
 
 4. **Contract Verification Failed**: Ensure you're using the correct compiler version and optimization settings.
 
