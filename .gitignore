@@ -17,3 +17,9 @@ node_modules
 ignition/deployments/chain-31337
 
 .vscode
+
+# Foundry
+out/
+cache_forge/
+lib/
+lib/forge-std

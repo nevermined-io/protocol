@@ -1,15 +1,14 @@
-name: Build and Tests
-
-on: push
+name: Foundry tests
+on: [push]
 
 jobs:
-  tests:
+  check:
+    name: Foundry project
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -29,7 +28,4 @@ jobs:
           yarn compile
       - name: Run Unit Tests
         run: |
-          yarn test
-      - name: Run Integration Tests
-        run: |
-          yarn test:integration
+          yarn test:foundry
