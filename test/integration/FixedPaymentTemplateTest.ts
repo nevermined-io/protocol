@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { ignition } from 'hardhat'
 import { expect } from 'chai'
-import { FullDeploymentModule } from '../../ignition/modules/FullDeployment'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 import hre from 'hardhat'
 import {
   generateId,

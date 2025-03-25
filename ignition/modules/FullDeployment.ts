@@ -60,137 +60,129 @@ const LibrariesDeploymentModule = buildModule(
 
 const AssetsRegistryModule = buildModule('AssetsRegistryModule', (m) => {
   const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-  
+
   // Deploy the implementation contract
   const assetsRegistryImpl = m.contract('AssetsRegistry', [], { from: owner })
-  
+
   // Get the ProxyAdmin
   const { proxyAdmin } = m.useModule(ProxyAdminModule)
-  
+
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
-  
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
   const assetsRegistryProxy = m.contract(
     'TransparentUpgradeableProxy',
-    [
-      assetsRegistryImpl,
-      proxyAdmin,
-      emptyData
-    ],
-    { from: owner }
+    [assetsRegistryImpl, proxyAdmin, emptyData],
+    { from: owner },
   )
-  
+
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
-  const assetsRegistry = m.contractAt('AssetsRegistry', assetsRegistryProxy, { id: 'AssetsRegistryProxyInstance' })
-  
+  const assetsRegistry = m.contractAt('AssetsRegistry', assetsRegistryProxy, {
+    id: 'AssetsRegistryProxyInstance',
+  })
+
   // Initialize the contract through the proxy
   m.call(assetsRegistry, 'initialize', [nvmConfig])
-  
+
   return { assetsRegistry, assetsRegistryImpl, assetsRegistryProxy }
 })
 
 const AgreementsStoreModule = buildModule('AgreementsStoreModule', (m) => {
   const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-  
+
   // Deploy the implementation contract
   const agreementsStoreImpl = m.contract('AgreementsStore', [], { from: owner })
-  
+
   // Get the ProxyAdmin
   const { proxyAdmin } = m.useModule(ProxyAdminModule)
-  
+
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
-  
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
   const agreementsStoreProxy = m.contract(
     'TransparentUpgradeableProxy',
-    [
-      agreementsStoreImpl,
-      proxyAdmin,
-      emptyData
-    ],
-    { from: owner }
+    [agreementsStoreImpl, proxyAdmin, emptyData],
+    { from: owner },
   )
-  
+
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
-  const agreementsStore = m.contractAt('AgreementsStore', agreementsStoreProxy, { id: 'AgreementsStoreProxyInstance' })
-  
+  const agreementsStore = m.contractAt('AgreementsStore', agreementsStoreProxy, {
+    id: 'AgreementsStoreProxyInstance',
+  })
+
   // Initialize the contract through the proxy
   m.call(agreementsStore, 'initialize', [nvmConfig])
-  
+
   return { agreementsStore, agreementsStoreImpl, agreementsStoreProxy }
 })
 
 const PaymentsVaultModule = buildModule('PaymentsVaultModule', (m) => {
   const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-  
+
   // Deploy the implementation contract
   const paymentsVaultImpl = m.contract('PaymentsVault', [], { from: owner })
-  
+
   // Get the ProxyAdmin
   const { proxyAdmin } = m.useModule(ProxyAdminModule)
-  
+
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
-  
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
   const paymentsVaultProxy = m.contract(
     'TransparentUpgradeableProxy',
-    [
-      paymentsVaultImpl,
-      proxyAdmin,
-      emptyData
-    ],
-    { from: owner }
+    [paymentsVaultImpl, proxyAdmin, emptyData],
+    { from: owner },
   )
-  
+
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
-  const paymentsVault = m.contractAt('PaymentsVault', paymentsVaultProxy, { id: 'PaymentsVaultProxyInstance' })
-  
+  const paymentsVault = m.contractAt('PaymentsVault', paymentsVaultProxy, {
+    id: 'PaymentsVaultProxyInstance',
+  })
+
   // Initialize the contract through the proxy
   m.call(paymentsVault, 'initialize', [nvmConfig])
-  
+
   return { paymentsVault, paymentsVaultImpl, paymentsVaultProxy }
 })
 
 const NFT1155CreditsModule = buildModule('NFT1155CreditsModule', (m) => {
   const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-  
+
   // Deploy the implementation contract
   const nftCreditsImpl = m.contract('NFT1155Credits', [], { from: owner })
-  
+
   // Get the ProxyAdmin
   const { proxyAdmin } = m.useModule(ProxyAdminModule)
-  
+
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
-  
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
   const nftCreditsProxy = m.contract(
     'TransparentUpgradeableProxy',
-    [
-      nftCreditsImpl,
-      proxyAdmin,
-      emptyData
-    ],
-    { from: owner }
+    [nftCreditsImpl, proxyAdmin, emptyData],
+    { from: owner },
   )
-  
+
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
-  const nftCredits = m.contractAt('NFT1155Credits', nftCreditsProxy, { id: 'NFT1155CreditsProxyInstance' })
-  
+  const nftCredits = m.contractAt('NFT1155Credits', nftCreditsProxy, {
+    id: 'NFT1155CreditsProxyInstance',
+  })
+
   // Initialize the contract through the proxy
   m.call(nftCredits, 'initialize', [nvmConfig, 'Nevermined Credits', 'NVMC'])
-  
+
   return { nftCredits, nftCreditsImpl, nftCreditsProxy }
 })
 
@@ -370,7 +362,31 @@ const DeploymentOfContractsModule = buildModule(
 )
 
 const FullDeploymentModule = buildModule('FullDeploymentModule', (m) => {
-  return m.useModule(DeploymentOfContractsModule)
+  const {
+    nvmConfig,
+    assetsRegistry,
+    agreementsStore,
+    paymentsVault,
+    nftCredits,
+    nftExpirableCredits,
+    lockPaymentCondition,
+    transferCreditsCondition,
+    distributePaymentsCondition,
+    fixedPaymentTemplate,
+  } = m.useModule(DeploymentOfContractsModule)
+  return {
+    nvmConfig,
+    assetsRegistry,
+    agreementsStore,
+    paymentsVault,
+    nftCredits,
+    nftExpirableCredits,
+    lockPaymentCondition,
+    transferCreditsCondition,
+    distributePaymentsCondition,
+    fixedPaymentTemplate,
+  }
 })
 
-export { NVMConfigModule, FullDeploymentModule }
+export { NVMConfigModule }
+export default FullDeploymentModule
