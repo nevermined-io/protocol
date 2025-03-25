@@ -63,19 +63,21 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
     if (plan.credits.amount > 0) {
       if (plan.credits.creditsType == IAsset.CreditsType.EXPIRABLE) {
         NFT1155ExpirableCredits nft1155 = NFT1155ExpirableCredits(plan.nftAddress);
-        nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, plan.credits.durationSecs , '');
-
+        nft1155.mint(
+          _receiverAddress,
+          uint256(_did),
+          plan.credits.amount,
+          plan.credits.durationSecs,
+          ''
+        );
       } else if (plan.credits.creditsType == IAsset.CreditsType.FIXED) {
         NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
         nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
-        
       } else if (plan.credits.creditsType == IAsset.CreditsType.DYNAMIC) {
         revert IAsset.InvalidCreditsType(plan.credits.creditsType);
       } else {
         revert IAsset.InvalidCreditsType(plan.credits.creditsType);
       }
-      
     }
-
   }
 }

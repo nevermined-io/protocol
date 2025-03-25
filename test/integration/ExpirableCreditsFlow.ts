@@ -60,9 +60,7 @@ describe('IT: Expirable Credits e2e flow', function () {
 
     _deployment = await loadFixture(deployModuleFixture)
     expect(_deployment.nvmConfig.address).to.be.a('string').to.startWith('0x')
-    expect(_deployment.assetsRegistry.address)
-      .to.be.a('string')
-      .to.startWith('0x')
+    expect(_deployment.assetsRegistry.address).to.be.a('string').to.startWith('0x')
 
     console.log(`NVM Config: ${_deployment.nvmConfig.address}`)
     console.log(`Assets Registry: ${_deployment.assetsRegistry.address}`)
@@ -70,11 +68,10 @@ describe('IT: Expirable Credits e2e flow', function () {
 
   it('Alice can define the fees of the plan', async () => {
     priceConfig.receivers = [alice.account.address]
-    const feesSetup =
-      await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
-        priceConfig.amounts,
-        priceConfig.receivers,
-      ])
+    const feesSetup = await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
+      priceConfig.amounts,
+      priceConfig.receivers,
+    ])
     priceConfig.amounts = feesSetup[0]
     priceConfig.receivers = feesSetup[1]
     console.log('Fees Setup:', feesSetup)
@@ -90,10 +87,9 @@ describe('IT: Expirable Credits e2e flow', function () {
   it('Alice can register an asset with a plan with expirable credits', async () => {
     console.log(`Alice: ${alice.account.address}`)
     const didSeed = generateId()
-    did = await _deployment.assetsRegistry.read.hashDID(
-      [didSeed, alice.account.address],
-      { from: alice.account },
-    )
+    did = await _deployment.assetsRegistry.read.hashDID([didSeed, alice.account.address], {
+      from: alice.account,
+    })
 
     expect(did).to.be.a('string').to.startWith('0x')
     console.log(`DID SEED: ${didSeed}`)
@@ -105,11 +101,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     )
     expect(txHash).to.be.a('string').to.startWith('0x')
     console.log('txHash:', txHash)
-    const logs = await getTxParsedLogs(
-      publicClient,
-      txHash,
-      _deployment.assetsRegistry.abi,
-    )
+    const logs = await getTxParsedLogs(publicClient, txHash, _deployment.assetsRegistry.abi)
 
     console.log('Logs:', logs)
     expect(logs.length).to.be.equal(2)
@@ -125,7 +117,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Plan ID:', planId)
     const plan = await _deployment.assetsRegistry.read.getPlan([planId])
     console.log('Plan = :', plan)
-    
+
     // Verify the plan has expirable credits
     expect(plan.credits.creditsType).to.equal(0) // 0 = EXPIRABLE
     expect(plan.credits.durationSecs).to.equal(600n) // 10 minutes
@@ -164,10 +156,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftExpirableCredits.read.balanceOf([
-      bob.account.address,
-      did,
-    ])
+    const balance = await _deployment.nftExpirableCredits.read.balanceOf([bob.account.address, did])
     console.log('Credits Balance:', balance)
     expect(balance > 0n).to.be.true
   })
@@ -202,18 +191,18 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Credits Balance Before Time Advance:', balanceBefore)
 
     // Advance blockchain time past the expiration period
-    await hre.network.provider.send("evm_increaseTime", [601]) // 10 minutes + 1 second
-    await hre.network.provider.send("evm_mine")
+    await hre.network.provider.send('evm_increaseTime', [601]) // 10 minutes + 1 second
+    await hre.network.provider.send('evm_mine')
 
     // Note: This test may need adjustment since the actual expiration check
     // mechanism would typically be implemented in a "use credits" function
     // which doesn't appear to be fully implemented yet
-    
+
     // Here we would ideally call a function that checks if credits are still valid
     // For now, we'll just document that this is where we would check expiration
     console.log('Time has been advanced past expiration period (10 minutes)')
     console.log('Credits should now be expired')
-    
+
     // Check if credits are expired by checking balance after expiration
     const balanceAfter = await _deployment.nftExpirableCredits.read.balanceOf([
       bob.account.address,

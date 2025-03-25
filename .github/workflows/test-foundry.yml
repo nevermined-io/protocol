@@ -1,0 +1,31 @@
+name: Foundry tests
+on: [push]
+
+jobs:
+  check:
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Pre-install
+        run: |
+          rm -rf node_modules
+          yarn install
+      - name: Lint
+        run: |
+          yarn lint
+      - name: Compile
+        run: |
+          yarn clean
+          yarn compile
+      - name: Run Unit Tests
+        run: |
+          yarn test:foundry
