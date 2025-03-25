@@ -40,8 +40,8 @@ contract DeployAll is Script, DeployConfig {
         console.log("NVMConfig deployed at:", address(nvmConfig));
         
         // 2. Deploy Libraries
-        TokenUtils tokenUtils = deployLibraries.run();
-        console.log("TokenUtils deployed at:", address(tokenUtils));
+        address tokenUtilsAddress = deployLibraries.run();
+        console.log("TokenUtils deployed at:", tokenUtilsAddress);
         
         // 3. Deploy Core Contracts
         (
@@ -67,7 +67,7 @@ contract DeployAll is Script, DeployConfig {
             address(assetsRegistry),
             address(agreementsStore),
             address(paymentsVault),
-            address(tokenUtils)
+            tokenUtilsAddress
         );
         console.log("LockPaymentCondition deployed at:", address(lockPaymentCondition));
         console.log("TransferCreditsCondition deployed at:", address(transferCreditsCondition));
@@ -97,7 +97,7 @@ contract DeployAll is Script, DeployConfig {
         // Write deployment addresses to a file for reference
         string memory deploymentInfo = string(abi.encodePacked(
             "NVMConfig: ", vm.toString(address(nvmConfig)), "\n",
-            "TokenUtils: ", vm.toString(address(tokenUtils)), "\n",
+            "TokenUtils: ", vm.toString(tokenUtilsAddress), "\n",
             "AssetsRegistry: ", vm.toString(address(assetsRegistry)), "\n",
             "AgreementsStore: ", vm.toString(address(agreementsStore)), "\n",
             "PaymentsVault: ", vm.toString(address(paymentsVault)), "\n",
