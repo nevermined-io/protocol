@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Script} from "forge-std/Script.sol";
+import {console} from "forge-std/console.sol";
 import {Constants} from "../Constants.sol";
 import {DeployConfig} from "./DeployConfig.sol";
 import {DeployNVMConfig} from "./DeployNVMConfig.sol";
