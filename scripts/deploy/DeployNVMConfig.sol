@@ -7,9 +7,8 @@ import {DeployConfig} from "./DeployConfig.sol";
 
 contract DeployNVMConfig is Script, DeployConfig {
     function run() public returns (NVMConfig) {
-        // Start broadcast as owner (using derived key from mnemonic)
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        vm.startBroadcast(ownerKey);
+        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         
         // Deploy NVMConfig
         NVMConfig nvmConfig = new NVMConfig();
@@ -20,9 +19,8 @@ contract DeployNVMConfig is Script, DeployConfig {
         // Set network fees (called by governor)
         vm.stopBroadcast();
         
-        // Start broadcast as governor (using derived key from mnemonic)
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
-        vm.startBroadcast(governorKey);
+        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
+        vm.startBroadcast(governorPrivateKey);
         nvmConfig.setNetworkFees(networkFee, feeReceiver);
         vm.stopBroadcast();
         

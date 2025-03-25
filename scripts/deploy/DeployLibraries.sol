@@ -8,9 +8,8 @@ import {DeployConfig} from "./DeployConfig.sol";
 
 contract DeployLibraries is Script, DeployConfig {
     function run() public returns (address) {
-        // Derive key from mnemonic
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        vm.startBroadcast(ownerKey);
+        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         
         // Deploy TokenUtils library - libraries are deployed differently
         // We can't instantiate libraries with 'new', so we'll use a low-level approach

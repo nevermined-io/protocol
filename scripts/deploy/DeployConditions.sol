@@ -21,13 +21,12 @@ contract DeployConditions is Script, DeployConfig {
         TransferCreditsCondition,
         DistributePaymentsCondition
     ) {
-        // Derive keys from mnemonic
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
+        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy LockPaymentCondition with TokenUtils library
-        vm.startBroadcast(ownerKey);
+        vm.startBroadcast(deployerPrivateKey);
         LockPaymentCondition lockPaymentCondition = new LockPaymentCondition();
         lockPaymentCondition.initialize(
             nvmConfigAddress,
@@ -39,7 +38,7 @@ contract DeployConditions is Script, DeployConfig {
         
         // Register LockPaymentCondition in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success1, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",
@@ -61,7 +60,7 @@ contract DeployConditions is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Deploy TransferCreditsCondition
-        vm.startBroadcast(ownerKey);
+        vm.startBroadcast(deployerPrivateKey);
         TransferCreditsCondition transferCreditsCondition = new TransferCreditsCondition();
         transferCreditsCondition.initialize(
             nvmConfigAddress,
@@ -72,7 +71,7 @@ contract DeployConditions is Script, DeployConfig {
         
         // Register TransferCreditsCondition in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success3, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",
@@ -94,7 +93,7 @@ contract DeployConditions is Script, DeployConfig {
         vm.stopBroadcast();
         
         // Deploy DistributePaymentsCondition with TokenUtils library
-        vm.startBroadcast(ownerKey);
+        vm.startBroadcast(deployerPrivateKey);
         DistributePaymentsCondition distributePaymentsCondition = new DistributePaymentsCondition();
         distributePaymentsCondition.initialize(
             nvmConfigAddress,
@@ -106,7 +105,7 @@ contract DeployConditions is Script, DeployConfig {
         
         // Register DistributePaymentsCondition in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success5, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",

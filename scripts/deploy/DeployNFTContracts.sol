@@ -9,20 +9,19 @@ import {NFT1155Credits} from "../../contracts/token/NFT1155Credits.sol";
 
 contract DeployNFTContracts is Script, DeployConfig {
     function run(address nvmConfigAddress) public returns (NFT1155Credits) {
-        // Derive keys from mnemonic
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
+        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy NFT1155Credits
-        vm.startBroadcast(ownerKey);
+        vm.startBroadcast(deployerPrivateKey);
         NFT1155Credits nftCredits = new NFT1155Credits();
         nftCredits.initialize(nvmConfigAddress, "Nevermined Credits", "NMCR");
         vm.stopBroadcast();
         
         // Register NFT1155Credits in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",

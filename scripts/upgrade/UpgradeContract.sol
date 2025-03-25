@@ -6,25 +6,6 @@ import {console} from "forge-std/console.sol";
 import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
 
 contract UpgradeContract is Script {
-    // Add mnemonic and index variables
-    string public mnemonic;
-    uint256 public governorIndex;
-    
-    constructor() {
-        // Default values that will be overridden by environment variables if available
-        mnemonic = "test test test test test test test test test test test junk"; // Default mnemonic
-        governorIndex = 1;         // Default governor index
-        
-        // Override defaults with environment variables if set
-        if (vm.envExists("MNEMONIC")) {
-            mnemonic = vm.envString("MNEMONIC");
-        }
-        
-        if (vm.envExists("GOVERNOR_INDEX")) {
-            governorIndex = vm.envUint("GOVERNOR_INDEX");
-        }
-    }
-    
     function run(
         address nvmConfigAddress,
         bytes32 contractName,
@@ -32,8 +13,7 @@ contract UpgradeContract is Script {
     ) public {
         require(newImplementation != address(0), "New implementation address cannot be zero");
         
-        // Derive key from mnemonic
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
+        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Get the current version of the contract using direct call
@@ -44,7 +24,7 @@ contract UpgradeContract is Script {
         uint256 currentVersion = abi.decode(data, (uint256));
         
         // Register the new implementation with an incremented version using direct call
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success2, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",

@@ -15,13 +15,12 @@ contract DeployTemplates is Script, DeployConfig {
         address transferCreditsConditionAddress,
         address distributePaymentsConditionAddress
     ) public returns (FixedPaymentTemplate) {
-        // Derive keys from mnemonic
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
+        uint256 deployerPrivateKey = vm.envUint("OWNER_PRIVATE_KEY");
+        uint256 governorPrivateKey = vm.envUint("GOVERNOR_PRIVATE_KEY");
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy FixedPaymentTemplate
-        vm.startBroadcast(ownerKey);
+        vm.startBroadcast(deployerPrivateKey);
         FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
         fixedPaymentTemplate.initialize(
             nvmConfigAddress,
@@ -34,7 +33,7 @@ contract DeployTemplates is Script, DeployConfig {
         
         // Register FixedPaymentTemplate in NVMConfig (called by governor)
         // Using direct call to NVMConfig since registerContract is not in the interface
-        vm.startBroadcast(governorKey);
+        vm.startBroadcast(governorPrivateKey);
         (bool success1, ) = nvmConfigAddress.call(
             abi.encodeWithSignature(
                 "registerContract(bytes32,address,uint256)",
