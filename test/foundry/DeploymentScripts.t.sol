@@ -92,9 +92,11 @@ contract DeploymentScriptsTest is Test {
         owner = vm.addr(ownerPrivateKey);
         governor = vm.addr(governorPrivateKey);
 
-        // Set environment variables for deployment scripts
-        vm.setEnv("OWNER_PRIVATE_KEY", vm.toString(ownerPrivateKey));
-        vm.setEnv("GOVERNOR_PRIVATE_KEY", vm.toString(governorPrivateKey));
+        // Set environment variables for deployment scripts using mnemonic approach
+        string memory testMnemonic = "test test test test test test test test test test test junk";
+        vm.setEnv("MNEMONIC", testMnemonic);
+        vm.setEnv("OWNER_INDEX", "0");
+        vm.setEnv("GOVERNOR_INDEX", "1");
 
         // Initialize mock deployment script
         mockDeployNVMConfig = new MockDeployNVMConfig();
