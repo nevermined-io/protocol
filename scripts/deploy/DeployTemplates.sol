@@ -19,8 +19,8 @@ contract DeployTemplates is Script, DeployConfig {
         string memory mnemonic = vm.envString("MNEMONIC");
         uint256 ownerIndex = vm.envUint("OWNER_INDEX");
         uint256 governorIndex = vm.envUint("GOVERNOR_INDEX");
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
-        uint256 governorKey = vm.deriveKey(mnemonic, governorIndex);
+        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
+        uint256 governorKey = uint256(vm.createKey(mnemonic, governorIndex));
         INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
         
         // Deploy FixedPaymentTemplate

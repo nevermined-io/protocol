@@ -34,8 +34,10 @@ contract DeployConfig is Script {
         }
         
         // Derive addresses from mnemonic and indexes
-        owner = vm.rememberKey(vm.deriveKey(mnemonic, ownerIndex));
-        governor = vm.rememberKey(vm.deriveKey(mnemonic, governorIndex));
+        uint256 ownerPrivateKey = uint256(vm.createKey(mnemonic, ownerIndex));
+        uint256 governorPrivateKey = uint256(vm.createKey(mnemonic, governorIndex));
+        owner = vm.addr(ownerPrivateKey);
+        governor = vm.addr(governorPrivateKey);
         
         if (vm.envExists("NVM_FEE_AMOUNT")) {
             networkFee = vm.envUint("NVM_FEE_AMOUNT");

@@ -11,7 +11,7 @@ contract DeployLibraries is Script, DeployConfig {
         // Derive owner key from mnemonic
         string memory mnemonic = vm.envString("MNEMONIC");
         uint256 ownerIndex = vm.envUint("OWNER_INDEX");
-        uint256 ownerKey = vm.deriveKey(mnemonic, ownerIndex);
+        uint256 ownerKey = uint256(vm.createKey(mnemonic, ownerIndex));
         vm.startBroadcast(ownerKey);
         
         // Deploy TokenUtils library - libraries are deployed differently
