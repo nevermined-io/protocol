@@ -214,8 +214,11 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Time has been advanced past expiration period (10 minutes)')
     console.log('Credits should now be expired')
     
-    // An actual implementation would check something like:
-    // const isExpired = await _deployment.nftCredits.read.isExpired([bob.account.address, did])
-    // expect(isExpired).to.be.true
+    // Check if credits are expired by checking balance after expiration
+    const balanceAfter = await _deployment.nftExpirableCredits.read.balanceOf([
+      bob.account.address,
+      did,
+    ])
+    expect(balanceAfter).to.equal(0n) // Balance should be 0 after expiration
   })
 })
