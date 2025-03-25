@@ -23,9 +23,17 @@ contract UpgradeContract is Script {
         require(success, "Failed to get contract version");
         uint256 currentVersion = abi.decode(data, (uint256));
         
-        // Register the new implementation with an incremented version
+        // Register the new implementation with an incremented version using direct call
         vm.startBroadcast(governorPrivateKey);
-        nvmConfig.registerContract(contractName, newImplementation, currentVersion + 1);
+        (bool success2, ) = nvmConfigAddress.call(
+            abi.encodeWithSignature(
+                "registerContract(bytes32,address,uint256)",
+                contractName,
+                newImplementation,
+                currentVersion + 1
+            )
+        );
+        require(success2, "Failed to register new contract implementation");
         vm.stopBroadcast();
         
         console.log("Contract upgraded successfully");
