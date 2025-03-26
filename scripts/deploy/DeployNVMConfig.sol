@@ -10,14 +10,7 @@ contract DeployNVMConfig is Script, DeployConfig {
     function run(address ownerAddress, address governorAddress) public returns (NVMConfig) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
         vm.startBroadcast(ownerAddress);
-        
-        // Get the current sender address to use as owner
-        address deployerAddress = msg.sender;
-        // owner = deployerAddress;
-        
-        // For governor, we'll use a separate address in production
-        // For testing, you can use the same address by setting GOVERNOR_ADDRESS env var
-        // governor = vm.envOr("GOVERNOR_ADDRESS", deployerAddress);
+                
         
         // Update fee receiver if not set
         if (feeReceiver == address(this)) {
@@ -30,9 +23,6 @@ contract DeployNVMConfig is Script, DeployConfig {
         // Initialize NVMConfig with owner and governor addresses
         nvmConfig.initialize(ownerAddress, governorAddress);
         
-        // Note: Setting network fees requires the governor role
-        // This should be done in a separate step after deployment
-        // using the governor's private key
         console.log("NVMConfig initialized with Owner:", ownerAddress);
         console.log("NVMConfig initialized with Governor:", governorAddress);
 
