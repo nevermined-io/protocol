@@ -21,15 +21,6 @@ jobs:
         with:
           version: stable          
 
-      - name: Pre-install
-        run: |
-          rm -rf node_modules
-          yarn install
-      - name: Compile
-        run: |
-          yarn clean
-          yarn compile
-
       - name: Install dependencies
         run: yarn install
       - name: Run upgradeability tests
