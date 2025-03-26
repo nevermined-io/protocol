@@ -134,7 +134,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
    * @notice Only an owner address can call this function.
    * @param _address the address to grant the governor role
    */
-  function grantGovernor(address _address) external onlyOwner(msg.sender) {
+  function grantGovernor(address _address) external onlyOwnerRole(msg.sender) {
     _grantRole(GOVERNOR_ROLE, _address);
     emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
   }
@@ -144,7 +144,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
    * @notice Only an owner address can call this function.
    * @param _address the address to revoke the governor role
    */
-  function revokeGovernor(address _address) external onlyOwner(msg.sender) {
+  function revokeGovernor(address _address) external onlyOwnerRole(msg.sender) {
     _revokeRole(GOVERNOR_ROLE, _address);
     emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
   }
