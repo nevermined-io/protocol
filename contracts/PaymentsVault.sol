@@ -8,8 +8,9 @@ import { INVMConfig } from './interfaces/INVMConfig.sol';
 import { IVault } from './interfaces/IVault.sol';
 import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
+contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable {
   /**
    * @notice Role allowing to deposit assets into the Vault
    */
@@ -46,6 +47,7 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
   function initialize(address _nvmConfigAddress) public initializer {
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    __Ownable_init();
   }
 
   receive() external payable {

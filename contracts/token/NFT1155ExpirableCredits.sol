@@ -6,8 +6,9 @@ pragma solidity ^0.8.28;
 import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
 import { NFT1155Base } from './NFT1155Base.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract NFT1155ExpirableCredits is NFT1155Base {
+contract NFT1155ExpirableCredits is NFT1155Base, OwnableUpgradeable {
   struct MintedCredits {
     uint256 amountMinted; // uint64
     uint256 expirationSecs;
@@ -29,6 +30,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
   ) public virtual initializer {
     ERC1155Upgradeable.__ERC1155_init('');
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    __Ownable_init();
   }
 
   function mint(

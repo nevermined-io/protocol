@@ -3,15 +3,16 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
-import { AgreementsStore } from './AgreementsStore.sol';
-import { BaseTemplate } from './BaseTemplate.sol';
-import { IAgreement } from '../interfaces/IAgreement.sol';
-import { LockPaymentCondition } from '../conditions/LockPaymentCondition.sol';
-import { TransferCreditsCondition } from '../conditions/TransferCreditsCondition.sol';
-import { DistributePaymentsCondition } from '../conditions/DistributePaymentsCondition.sol';
+import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import {AgreementsStore} from './AgreementsStore.sol';
+import {BaseTemplate} from './BaseTemplate.sol';
+import {IAgreement} from '../interfaces/IAgreement.sol';
+import {LockPaymentCondition} from '../conditions/LockPaymentCondition.sol';
+import {TransferCreditsCondition} from '../conditions/TransferCreditsCondition.sol';
+import {DistributePaymentsCondition} from '../conditions/DistributePaymentsCondition.sol';
+import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract FixedPaymentTemplate is BaseTemplate {
+contract FixedPaymentTemplate is BaseTemplate, OwnableUpgradeable {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
 
   INVMConfig internal nvmConfig;
@@ -32,6 +33,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
     distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
+    __Ownable_init();
   }
 
   function createAgreement(

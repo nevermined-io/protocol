@@ -11,11 +11,13 @@ import { IAsset } from '../interfaces/IAsset.sol';
 import { IVault } from '../interfaces/IVault.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { TokenUtils } from '../utils/TokenUtils.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 contract DistributePaymentsCondition is
   Initializable,
   ReentrancyGuardUpgradeable,
-  TemplateCondition
+  TemplateCondition,
+  OwnableUpgradeable
 {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('DistributePaymentsCondition');
 
@@ -35,6 +37,7 @@ contract DistributePaymentsCondition is
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
     vault = IVault(_vaultAddress);
+    __Ownable_init();
   }
 
   function fulfill(

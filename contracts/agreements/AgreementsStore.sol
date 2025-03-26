@@ -3,11 +3,12 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
-import { IAgreement } from '../interfaces/IAgreement.sol';
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import {IAgreement} from '../interfaces/IAgreement.sol';
+import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract AgreementsStore is Initializable, IAgreement {
+contract AgreementsStore is Initializable, IAgreement, OwnableUpgradeable {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
 
   INVMConfig internal nvmConfig;
@@ -24,6 +25,7 @@ contract AgreementsStore is Initializable, IAgreement {
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    __Ownable_init();
   }
 
   function register(

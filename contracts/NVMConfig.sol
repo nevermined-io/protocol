@@ -5,13 +5,14 @@ pragma solidity ^0.8.28;
 
 import { INVMConfig } from './interfaces/INVMConfig.sol';
 import { AccessControlUpgradeable } from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 /**
  * @title Nevermined Config contract
  * @author @aaitor
  * @notice This contract stores all the relevant configuration used by the Nevermined Protocol
  */
-contract NVMConfig is INVMConfig, AccessControlUpgradeable {
+contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
   /**
    * @notice Role Owning the Nevermined Config contract
    */
@@ -94,7 +95,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
-
+    __Ownable_init();
+    _transferOwnership(_owner);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////

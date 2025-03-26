@@ -11,8 +11,9 @@ import { IAsset } from '../interfaces/IAsset.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { NFT1155Credits } from '../token/NFT1155Credits.sol';
 import { NFT1155ExpirableCredits } from '../token/NFT1155ExpirableCredits.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition {
+contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition, OwnableUpgradeable {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
 
   INVMConfig internal nvmConfig;
@@ -28,6 +29,7 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
     nvmConfig = INVMConfig(_nvmConfigAddress);
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
+    __Ownable_init();
   }
 
   function fulfill(
