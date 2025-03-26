@@ -12,6 +12,10 @@ interface INVMConfig {
   /// @param sender The address of the account calling this function
   error OnlyGovernor(address sender);
 
+  /// Only the owner or a valid governor address can call this function, but `sender` is not part of the governors
+  /// @param sender The address of the account calling this function
+  error OnlyOwnerOrGovernor(address sender);
+
   /// Fee must be between 0 and 100 percent but a `networkFee` was provided
   /// @param networkFee The network fee to configure
   error InvalidNetworkFee(uint256 networkFee);

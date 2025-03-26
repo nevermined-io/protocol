@@ -11,20 +11,31 @@ import {DeployCoreContracts} from "./DeployCoreContracts.sol";
 import {DeployNFTContracts} from "./DeployNFTContracts.sol";
 import {DeployConditions} from "./DeployConditions.sol";
 import {DeployTemplates} from "./DeployTemplates.sol";
-import {ManagePermissions} from "./ManagePermissions.sol";
+// import {ManagePermissions} from "./ManagePermissions.sol";
 import {NVMConfig} from "../../contracts/NVMConfig.sol";
 import {TokenUtils} from "../../contracts/utils/TokenUtils.sol";
 import {AssetsRegistry} from "../../contracts/AssetsRegistry.sol";
 import {AgreementsStore} from "../../contracts/agreements/AgreementsStore.sol";
 import {PaymentsVault} from "../../contracts/PaymentsVault.sol";
 import {NFT1155Credits} from "../../contracts/token/NFT1155Credits.sol";
+import {NFT1155ExpirableCredits} from "../../contracts/token/NFT1155ExpirableCredits.sol";
 import {LockPaymentCondition} from "../../contracts/conditions/LockPaymentCondition.sol";
 import {TransferCreditsCondition} from "../../contracts/conditions/TransferCreditsCondition.sol";
 import {DistributePaymentsCondition} from "../../contracts/conditions/DistributePaymentsCondition.sol";
 import {FixedPaymentTemplate} from "../../contracts/agreements/FixedPaymentTemplate.sol";
+import {OwnerGrantRoles} from "./OwnerGrantRoles.sol";
 
 contract DeployAll is Script, DeployConfig {
     function run() public {
+        
+        address ownerAddress = msg.sender;
+        address governorAddress = vm.envOr('GOVERNOR_ADDRESS', msg.sender);
+        string memory outputJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
+
+        console.log("Deploying all contracts with addresses:");
+        console.log("\tOwner:", ownerAddress);
+        console.log("\tGovernor:", governorAddress);
+
         // Load the deployment scripts
         DeployNVMConfig deployNVMConfig = new DeployNVMConfig();
         DeployLibraries deployLibraries = new DeployLibraries();
@@ -32,15 +43,16 @@ contract DeployAll is Script, DeployConfig {
         DeployNFTContracts deployNFTContracts = new DeployNFTContracts();
         DeployConditions deployConditions = new DeployConditions();
         DeployTemplates deployTemplates = new DeployTemplates();
-        ManagePermissions managePermissions = new ManagePermissions();
+        OwnerGrantRoles ownerGrantRoles = new OwnerGrantRoles();
+        // ManagePermissions managePermissions = new ManagePermissions();
         
         // Execute the deployments in order
         // 1. Deploy NVMConfig
-        NVMConfig nvmConfig = deployNVMConfig.run();
+        NVMConfig nvmConfig = deployNVMConfig.run(ownerAddress, governorAddress);
         console.log("NVMConfig deployed at:", address(nvmConfig));
         
         // 2. Deploy Libraries
-        address tokenUtilsAddress = deployLibraries.run();
+        address tokenUtilsAddress = deployLibraries.run(ownerAddress);
         console.log("TokenUtils deployed at:", tokenUtilsAddress);
         
         // 3. Deploy Core Contracts
@@ -48,14 +60,19 @@ contract DeployAll is Script, DeployConfig {
             AssetsRegistry assetsRegistry,
             AgreementsStore agreementsStore,
             PaymentsVault paymentsVault
-        ) = deployCoreContracts.run(address(nvmConfig));
+        ) = deployCoreContracts.run(address(nvmConfig), ownerAddress);
         console.log("AssetsRegistry deployed at:", address(assetsRegistry));
         console.log("AgreementsStore deployed at:", address(agreementsStore));
         console.log("PaymentsVault deployed at:", address(paymentsVault));
         
         // 4. Deploy NFT Contracts
-        NFT1155Credits nftCredits = deployNFTContracts.run(address(nvmConfig));
+        ( 
+            NFT1155Credits nftCredits,
+            NFT1155ExpirableCredits nftExpirableCredits
+        ) = deployNFTContracts.run(address(nvmConfig), ownerAddress);
+
         console.log("NFT1155Credits deployed at:", address(nftCredits));
+        console.log("NFT1155ExpirableCredits deployed at:", address(nftExpirableCredits));
         
         // 5. Deploy Conditions
         (
@@ -63,6 +80,7 @@ contract DeployAll is Script, DeployConfig {
             TransferCreditsCondition transferCreditsCondition,
             DistributePaymentsCondition distributePaymentsCondition
         ) = deployConditions.run(
+            ownerAddress,
             address(nvmConfig),
             address(assetsRegistry),
             address(agreementsStore),
@@ -73,8 +91,10 @@ contract DeployAll is Script, DeployConfig {
         console.log("TransferCreditsCondition deployed at:", address(transferCreditsCondition));
         console.log("DistributePaymentsCondition deployed at:", address(distributePaymentsCondition));
         
+    
         // 6. Deploy Templates
         FixedPaymentTemplate fixedPaymentTemplate = deployTemplates.run(
+            ownerAddress,
             address(nvmConfig),
             address(agreementsStore),
             address(lockPaymentCondition),
@@ -83,18 +103,31 @@ contract DeployAll is Script, DeployConfig {
         );
         console.log("FixedPaymentTemplate deployed at:", address(fixedPaymentTemplate));
         
-        // 7. Manage Permissions
-        managePermissions.run(
+        ownerGrantRoles.run(
             address(nvmConfig),
+            ownerAddress,
             address(paymentsVault),
             address(nftCredits),
             address(lockPaymentCondition),
-            address(distributePaymentsCondition),
-            address(transferCreditsCondition)
+            address(transferCreditsCondition),
+            address(distributePaymentsCondition)
         );
-        console.log("Permissions granted successfully");
+        console.log("Roles granted successfully by Owner");
+
+        // // 7. Manage Permissions
+        // managePermissions.run(
+        //     address(nvmConfig),
+        //     address(paymentsVault),
+        //     address(nftCredits),
+        //     address(lockPaymentCondition),
+        //     address(distributePaymentsCondition),
+        //     address(transferCreditsCondition),
+        //     address(fixedPaymentTemplate)
+        // );
+        // console.log("Permissions granted successfully");
         
         // Write deployment addresses to a file for reference
+        /**
         string memory deploymentInfo = string(abi.encodePacked(
             "NVMConfig: ", vm.toString(address(nvmConfig)), "\n",
             "TokenUtils: ", vm.toString(tokenUtilsAddress), "\n",
@@ -102,13 +135,34 @@ contract DeployAll is Script, DeployConfig {
             "AgreementsStore: ", vm.toString(address(agreementsStore)), "\n",
             "PaymentsVault: ", vm.toString(address(paymentsVault)), "\n",
             "NFT1155Credits: ", vm.toString(address(nftCredits)), "\n",
+            "NFT1155ExpirableCredits: ", vm.toString(address(nftExpirableCredits)), "\n",
             "LockPaymentCondition: ", vm.toString(address(lockPaymentCondition)), "\n",
             "TransferCreditsCondition: ", vm.toString(address(transferCreditsCondition)), "\n",
             "DistributePaymentsCondition: ", vm.toString(address(distributePaymentsCondition)), "\n",
             "FixedPaymentTemplate: ", vm.toString(address(fixedPaymentTemplate)), "\n"
         ));
-        
         vm.writeFile("./deployments/latest.txt", deploymentInfo);
         console.log("Deployment addresses written to ./deployments/latest.txt");
+ */
+        string memory deploymentJson = string(abi.encodePacked(
+            "{\n",
+            '  "NVMConfig": "', vm.toString(address(nvmConfig)), '",\n',
+            '  "TokenUtils": "', vm.toString(tokenUtilsAddress), '",\n',
+            '  "AssetsRegistry": "', vm.toString(address(assetsRegistry)), '",\n',
+            '  "AgreementsStore": "', vm.toString(address(agreementsStore)), '",\n',
+            '  "PaymentsVault": "', vm.toString(address(paymentsVault)), '",\n',
+            '  "NFT1155Credits": "', vm.toString(address(nftCredits)), '",\n',
+            '  "NFT1155ExpirableCredits": "', vm.toString(address(nftExpirableCredits)), '",\n',
+            '  "LockPaymentCondition": "', vm.toString(address(lockPaymentCondition)), '",\n',
+            '  "TransferCreditsCondition": "', vm.toString(address(transferCreditsCondition)), '",\n',
+            '  "DistributePaymentsCondition": "', vm.toString(address(distributePaymentsCondition)), '",\n',
+            '  "FixedPaymentTemplate": "', vm.toString(address(fixedPaymentTemplate)), '"\n',
+            "}\n"
+        ));
+        
+        vm.writeJson(deploymentJson, outputJson);
+        console.log('Deployment addresses written to %s', outputJson);
+        
+        
     }
 }

@@ -7,6 +7,7 @@ library Constants {
     bytes32 constant HASH_AGREEMENTS_STORE = keccak256("AgreementsStore");
     bytes32 constant HASH_PAYMENTS_VAULT = keccak256("PaymentsVault");
     bytes32 constant HASH_NFT1155CREDITS = keccak256("NFT1155Credits");
+    bytes32 constant HASH_NFT1155EXPIRABLECREDITS = keccak256("NFT1155ExpirableCredits");
     bytes32 constant HASH_LOCKPAYMENT_CONDITION = keccak256("LockPaymentCondition");
     bytes32 constant HASH_TRANSFERCREDITS_CONDITION = keccak256("TransferCreditsCondition");
     bytes32 constant HASH_DISTRIBUTEPAYMENTS_CONDITION = keccak256("DistributePaymentsCondition");

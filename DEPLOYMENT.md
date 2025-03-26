@@ -16,18 +16,26 @@ Before deploying the contracts, make sure you have the following:
 Create a `.env` file with the following variables:
 
 ```
-# Mnemonic and indexes for wallet derivation
-MNEMONIC="your twelve word mnemonic phrase here"
-OWNER_INDEX=0    # Index for owner wallet derivation
-GOVERNOR_INDEX=1 # Index for governor wallet derivation
+export RPC_URL="http://localhost:8545"
 
-# Network configuration
-BASE_SEPOLIA_RPC_URL=https://sepolia.base.org
-ETHERSCAN_API_KEY=your_etherscan_api_key
+export OWNER_MNEMONIC="test test test test test test test test test test test junk"
+export OWNER_INDEX=0
+export OWNER_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+
+export GOVERNOR_MNEMONIC="test test test test test test test test test test test junk"
+export GOVERNOR_INDEX=1
+export GOVERNOR_ADDRESS="0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+
+# Base Scan
+export ETHERSCAN_API_KEY=GG46R7PA464UC7C5T4G6D13ACYVJWJFQ1U
 
 # Optional configuration
-NVM_FEE_AMOUNT=10000  # 1% by default (denominator is 1,000,000)
-NVM_FEE_RECEIVER=0x...  # Fee receiver address (defaults to owner address if not set)
+# 1% by default (denominator is 1,000,000)
+export NVM_FEE_AMOUNT=10000  
+# Fee receiver address (defaults to owner address if not set)
+export NVM_FEE_RECEIVER=0x731E7a35DDBB7d2b168D16824B371034f0DD0024
+
+export DEPLOYMENT_ADDRESSES_JSON="./deployments/latest.json"
 ```
 
 Load the environment variables:
@@ -50,15 +58,26 @@ anvil
 
 ```bash
 mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url http://localhost:8545 --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
+forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS
+
 ```
 
-3. Set network fees (requires governor role):
+3. Configure the contracts and Set network fees (requires governor role):
 
 ```bash
 # Set network fees using the governor account
-forge script scripts/deploy/SetNetworkFees.sol --rpc-url http://localhost:8545 --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX
+forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$GOVERNOR_MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS
+
 ```
+
+
+
+
+
+
+
+
+
 
 ### Base Sepolia Deployment
 
@@ -67,6 +86,7 @@ forge script scripts/deploy/SetNetworkFees.sol --rpc-url http://localhost:8545 -
 ```bash
 mkdir -p deployments
 forge script scripts/deploy/DeployAll.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
+
 ```
 
 2. Set network fees (requires governor role):

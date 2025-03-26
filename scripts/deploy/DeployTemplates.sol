@@ -9,6 +9,7 @@ import {FixedPaymentTemplate} from "../../contracts/agreements/FixedPaymentTempl
 
 contract DeployTemplates is Script, DeployConfig {
     function run(
+        address ownerAddress,
         address nvmConfigAddress,
         address agreementsStoreAddress,
         address lockPaymentConditionAddress,
@@ -16,15 +17,7 @@ contract DeployTemplates is Script, DeployConfig {
         address distributePaymentsConditionAddress
     ) public returns (FixedPaymentTemplate) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast();
-        
-        // Get the current sender address to use as owner
-        owner = msg.sender;
-        
-        // For governor operations, you would need to run a separate command with the governor index
-        // This script assumes the owner is deploying the contracts
-        // Get NVMConfig instance if needed
-        // // INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
+        vm.startBroadcast(ownerAddress);        
         
         // Deploy FixedPaymentTemplate
         FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
@@ -36,8 +29,6 @@ contract DeployTemplates is Script, DeployConfig {
             distributePaymentsConditionAddress
         );
         
-        // Note: For registering contracts in NVMConfig, you would need to run a separate command
-        // with the governor's mnemonic index, as that requires governor privileges
         
         vm.stopBroadcast();
         

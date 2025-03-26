@@ -10,12 +10,9 @@ import {AgreementsStore} from "../../contracts/agreements/AgreementsStore.sol";
 import {PaymentsVault} from "../../contracts/PaymentsVault.sol";
 
 contract DeployCoreContracts is Script, DeployConfig {
-    function run(address nvmConfigAddress) public returns (AssetsRegistry, AgreementsStore, PaymentsVault) {
+    function run(address nvmConfigAddress, address ownerAddress) public returns (AssetsRegistry, AgreementsStore, PaymentsVault) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast();
-        
-        // Get the current sender address to use as owner
-        owner = msg.sender;
+        vm.startBroadcast(ownerAddress);
         
         // For governor operations, you would need to run a separate command with the governor index
         // This script assumes the owner is deploying the contracts

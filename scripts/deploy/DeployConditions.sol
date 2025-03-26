@@ -11,6 +11,7 @@ import {DistributePaymentsCondition} from "../../contracts/conditions/Distribute
 
 contract DeployConditions is Script, DeployConfig {
     function run(
+        address ownerAddress,
         address nvmConfigAddress,
         address assetsRegistryAddress,
         address agreementsStoreAddress,
@@ -22,16 +23,8 @@ contract DeployConditions is Script, DeployConfig {
         DistributePaymentsCondition
     ) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast();
-        
-        // Get the current sender address to use as owner
-        owner = msg.sender;
-        
-        // For governor operations, you would need to run a separate command with the governor index
-        // This script assumes the owner is deploying the contracts
-        // Get NVMConfig instance if needed
-        // // INVMConfig nvmConfig = INVMConfig(nvmConfigAddress);
-        
+        vm.startBroadcast(ownerAddress);        
+                
         // Deploy LockPaymentCondition with TokenUtils library
         LockPaymentCondition lockPaymentCondition = new LockPaymentCondition();
         lockPaymentCondition.initialize(
@@ -57,9 +50,6 @@ contract DeployConditions is Script, DeployConfig {
             agreementsStoreAddress,
             paymentsVaultAddress
         );
-        
-        // Note: For registering contracts in NVMConfig, you would need to run a separate command
-        // with the governor's mnemonic index, as that requires governor privileges
         
         vm.stopBroadcast();
         

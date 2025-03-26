@@ -105,6 +105,15 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * Modifier restricting access to only governors addresses
    * @param _address the address to validate if has the governor role
    */
+  modifier onlyOwnerOrGovernor(address _address) {
+    if (!hasRole(GOVERNOR_ROLE, _address) && !hasRole(OWNER_ROLE, _address)) revert OnlyOwnerOrGovernor(_address);
+    _;
+  }
+
+  /**
+   * Modifier restricting access to only governors addresses
+   * @param _address the address to validate if has the governor role
+   */
   modifier onlyGovernor(address _address) {
     if (!hasRole(GOVERNOR_ROLE, _address)) revert OnlyGovernor(_address);
     _;

@@ -4,35 +4,38 @@ pragma solidity ^0.8.28;
 import {Script} from "forge-std/Script.sol";
 import {NVMConfig} from "../../contracts/NVMConfig.sol";
 import {DeployConfig} from "./DeployConfig.sol";
+import {console} from "forge-std/console.sol";
 
 contract DeployNVMConfig is Script, DeployConfig {
-    function run() public returns (NVMConfig) {
+    function run(address ownerAddress, address governorAddress) public returns (NVMConfig) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast();
+        vm.startBroadcast(ownerAddress);
         
         // Get the current sender address to use as owner
         address deployerAddress = msg.sender;
-        owner = deployerAddress;
+        // owner = deployerAddress;
         
         // For governor, we'll use a separate address in production
         // For testing, you can use the same address by setting GOVERNOR_ADDRESS env var
-        governor = vm.envOr("GOVERNOR_ADDRESS", deployerAddress);
+        // governor = vm.envOr("GOVERNOR_ADDRESS", deployerAddress);
         
         // Update fee receiver if not set
         if (feeReceiver == address(this)) {
-            feeReceiver = owner;
+            feeReceiver = ownerAddress;
         }
         
         // Deploy NVMConfig
         NVMConfig nvmConfig = new NVMConfig();
         
         // Initialize NVMConfig with owner and governor addresses
-        nvmConfig.initialize(owner, governor);
+        nvmConfig.initialize(ownerAddress, governorAddress);
         
         // Note: Setting network fees requires the governor role
         // This should be done in a separate step after deployment
         // using the governor's private key
-        
+        console.log("NVMConfig initialized with Owner:", ownerAddress);
+        console.log("NVMConfig initialized with Governor:", governorAddress);
+
         vm.stopBroadcast();
         
         return nvmConfig;

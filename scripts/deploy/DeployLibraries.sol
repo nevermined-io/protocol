@@ -7,9 +7,9 @@ import {TokenUtils} from "../../contracts/utils/TokenUtils.sol";
 import {DeployConfig} from "./DeployConfig.sol";
 
 contract DeployLibraries is Script, DeployConfig {
-    function run() public returns (address) {
+    function run(address ownerAddress) public returns (address) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast();
+        vm.startBroadcast(ownerAddress);
         
         // Get the current sender address to use as owner
         owner = msg.sender;
