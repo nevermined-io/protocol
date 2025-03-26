@@ -48,7 +48,7 @@ contract AssetsRegistry is Initializable, IAsset, OwnableUpgradeable {
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
     // console.log('AssetsRegistry initialized', _nvmConfigAddress);
   }
 

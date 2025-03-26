@@ -29,7 +29,7 @@ contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, 
     nvmConfig = INVMConfig(_nvmConfigAddress);
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
   }
 
   function fulfill(

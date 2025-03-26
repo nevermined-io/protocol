@@ -47,7 +47,7 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable, Own
   function initialize(address _nvmConfigAddress) public initializer {
     ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
   }
 
   receive() external payable {

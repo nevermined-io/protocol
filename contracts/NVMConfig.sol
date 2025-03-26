@@ -95,8 +95,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
     AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
-    __Ownable_init();
-    _transferOwnership(_owner);
+    __Ownable_init(_owner);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -125,7 +124,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
    * Modifier restricting access to only owner addresses
    * @param _address the address to validate if has the owner role
    */
-  modifier onlyOwner(address _address) {
+  modifier onlyOwnerRole(address _address) {
     if (!hasRole(OWNER_ROLE, _address)) revert OnlyOwner(_address);
     _;
   }

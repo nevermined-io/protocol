@@ -33,7 +33,7 @@ contract FixedPaymentTemplate is BaseTemplate, OwnableUpgradeable {
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
     distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
   }
 
   function createAgreement(

@@ -25,7 +25,7 @@ contract AgreementsStore is Initializable, IAgreement, OwnableUpgradeable {
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
   }
 
   function register(

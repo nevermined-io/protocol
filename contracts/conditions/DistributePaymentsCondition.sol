@@ -37,7 +37,7 @@ contract DistributePaymentsCondition is
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
     vault = IVault(_vaultAddress);
-    __Ownable_init();
+    __Ownable_init(msg.sender);
   }
 
   function fulfill(
