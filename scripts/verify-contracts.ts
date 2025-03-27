@@ -134,6 +134,10 @@ async function verifyContracts() {
     let successCount = 0;
     let skipCount = 0;
     let failCount = 0;
+    
+    const alreadyVerifiedContracts: string[] = [];
+    const successfullyVerifiedContracts: string[] = [];
+    const failedVerificationContracts: string[] = [];
 
     for (const contractName of contractNames) {
       const contractAddress = deploymentAddresses[contractName];
@@ -142,6 +146,7 @@ async function verifyContracts() {
       
       if (isContractVerified(contractAddress, networkName, etherscanApiKey)) {
         console.log(`✅ ${contractName} is already verified. Skipping.`);
+        alreadyVerifiedContracts.push(`${contractName} (${contractAddress})`);
         skipCount++;
         continue;
       }
@@ -149,8 +154,10 @@ async function verifyContracts() {
       const success = await verifyContract(contractName, contractAddress, networkName, etherscanApiKey);
       
       if (success) {
+        successfullyVerifiedContracts.push(`${contractName} (${contractAddress})`);
         successCount++;
       } else {
+        failedVerificationContracts.push(`${contractName} (${contractAddress})`);
         failCount++;
       }
     }
@@ -160,6 +167,27 @@ async function verifyContracts() {
     console.log(`Already verified (skipped): ${skipCount}`);
     console.log(`Successfully verified: ${successCount}`);
     console.log(`Failed to verify: ${failCount}`);
+    
+    if (alreadyVerifiedContracts.length > 0) {
+      console.log(`\n=== Already Verified Contracts (${alreadyVerifiedContracts.length}) ===`);
+      alreadyVerifiedContracts.forEach((contract, index) => {
+        console.log(`${index + 1}. ${contract}`);
+      });
+    }
+    
+    if (successfullyVerifiedContracts.length > 0) {
+      console.log(`\n=== Successfully Verified Contracts (${successfullyVerifiedContracts.length}) ===`);
+      successfullyVerifiedContracts.forEach((contract, index) => {
+        console.log(`${index + 1}. ${contract}`);
+      });
+    }
+    
+    if (failedVerificationContracts.length > 0) {
+      console.log(`\n=== Failed Verification Contracts (${failedVerificationContracts.length}) ===`);
+      failedVerificationContracts.forEach((contract, index) => {
+        console.log(`${index + 1}. ${contract}`);
+      });
+    }
     
     if (failCount > 0) {
       process.exit(1);
