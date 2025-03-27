@@ -32,6 +32,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
     distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
+    __Ownable_init(msg.sender);
   }
 
   function createAgreement(

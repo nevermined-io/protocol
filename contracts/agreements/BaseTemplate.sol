@@ -3,10 +3,10 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import { AgreementsStore } from './AgreementsStore.sol';
 
-abstract contract BaseTemplate is Initializable {
+abstract contract BaseTemplate is OwnableUpgradeable {
   AgreementsStore internal agreementStore;
 
   address internal assetsRegistryAddress;

@@ -5,13 +5,14 @@ pragma solidity ^0.8.28;
 
 import { INVMConfig } from './interfaces/INVMConfig.sol';
 import { AccessControlUpgradeable } from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 /**
  * @title Nevermined Config contract
  * @author @aaitor
  * @notice This contract stores all the relevant configuration used by the Nevermined Protocol
  */
-contract NVMConfig is INVMConfig, AccessControlUpgradeable {
+contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
   /**
    * @notice Role Owning the Nevermined Config contract
    */
@@ -94,7 +95,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
     AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
     AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
-
+    __Ownable_init(_owner);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
@@ -123,7 +124,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * Modifier restricting access to only owner addresses
    * @param _address the address to validate if has the owner role
    */
-  modifier onlyOwner(address _address) {
+  modifier onlyOwnerRole(address _address) {
     if (!hasRole(OWNER_ROLE, _address)) revert OnlyOwner(_address);
     _;
   }
@@ -133,7 +134,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @notice Only an owner address can call this function.
    * @param _address the address to grant the governor role
    */
-  function grantGovernor(address _address) external onlyOwner(msg.sender) {
+  function grantGovernor(address _address) external onlyOwnerRole(msg.sender) {
     _grantRole(GOVERNOR_ROLE, _address);
     emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
   }
@@ -143,7 +144,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @notice Only an owner address can call this function.
    * @param _address the address to revoke the governor role
    */
-  function revokeGovernor(address _address) external onlyOwner(msg.sender) {
+  function revokeGovernor(address _address) external onlyOwnerRole(msg.sender) {
     _revokeRole(GOVERNOR_ROLE, _address);
     emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
   }

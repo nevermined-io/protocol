@@ -3,7 +3,6 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
 import { IAgreement } from '../interfaces/IAgreement.sol';
@@ -12,7 +11,7 @@ import { IVault } from '../interfaces/IVault.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { TokenUtils } from '../utils/TokenUtils.sol';
 
-contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition {
+contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');
 
   INVMConfig internal nvmConfig;
@@ -40,6 +39,7 @@ contract LockPaymentCondition is Initializable, ReentrancyGuardUpgradeable, Temp
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
     vault = IVault(_vaultAddress);
+    __Ownable_init(msg.sender);
   }
 
   function fulfill(

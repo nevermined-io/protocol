@@ -64,7 +64,7 @@ The protocol uses a condition-based agreement system where specific conditions m
 
 ### Prerequisites
 
-- Node.js (>= 18.x)
+- Node.js (>= 22.x)
 - Yarn
 
 ### Installation

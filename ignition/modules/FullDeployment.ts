@@ -7,10 +7,10 @@ import { sha3 } from '../../test/common/utils'
 import { zeroAddress } from 'viem'
 import { ProxyAdminModule } from './ProxyDeployment'
 
-const OWNER_ACCOUNT_INDEX = (process.env.OWNER_ACCOUNT_INDEX || 0) as number
-const GOVERNOR_ACCOUNT_INDEX = (process.env.GOVERNOR_ACCOUNT_INDEX ||
-  1) as number
-const NVM_FEE_AMOUNT = (process.env.NVM_FEE_AMOUNT || 10000) as number // 1% by default
+const OWNER_ACCOUNT_INDEX: number = Number(process.env.OWNER_ACCOUNT_INDEX || 0)
+const GOVERNOR_ACCOUNT_INDEX: number = Number(process.env.GOVERNOR_ACCOUNT_INDEX ||
+  1)
+const NVM_FEE_AMOUNT: number = Number(process.env.NVM_FEE_AMOUNT || 10000) // 1% by default
 const NVM_FEE_RECEIVER = process.env.NVM_FEE_RECEIVER
 
 const NVMConfigModule = buildModule('NVMConfigModule', (m) => {

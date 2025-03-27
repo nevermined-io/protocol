@@ -15,6 +15,7 @@ contract NFT1155Credits is NFT1155Base {
   ) public virtual initializer {
     ERC1155Upgradeable.__ERC1155_init('');
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    __Ownable_init(msg.sender);
   }
 
   function mint(
