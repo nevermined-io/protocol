@@ -58,7 +58,7 @@ anvil
 
 ```bash
 mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS
+forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify
 
 ```
 
@@ -68,32 +68,6 @@ forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemo
 # Set network fees using the governor account
 forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$GOVERNOR_MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS
 
-```
-
-
-
-
-
-
-
-
-
-
-### Base Sepolia Deployment
-
-1. Deploy all contracts to Base Sepolia:
-
-```bash
-mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
-
-```
-
-2. Set network fees (requires governor role):
-
-```bash
-# Set network fees using the governor account
-forge script scripts/deploy/SetNetworkFees.sol --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX
 ```
 
 ### Understanding Mnemonic-Based Deployment

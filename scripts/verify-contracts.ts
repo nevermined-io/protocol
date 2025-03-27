@@ -20,59 +20,52 @@ const CHAIN_ID_TO_NETWORK: Record<string, string> = {
   '84532': 'base-sepolia'
 };
 
+let CONTRACT_LIBRARIES = {
+  'TokenUtils': { 'address': '0x0', 'path': 'contracts/utils/TokenUtils.sol' },
+}
+let librariesOptions = ''
+
+enum VerificationStatus {
+  AlreadyVerified = 'AlreadyVerified',
+  Success = 'Success',
+  Failure = 'Failure'
+}
 const MAX_RETRY_ATTEMPTS = 3;
 const BASE_RETRY_DELAY = 5000;
 
+
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function isContractVerified(contractAddress: string, networkName: string, etherscanApiKey: string): boolean {
-  try {
-    const command = `forge verify-check --chain ${networkName} --etherscan-api-key ${etherscanApiKey} ${contractAddress}`;
-    console.log(`Checking verification status for ${contractAddress}...`);
-    
-    const output = execSync(command, { encoding: 'utf8' });
-    
-    if (output.includes('already verified') || output.includes('Successfully verified')) {
-      console.log(`Contract at ${contractAddress} is already verified`);
-      return true;
-    }
-    
-    return false;
-  } catch (error) {
-    console.log(`Contract at ${contractAddress} is not verified or check failed`);
-    return false;
-  }
 }
 
 async function verifyContract(
   contractName: string, 
   contractAddress: string, 
   networkName: string, 
-  etherscanApiKey: string
-): Promise<boolean> {
+  etherscanApiKey: string,
+  libraries: string
+): Promise<VerificationStatus> {
   for (let attempt = 1; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     try {
       console.log(`Attempt ${attempt}/${MAX_RETRY_ATTEMPTS} to verify ${contractName} at ${contractAddress}`);
       
-      const command = `forge verify-contract ${contractAddress} ${contractName} --chain ${networkName} --etherscan-api-key ${etherscanApiKey}`;
+      const command = `forge verify-contract ${contractAddress} ${contractName} --chain ${networkName} --etherscan-api-key "${etherscanApiKey}" ${libraries} `;
       console.log(`Executing: ${command.replace(etherscanApiKey, '***')}`);
       
       const output = execSync(command, { encoding: 'utf8' });
       console.log(output);
       
-      if (output.includes('Successfully verified') || isContractVerified(contractAddress, networkName, etherscanApiKey)) {
+      if (output.includes('Successfully verified')) {
         console.log(`✅ Successfully verified ${contractName}`);
-        return true;
+        return VerificationStatus.Success;
+      } else if (output.includes('already verified')) {
+        console.log(`✅ Already verified ${contractName}`);
+        return VerificationStatus.AlreadyVerified;      
       }
       
       console.log(`Verification output did not confirm success, will retry...`);
     } catch (error: any) {
-      if (error.message?.includes('already verified')) {
-        console.log(`✅ ${contractName} is already verified`);
-        return true;
-      }
       
       console.error(`❌ Attempt ${attempt}/${MAX_RETRY_ATTEMPTS} failed to verify ${contractName}:`);
       console.error(error.message || error);
@@ -83,12 +76,12 @@ async function verifyContract(
         await sleep(delayMs);
       } else {
         console.error(`❌ All ${MAX_RETRY_ATTEMPTS} attempts to verify ${contractName} failed`);
-        return false;
+        return VerificationStatus.Failure;
       }
     }
   }
   
-  return false;
+  return VerificationStatus.Failure;
 }
 
 async function verifyContracts() {
@@ -131,6 +124,17 @@ async function verifyContracts() {
     const contractNames = Object.keys(deploymentAddresses);
     console.log(`Found ${contractNames.length} contracts to verify`);
 
+    const librariesNames = Object.keys(CONTRACT_LIBRARIES);
+    
+    librariesOptions = ''
+    librariesNames.forEach((libraryName) => {
+      const libraryAddress: string = deploymentAddresses[libraryName as keyof typeof CONTRACT_LIBRARIES];
+      const libraryPath: string = CONTRACT_LIBRARIES[libraryName as keyof typeof CONTRACT_LIBRARIES]['path'];
+      CONTRACT_LIBRARIES[libraryName as keyof typeof CONTRACT_LIBRARIES]['address'] = libraryAddress;
+      librariesOptions += `--libraries ${libraryPath}:${libraryName}:${libraryAddress} `;
+    });
+    console.log(`Found ${librariesNames.length} libraries: ${JSON.stringify(CONTRACT_LIBRARIES)}`);
+
     let successCount = 0;
     let skipCount = 0;
     let failCount = 0;
@@ -144,18 +148,21 @@ async function verifyContracts() {
       
       console.log(`\n=== Processing ${contractName} at ${contractAddress} ===`);
       
-      if (isContractVerified(contractAddress, networkName, etherscanApiKey)) {
-        console.log(`✅ ${contractName} is already verified. Skipping.`);
-        alreadyVerifiedContracts.push(`${contractName} (${contractAddress})`);
-        skipCount++;
-        continue;
-      }
+      // if (isContractVerified(contractAddress, networkName, etherscanApiKey)) {
+      //   console.log(`✅ ${contractName} is already verified. Skipping.`);
+      //   alreadyVerifiedContracts.push(`${contractName} (${contractAddress})`);
+      //   skipCount++;
+      //   continue;
+      // }
       
-      const success = await verifyContract(contractName, contractAddress, networkName, etherscanApiKey);
+      const verificationStatus = await verifyContract(contractName, contractAddress, networkName, etherscanApiKey, librariesOptions);
       
-      if (success) {
+      if (verificationStatus === VerificationStatus.Success) {
         successfullyVerifiedContracts.push(`${contractName} (${contractAddress})`);
         successCount++;
+      } else if (verificationStatus === VerificationStatus.AlreadyVerified) {
+        alreadyVerifiedContracts.push(`${contractName} (${contractAddress})`);
+        skipCount++;
       } else {
         failedVerificationContracts.push(`${contractName} (${contractAddress})`);
         failCount++;
