@@ -2,7 +2,7 @@
   "name": "contracts-exp",
   "version": "0.0.1",
   "scripts": {
-    "clean": "npx hardhat clean",
+    "clean": "npx hardhat clean && forge clean && forge cache clean",
     "test": "npx hardhat test $(find test/unit -name '*.*s')",
     "test:integration": "npx hardhat test $(find test/integration -name '*.*s')",
     "test:upgrades": "npx hardhat test $(find test/upgradeability -name '*.*s')",
@@ -19,9 +19,9 @@
     "biome:fix": "npx @biomejs/biome format . --write ",
     "build": "npx hardhat compile",
     "compile": "npx hardhat compile",
-    "deploy": "npx hardhat ignition deploy --parameters ignition/parameters.json ignition/modules/FullDeployment.ts",
-    "deploy:local": "yarn deploy --network localhost",
-    "deploy:sepolia": "yarn deploy sepolia ",
+    "deploy:ignition": "npx hardhat ignition deploy --parameters ignition/parameters.json ignition/modules/FullDeployment.ts",
+    "deploy": "forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify",
+    "deploy:local": "forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS",
     "upgrade": "npx hardhat run scripts/upgrade-contracts.ts",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"

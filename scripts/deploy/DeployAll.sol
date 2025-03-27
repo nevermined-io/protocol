@@ -114,36 +114,6 @@ contract DeployAll is Script, DeployConfig {
         );
         console.log("Roles granted successfully by Owner");
 
-        // // 7. Manage Permissions
-        // managePermissions.run(
-        //     address(nvmConfig),
-        //     address(paymentsVault),
-        //     address(nftCredits),
-        //     address(lockPaymentCondition),
-        //     address(distributePaymentsCondition),
-        //     address(transferCreditsCondition),
-        //     address(fixedPaymentTemplate)
-        // );
-        // console.log("Permissions granted successfully");
-        
-        // Write deployment addresses to a file for reference
-        /**
-        string memory deploymentInfo = string(abi.encodePacked(
-            "NVMConfig: ", vm.toString(address(nvmConfig)), "\n",
-            "TokenUtils: ", vm.toString(tokenUtilsAddress), "\n",
-            "AssetsRegistry: ", vm.toString(address(assetsRegistry)), "\n",
-            "AgreementsStore: ", vm.toString(address(agreementsStore)), "\n",
-            "PaymentsVault: ", vm.toString(address(paymentsVault)), "\n",
-            "NFT1155Credits: ", vm.toString(address(nftCredits)), "\n",
-            "NFT1155ExpirableCredits: ", vm.toString(address(nftExpirableCredits)), "\n",
-            "LockPaymentCondition: ", vm.toString(address(lockPaymentCondition)), "\n",
-            "TransferCreditsCondition: ", vm.toString(address(transferCreditsCondition)), "\n",
-            "DistributePaymentsCondition: ", vm.toString(address(distributePaymentsCondition)), "\n",
-            "FixedPaymentTemplate: ", vm.toString(address(fixedPaymentTemplate)), "\n"
-        ));
-        vm.writeFile("./deployments/latest.txt", deploymentInfo);
-        console.log("Deployment addresses written to ./deployments/latest.txt");
- */
         string memory deploymentJson = string(abi.encodePacked(
             "{\n",
             '  "NVMConfig": "', vm.toString(address(nvmConfig)), '",\n',
