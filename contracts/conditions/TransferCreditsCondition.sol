@@ -3,7 +3,6 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
 import { IAgreement } from '../interfaces/IAgreement.sol';
@@ -11,9 +10,8 @@ import { IAsset } from '../interfaces/IAsset.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { NFT1155Credits } from '../token/NFT1155Credits.sol';
 import { NFT1155ExpirableCredits } from '../token/NFT1155ExpirableCredits.sol';
-import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
-contract TransferCreditsCondition is Initializable, ReentrancyGuardUpgradeable, TemplateCondition, OwnableUpgradeable {
+contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
 
   INVMConfig internal nvmConfig;

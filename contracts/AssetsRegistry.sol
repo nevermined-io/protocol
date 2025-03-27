@@ -5,11 +5,9 @@ pragma solidity ^0.8.28;
 
 import { INVMConfig } from './interfaces/INVMConfig.sol';
 import { IAsset } from './interfaces/IAsset.sol';
-import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-// import 'hardhat/console.sol';
 
-contract AssetsRegistry is Initializable, IAsset, OwnableUpgradeable {
+contract AssetsRegistry is IAsset, OwnableUpgradeable {
   bytes32 public constant OWNER_ROLE = keccak256('REGISTRY_OWNER');
 
   INVMConfig internal nvmConfig;

@@ -64,7 +64,7 @@ The protocol uses a condition-based agreement system where specific conditions m
 
 ### Prerequisites
 
-- Node.js (>= 18.x)
+- Node.js (>= 22.x)
 - Yarn
 
 ### Installation
@@ -164,20 +164,6 @@ A typical interaction flow in the Nevermined protocol:
 3. Payment is locked in the PaymentsVault (LockPaymentCondition)
 4. Access credits are transferred to the consumer (TransferCreditsCondition)
 5. Payments are distributed to receivers (DistributePaymentsCondition)
-
-## Ownership Transfer
-
-The contracts now implement OpenZeppelin's `OwnableUpgradeable` pattern. To transfer ownership of all contracts to a new address, you can use the provided script:
-
-```bash
-# Set the new owner address
-export NEW_OWNER_ADDRESS=0xNewOwnerAddressHere
-    
-# Run the transfer script
-npx hardhat run scripts/transfer-ownership.ts --network <network>
-```
-
-This will transfer ownership of all contracts to the provided address.
 
 ## License
 

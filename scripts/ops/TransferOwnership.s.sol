@@ -17,36 +17,23 @@ import {DistributePaymentsCondition} from "../../contracts/conditions/Distribute
 /**
  * @title TransferOwnership
  * @notice Foundry script to transfer ownership of all OwnableUpgradeable contracts
- * @dev Run with: forge script script/foundry/TransferOwnership.s.sol --rpc-url <RPC_URL> --broadcast
+ * @dev Run with: forge script scripts/ops/TransferOwnership.s.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS
  */
 contract TransferOwnership is Script {
-    // Contract addresses - these should be set before running the script
-    address public nvmConfigAddress;
-    address public assetsRegistryAddress;
-    address public paymentsVaultAddress;
-    address public nft1155CreditsAddress;
-    address public nft1155ExpirableCreditsAddress;
-    address public agreementsStoreAddress;
-    address public fixedPaymentTemplateAddress;
-    address public lockPaymentConditionAddress;
-    address public transferCreditsConditionAddress;
-    address public distributePaymentsConditionAddress;
 
     // New owner address
     address public newOwner;
+    string public json;
 
     function setUp() public {
-        // Load addresses from environment variables
-        nvmConfigAddress = vm.envAddress("NVM_CONFIG_ADDRESS");
-        assetsRegistryAddress = vm.envAddress("ASSETS_REGISTRY_ADDRESS");
-        paymentsVaultAddress = vm.envAddress("PAYMENTS_VAULT_ADDRESS");
-        nft1155CreditsAddress = vm.envAddress("NFT1155_CREDITS_ADDRESS");
-        nft1155ExpirableCreditsAddress = vm.envAddress("NFT1155_EXPIRABLE_CREDITS_ADDRESS");
-        agreementsStoreAddress = vm.envAddress("AGREEMENTS_STORE_ADDRESS");
-        fixedPaymentTemplateAddress = vm.envAddress("FIXED_PAYMENT_TEMPLATE_ADDRESS");
-        lockPaymentConditionAddress = vm.envAddress("LOCK_PAYMENT_CONDITION_ADDRESS");
-        transferCreditsConditionAddress = vm.envAddress("TRANSFER_CREDITS_CONDITION_ADDRESS");
-        distributePaymentsConditionAddress = vm.envAddress("DISTRIBUTE_PAYMENTS_CONDITION_ADDRESS");
+
+        console.log("Transferring ownership from address :", msg.sender);                
+
+        string memory addressesJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
+        json = vm.readFile(addressesJson);
+
+        console.log("Configuring contracts with JSON addresses from file: ", addressesJson);
+        console.log(json);
 
         // Load new owner address
         newOwner = vm.envAddress("NEW_OWNER_ADDRESS");
@@ -60,22 +47,25 @@ contract TransferOwnership is Script {
         vm.startBroadcast();
 
         // Transfer ownership of each contract
-        transferOwnership(nvmConfigAddress, "NVMConfig");
-        transferOwnership(assetsRegistryAddress, "AssetsRegistry");
-        transferOwnership(paymentsVaultAddress, "PaymentsVault");
-        transferOwnership(nft1155CreditsAddress, "NFT1155Credits");
-        transferOwnership(nft1155ExpirableCreditsAddress, "NFT1155ExpirableCredits");
-        transferOwnership(agreementsStoreAddress, "AgreementsStore");
-        transferOwnership(fixedPaymentTemplateAddress, "FixedPaymentTemplate");
-        transferOwnership(lockPaymentConditionAddress, "LockPaymentCondition");
-        transferOwnership(transferCreditsConditionAddress, "TransferCreditsCondition");
-        transferOwnership(distributePaymentsConditionAddress, "DistributePaymentsCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.NVMConfig'), "NVMConfig");
+        transferOwnership(vm.parseJsonAddress(json, '$.AssetsRegistry'), "AssetsRegistry");
+        transferOwnership(vm.parseJsonAddress(json, '$.PaymentsVault'), "PaymentsVault");
+        transferOwnership(vm.parseJsonAddress(json, '$.NFT1155Credits'), "NFT1155Credits");
+        transferOwnership(vm.parseJsonAddress(json, '$.NFT1155ExpirableCredits'), "NFT1155ExpirableCredits");
+        transferOwnership(vm.parseJsonAddress(json, '$.AgreementsStore'), "AgreementsStore");
+        transferOwnership(vm.parseJsonAddress(json, '$.FixedPaymentTemplate'), "FixedPaymentTemplate");
+        transferOwnership(vm.parseJsonAddress(json, '$.LockPaymentCondition'), "LockPaymentCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.TransferCreditsCondition'), "TransferCreditsCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.DistributePaymentsCondition'), "DistributePaymentsCondition");
 
         // Stop broadcasting transactions
         vm.stopBroadcast();
+
+        console.log("Ownership transfer complete");
     }
 
     function transferOwnership(address contractAddress, string memory contractName) internal {
+        console.log("Transferring ownership of %s:%s to address %s", contractName, contractAddress, newOwner);
         // Skip if contract address is not set
         if (contractAddress == address(0)) {
             console.log("Skipping %s: address not set", contractName);
