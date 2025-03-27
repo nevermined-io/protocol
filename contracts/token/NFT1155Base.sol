@@ -4,7 +4,7 @@
 pragma solidity ^0.8.28;
 
 import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
-import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import { IERC2981 } from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
 

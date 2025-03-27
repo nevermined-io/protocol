@@ -7,7 +7,7 @@ import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ER
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
 import { NFT1155Base } from './NFT1155Base.sol';
 
-contract NFT1155Credits is NFT1155Base  {
+contract NFT1155Credits is NFT1155Base {
   function initialize(
     address _nvmConfigAddress,
     string memory /*_name*/,

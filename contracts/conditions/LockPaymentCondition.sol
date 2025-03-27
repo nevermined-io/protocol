@@ -3,13 +3,13 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {IAgreement} from '../interfaces/IAgreement.sol';
-import {IAsset} from '../interfaces/IAsset.sol';
-import {IVault} from '../interfaces/IVault.sol';
-import {TemplateCondition} from './TemplateCondition.sol';
-import {TokenUtils} from '../utils/TokenUtils.sol';
+import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
+import { IVault } from '../interfaces/IVault.sol';
+import { TemplateCondition } from './TemplateCondition.sol';
+import { TokenUtils } from '../utils/TokenUtils.sol';
 
 contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');

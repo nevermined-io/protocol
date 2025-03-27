@@ -11,10 +11,7 @@ import { IVault } from '../interfaces/IVault.sol';
 import { TemplateCondition } from './TemplateCondition.sol';
 import { TokenUtils } from '../utils/TokenUtils.sol';
 
-contract DistributePaymentsCondition is
-  ReentrancyGuardUpgradeable,
-  TemplateCondition  
-{
+contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('DistributePaymentsCondition');
 
   INVMConfig internal nvmConfig;
