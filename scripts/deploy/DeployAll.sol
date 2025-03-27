@@ -34,8 +34,9 @@ contract DeployAll is Script, DeployConfig {
         string memory packageJson = vm.envOr('PACKAGE_JSON', string('./package.json'));
         string memory version = vm.parseJsonString(vm.readFile(packageJson), '$.version');
 
-        string memory outputJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string(abi.encodePacked(
-            './deployments/deployment-', version ,'-', block.chainid ,'.json')));
+        string memory outputJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string(
+            abi.encodePacked(
+            './deployments/deployment-v', version ,'-', vm.toString(block.chainid) ,'.json')));
 
         console.log("Deploying all contracts with addresses:");
         console.log("\tOwner:", ownerAddress);
