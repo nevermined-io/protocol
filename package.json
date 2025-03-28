@@ -20,8 +20,9 @@
     "build": "npx hardhat compile",
     "compile": "npx hardhat compile",
     "deploy:ignition": "npx hardhat ignition deploy --parameters ignition/parameters.json ignition/modules/FullDeployment.ts",
-    "deploy": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify",
-    "deploy:local": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
+    "deploy:local": "yarn deploy:local:install && yarn deploy:local:config",
+    "deploy:local:install": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
+    "deploy:local:config": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
     "upgrade": "npx hardhat run scripts/upgrade-contracts.ts",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"
