@@ -26,6 +26,17 @@ interface IAsset {
     DYNAMIC
   }
 
+  /// Different types of redemptions criterias that can be used when redeeming credits
+  /// @notice 0 - ONLY_ROLE, 1 - ONLY_OWNER, 2 - ROLE_AND_OWNER
+  /// If ONLY_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
+  /// If ONLY_OWNER it means the credits can be redeemed only by the owner of the Plan
+  /// If ROLE_AND_OWNER it means the credits can be redeemed by an account with the `CREDITS_BURNER_ROLE` or the owner of the Plan
+  enum RedeemptionType {
+    ONLY_ROLE,
+    ONLY_OWNER,
+    ROLE_AND_OWNER
+  }
+
   struct DIDAsset {
     // The owner of the asset
     address owner;
@@ -74,6 +85,11 @@ interface IAsset {
      * The type of configuration of the credits type
      */
     CreditsType creditsType;
+
+    /**
+     * How the credits can be redeemed
+     */
+    RedeemptionType redemptionType;
     /**
      * The duration of the credits in seconds
      * @notice only if creditsType == EXPIRABLE
@@ -97,6 +113,8 @@ interface IAsset {
 
   /// Definition of a plan
   struct Plan {
+    // The owner of the Plan
+    address owner;
     // The price configuration of the plan
     PriceConfig price;
     // The credits configuration of the plan

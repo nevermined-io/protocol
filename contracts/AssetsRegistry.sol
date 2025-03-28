@@ -93,21 +93,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     CreditsConfig memory _creditsConfig,
     address _nftAddress
   ) public {
-    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
-    if (plans[planId].lastUpdated != 0) {
-      revert PlanAlreadyRegistered(planId);
-    }
-    if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
-      revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
-    }
-
-    plans[planId] = Plan({
-      price: _priceConfig,
-      credits: _creditsConfig,
-      nftAddress: _nftAddress,
-      lastUpdated: block.timestamp
-    });
-    emit PlanRegistered(planId, msg.sender);
+    _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress);
   }
 
   function registerAssetAndPlan(
@@ -119,12 +105,36 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
   ) external {
     bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
     if (!this.planExists(planId)) {
-      createPlan(_priceConfig, _creditsConfig, _nftAddress);
+      _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress);
     }
 
     bytes32[] memory _assetPlans = new bytes32[](1);
     _assetPlans[0] = planId;
     register(_didSeed, _url, _assetPlans);
+  }
+
+  function _createPlan(
+    address _owner,
+    PriceConfig memory _priceConfig,
+    CreditsConfig memory _creditsConfig,
+    address _nftAddress
+  ) internal {
+    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner);
+    if (plans[planId].lastUpdated != 0) {
+      revert PlanAlreadyRegistered(planId);
+    }
+    if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
+      revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
+    }
+
+    plans[planId] = Plan({
+      owner: _owner,
+      price: _priceConfig,
+      credits: _creditsConfig,
+      nftAddress: _nftAddress,
+      lastUpdated: block.timestamp
+    });
+    emit PlanRegistered(planId, _owner);
   }
 
   function getPlan(bytes32 _planId) public view returns (Plan memory) {

@@ -40,6 +40,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   }
   const creditsConfig = {
     creditsType: 0, // Means Expirable Credits
+    redemptionType: 2, // Means Role and Owner can redeem credits
     durationSecs: 600, // 10 minutes expiration time
     amount: 500,
     minAmount: 1,

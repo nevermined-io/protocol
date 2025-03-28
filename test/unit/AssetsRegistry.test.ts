@@ -112,6 +112,7 @@ describe('AssetsRegistry', function () {
     }
     const creditsConfig = {
       creditsType: 1, // Means Fixed Credits
+      redemptionType: 2, // ROLE AND OWNER can redeem credits
       durationSecs: 0,
       amount: 100,
       minAmount: 1,
