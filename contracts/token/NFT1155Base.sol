@@ -7,6 +7,7 @@ import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ER
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import { IERC2981 } from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 
 abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   /**
@@ -26,6 +27,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
 
   INVMConfig internal nvmConfig;
+
+  IAsset internal assetsRegistry;
 
   /// Only an account with the right role can access this function
   /// @param sender The address of the account calling this function

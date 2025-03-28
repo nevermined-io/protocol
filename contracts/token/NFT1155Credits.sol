@@ -5,16 +5,19 @@ pragma solidity ^0.8.28;
 
 import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 import { NFT1155Base } from './NFT1155Base.sol';
 
 contract NFT1155Credits is NFT1155Base {
   function initialize(
     address _nvmConfigAddress,
+    address _assetsRegistryAddress,
     string memory /*_name*/,
     string memory /*_symbol*/
   ) public virtual initializer {
     ERC1155Upgradeable.__ERC1155_init('');
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    assetsRegistry = IAsset(_assetsRegistryAddress);
     __Ownable_init(msg.sender);
   }
 

@@ -77,7 +77,7 @@ contract DeployAll is Script, DeployConfig {
         ( 
             NFT1155Credits nftCredits,
             NFT1155ExpirableCredits nftExpirableCredits
-        ) = deployNFTContracts.run(address(nvmConfig), ownerAddress);
+        ) = deployNFTContracts.run(address(nvmConfig), address(assetsRegistry), ownerAddress);
 
         console.log("NFT1155Credits deployed at:", address(nftCredits));
         console.log("NFT1155ExpirableCredits deployed at:", address(nftExpirableCredits));

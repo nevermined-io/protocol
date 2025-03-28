@@ -18,7 +18,7 @@ describe('NFT1155ExpirableCredits', function () {
     const [owner, minter, burner, unauthorized] = await hre.viem.getWalletClients()
 
     // Get the NVMConfig from the FullDeploymentModule
-    const { nvmConfig } = await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry } = await hre.ignition.deploy(FullDeploymentModule)
 
     // Deploy NFT1155ExpirableCredits directly since it's not in the FullDeploymentModule
     const nftExpirableCredits = await hre.viem.deployContract('NFT1155ExpirableCredits')
@@ -26,6 +26,7 @@ describe('NFT1155ExpirableCredits', function () {
     // Initialize the contract
     await nftExpirableCredits.write.initialize([
       nvmConfig.address,
+      assetsRegistry.address,
       'Nevermined Expirable Credits',
       'NVMEC',
     ])

@@ -85,7 +85,6 @@ interface IAsset {
      * The type of configuration of the credits type
      */
     CreditsType creditsType;
-
     /**
      * How the credits can be redeemed
      */

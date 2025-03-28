@@ -166,6 +166,9 @@ const NFT1155CreditsModule = buildModule('NFT1155CreditsModule', (m) => {
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
 
+  // Get the AssetsRegistry
+  const { assetsRegistry } = m.useModule(AssetsRegistryModule)
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
@@ -181,7 +184,7 @@ const NFT1155CreditsModule = buildModule('NFT1155CreditsModule', (m) => {
   })
 
   // Initialize the contract through the proxy
-  m.call(nftCredits, 'initialize', [nvmConfig, 'Nevermined Credits', 'NVMC'])
+  m.call(nftCredits, 'initialize', [nvmConfig, assetsRegistry, 'Nevermined Credits', 'NVMC'])
 
   return { nftCredits, nftCreditsImpl, nftCreditsProxy }
 })
@@ -198,6 +201,9 @@ const NFT1155ExpirableCreditsModule = buildModule('NFT1155ExpirableCreditsModule
   // Get the NVMConfig
   const { nvmConfig } = m.useModule(NVMConfigModule)
   
+  // Get the AssetsRegistry
+  const { assetsRegistry } = m.useModule(AssetsRegistryModule)
+
   // Deploy the proxy with the implementation
   // Use empty bytes for initialization data - we'll initialize separately
   const emptyData = '0x'
@@ -215,7 +221,7 @@ const NFT1155ExpirableCreditsModule = buildModule('NFT1155ExpirableCreditsModule
   const nftExpirableCredits = m.contractAt('NFT1155ExpirableCredits', nftExpirableCreditsProxy, { id: 'NFT1155ExpirableCreditsProxyInstance' })
   
   // Initialize the contract through the proxy
-  m.call(nftExpirableCredits, 'initialize', [nvmConfig, 'Nevermined Expirable Credits', 'NVMEC'])
+  m.call(nftExpirableCredits, 'initialize', [nvmConfig, assetsRegistry, 'Nevermined Expirable Credits', 'NVMEC'])
   
   return { nftExpirableCredits, nftExpirableCreditsImpl, nftExpirableCreditsProxy }
 })

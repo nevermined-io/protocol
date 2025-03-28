@@ -16,7 +16,8 @@ describe('NFT1155Credits', function () {
     // Contracts are deployed using the first signer/account by default
     const [owner, minter, burner, unauthorized] = await hre.viem.getWalletClients()
 
-    const { nvmConfig, nftCredits } = await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry, nftCredits } =
+      await hre.ignition.deploy(FullDeploymentModule)
     const publicClient = await hre.viem.getPublicClient()
 
     // Get the role constants
