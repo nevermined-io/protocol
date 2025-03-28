@@ -1,4 +1,5 @@
 import { keccak256, parseEventLogs, toBytes } from 'viem'
+import { execSync } from 'child_process';
 
 export function generateId(): `0x${string}` {
   return keccak256(toBytes(Math.random().toString()))
@@ -18,6 +19,21 @@ export async function getTxParsedLogs(publicClient: any, txHash: string, abi: an
   const logs = await getTxEvents(publicClient, txHash)
   if (logs.length > 0) return parseEventLogs({ abi, logs }) as any[]
   return []
+}
+
+export interface ForgeAccount {
+  mnemonic: string
+  index: number
+  address: `0x${string}`
+}
+
+export function deployContractsWithForge(rpcUrl: string, accountAttributes: ForgeAccount) {
+  const command = `forge script scripts/deploy/DeployAll.sol /n
+  --extra-output-files abi --rpc-url ${rpcUrl} --broadcast --mnemonics "${accountAttributes.mnemonic}" 
+  --mnemonic-indexes ${accountAttributes.index} --sender ${accountAttributes.address} `;
+
+  const output = execSync(command, { encoding: 'utf8' })
+  console.log(output)  
 }
 
 /**
