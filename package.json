@@ -17,7 +17,7 @@
     "prettier:ts": "npx prettier --write test/**/*.ts",
     "biome": "npx @biomejs/biome check . ",
     "biome:fix": "npx @biomejs/biome format . --write ",
-    "build": "npx hardhat compile",
+    "build": "forge build",
     "compile": "npx hardhat compile",
     "deploy:ignition": "npx hardhat ignition deploy --parameters ignition/parameters.json ignition/modules/FullDeployment.ts",
     "deploy:local": "yarn deploy:local:install && yarn deploy:local:config",

@@ -2,16 +2,5 @@
   "name": "contracts-exp",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "lib/contracts-exp/src",
-  "projectType": "library",
-  "targets": {
-    "build": {
-      "executor": "@nx/js:tsc",
-      "options": {
-        "outputPath": "dist/lib/contracts-exp",
-        "tsConfig": "lib/contracts-exp/tsconfig.lib.json",
-        "packageJson": "lib/contracts-exp/package.json",
-        "main": "lib/contracts-exp/src/index.ts"
-      }
-    }
-  }
+  "projectType": "library"
 }
