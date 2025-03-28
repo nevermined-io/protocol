@@ -58,7 +58,7 @@ anvil
 
 ```bash
 mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify
+forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify
 
 ```
 

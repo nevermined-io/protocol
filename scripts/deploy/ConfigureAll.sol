@@ -38,7 +38,6 @@ contract ConfigureAll is Script, DeployConfig {
 
         console.log("Configuring contracts with JSON addresses from file: ", addressesJson);
         console.log(json);
-        //console.log(vm.parseJsonAddress(json, '$.NVMConfig'));
         
         // Load the deployment scripts        
         ManagePermissions managePermissions = new ManagePermissions();
@@ -46,19 +45,19 @@ contract ConfigureAll is Script, DeployConfig {
         
         managePermissions.run(
             governorAddress,
-            vm.parseJsonAddress(json, '$.NVMConfig'),
-            vm.parseJsonAddress(json, '$.PaymentsVault'),
-            vm.parseJsonAddress(json, '$.NFT1155Credits'),
-            vm.parseJsonAddress(json, '$.LockPaymentCondition'),
-            vm.parseJsonAddress(json, '$.DistributePaymentsCondition'),
-            vm.parseJsonAddress(json, '$.TransferCreditsCondition'),
-            vm.parseJsonAddress(json, '$.FixedPaymentTemplate')
+            vm.parseJsonAddress(json, '$.contracts.NVMConfig'),
+            vm.parseJsonAddress(json, '$.contracts.PaymentsVault'),
+            vm.parseJsonAddress(json, '$.contracts.NFT1155Credits'),
+            vm.parseJsonAddress(json, '$.contracts.LockPaymentCondition'),
+            vm.parseJsonAddress(json, '$.contracts.DistributePaymentsCondition'),
+            vm.parseJsonAddress(json, '$.contracts.TransferCreditsCondition'),
+            vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate')
         );
         console.log("Permissions configured");
 
         setNetworkFees.run(
             governorAddress,
-            vm.parseJsonAddress(json, '$.NVMConfig')
+            vm.parseJsonAddress(json, '$.contracts.NVMConfig')
         );
         
         

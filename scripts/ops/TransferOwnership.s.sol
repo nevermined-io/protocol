@@ -47,16 +47,16 @@ contract TransferOwnership is Script {
         vm.startBroadcast();
 
         // Transfer ownership of each contract
-        transferOwnership(vm.parseJsonAddress(json, '$.NVMConfig'), "NVMConfig");
-        transferOwnership(vm.parseJsonAddress(json, '$.AssetsRegistry'), "AssetsRegistry");
-        transferOwnership(vm.parseJsonAddress(json, '$.PaymentsVault'), "PaymentsVault");
-        transferOwnership(vm.parseJsonAddress(json, '$.NFT1155Credits'), "NFT1155Credits");
-        transferOwnership(vm.parseJsonAddress(json, '$.NFT1155ExpirableCredits'), "NFT1155ExpirableCredits");
-        transferOwnership(vm.parseJsonAddress(json, '$.AgreementsStore'), "AgreementsStore");
-        transferOwnership(vm.parseJsonAddress(json, '$.FixedPaymentTemplate'), "FixedPaymentTemplate");
-        transferOwnership(vm.parseJsonAddress(json, '$.LockPaymentCondition'), "LockPaymentCondition");
-        transferOwnership(vm.parseJsonAddress(json, '$.TransferCreditsCondition'), "TransferCreditsCondition");
-        transferOwnership(vm.parseJsonAddress(json, '$.DistributePaymentsCondition'), "DistributePaymentsCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.NVMConfig'), "NVMConfig");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.AssetsRegistry'), "AssetsRegistry");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.PaymentsVault'), "PaymentsVault");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.NFT1155Credits'), "NFT1155Credits");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.NFT1155ExpirableCredits'), "NFT1155ExpirableCredits");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.AgreementsStore'), "AgreementsStore");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate'), "FixedPaymentTemplate");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.LockPaymentCondition'), "LockPaymentCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.TransferCreditsCondition'), "TransferCreditsCondition");
+        transferOwnership(vm.parseJsonAddress(json, '$.contracts.DistributePaymentsCondition'), "DistributePaymentsCondition");
 
         // Stop broadcasting transactions
         vm.stopBroadcast();
