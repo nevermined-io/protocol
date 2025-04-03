@@ -27,14 +27,14 @@ interface IAsset {
   }
 
   /// Different types of redemptions criterias that can be used when redeeming credits
-  /// @notice 0 - ONLY_ROLE, 1 - ONLY_OWNER, 2 - ROLE_AND_OWNER
-  /// If ONLY_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
+  /// @notice 0 - ONLY_GLOBAL_ROLE, 1 - ONLY_OWNER, 2 - ROLE_AND_OWNER
+  /// If ONLY_GLOBAL_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
   /// If ONLY_OWNER it means the credits can be redeemed only by the owner of the Plan
-  /// If ROLE_AND_OWNER it means the credits can be redeemed by an account with the `CREDITS_BURNER_ROLE` or the owner of the Plan
+  /// If ONLY_PLAN_ROLE it means the credits can be redeemed by an account with specifics grants for the plan
   enum RedeemptionType {
-    ONLY_ROLE,
+    ONLY_GLOBAL_ROLE,
     ONLY_OWNER,
-    ROLE_AND_OWNER
+    ONLY_PLAN_ROLE
   }
 
   struct DIDAsset {
@@ -140,6 +140,13 @@ interface IAsset {
   /// The `creditsType` given as parameter is not supported
   /// @param creditsType The type of credits
   error InvalidCreditsType(CreditsType creditsType);
+
+  /// The `amount` of credits to redeem is not valid
+  /// @param planId The identifier of the plan
+  /// @param creditsType The type of credits
+  /// @param amount The amount of credits to redeem
+
+  error InvalidRedeemptionAmount(bytes32 planId, CreditsType creditsType, uint256 amount);
 
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 

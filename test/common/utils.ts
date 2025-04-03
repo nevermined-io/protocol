@@ -43,12 +43,44 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
 export function createCreditsConfig(): any {
   return {
     creditsType: 1, // FIXED
-    redemptionType: 2, // ROLE AND OWNER can redeem credits
+    redemptionType: 0, // ONLY_GLOBAL_ROLE
     durationSecs: 0n,
     amount: 100n,
     minAmount: 1n,
     maxAmount: 1n,
   }
+}
+
+export async function registerPlan(
+  assetsRegistry: any,
+  publisher: any,
+  priceConfig: any,
+  creditsConfig: any,
+  nftCreditsAddress: string,
+): Promise<any> {
+  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+    priceConfig.amounts,
+    priceConfig.receivers,
+  ])
+  const [_amounts, _receivers] = result
+  priceConfig.amounts = _amounts
+  priceConfig.receivers = _receivers
+
+  const planId = await assetsRegistry.read.hashPlanId([
+    priceConfig,
+    creditsConfig,
+    nftCreditsAddress,
+    publisher.account.address,
+  ])
+  try {
+    await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftCreditsAddress], {
+      account: publisher.account,
+    })
+  } catch (e) {
+    console.log('Plan already registered: ', planId)
+  }
+
+  return planId
 }
 
 /**

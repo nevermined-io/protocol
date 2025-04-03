@@ -35,6 +35,16 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   /// @param role The role required to call this function
   error InvalidRole(address sender, bytes32 role);
 
+  /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`
+  /// @param planId The identifier of the plan
+  /// @param redeemptionType The type of redemptions that can be used for the plan
+  /// @param sender The address of the account calling this function
+  error InvalidRedemptionPermission(
+    bytes32 planId,
+    IAsset.RedeemptionType redeemptionType,
+    address sender
+  );
+
   function mint(address _to, uint256 _id, uint256 _value, bytes memory _data) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
       revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
@@ -54,11 +64,57 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     _mintBatch(_to, _ids, _values, _data);
   }
 
-  function burn(address _from, uint256 _id, uint256 _value) public virtual {
-    if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
-      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+  function burn(address _from, uint256 _id, uint256 _amount) public virtual {
+    bytes32 planId = bytes32(_id);
+    IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(planId);
 
-    _burn(_from, _id, _value);
+    if (!_canRedeemCredits(planId, plan.owner, plan.credits.redemptionType, msg.sender))
+      revert InvalidRedemptionPermission(planId, plan.credits.redemptionType, msg.sender);
+
+    uint256 creditsToRedeem = _creditsToRedeem(
+      planId,
+      plan.credits.creditsType,
+      _amount,
+      plan.credits.minAmount,
+      plan.credits.maxAmount
+    );
+
+    _burn(_from, _id, creditsToRedeem);
+  }
+
+  function _creditsToRedeem(
+    bytes32 _planId,
+    IAsset.CreditsType _creditsType,
+    uint256 _amount,
+    uint256 _min,
+    uint256 _max
+  ) internal pure returns (uint256) {
+    if (_creditsType == IAsset.CreditsType.DYNAMIC) {
+      if (_amount < _min || _amount > _max) return _min;
+      else return _amount;
+    } else if (_creditsType == IAsset.CreditsType.FIXED) {
+      return _min;
+    } else if (_creditsType == IAsset.CreditsType.EXPIRABLE) {
+      return 1;
+    }
+    revert IAsset.InvalidRedeemptionAmount(_planId, _creditsType, _amount);
+  }
+
+  function _canRedeemCredits(
+    bytes32 _planId,
+    address _owner,
+    IAsset.RedeemptionType _redemptionType,
+    address _sender
+  ) internal view returns (bool) {
+    if (_redemptionType == IAsset.RedeemptionType.ONLY_GLOBAL_ROLE) {
+      return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
+    } else if (_redemptionType == IAsset.RedeemptionType.ONLY_OWNER) {
+      return _sender == _owner;
+    } else if (_redemptionType == IAsset.RedeemptionType.ONLY_PLAN_ROLE) {
+      return nvmConfig.hasRole(_sender, _planId);
+    }
+    return false;
   }
 
   function burnBatch(
