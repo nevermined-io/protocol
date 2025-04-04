@@ -23,3 +23,7 @@ out/
 cache_forge/
 lib/
 lib/forge-std
+
+# Local Deployments
+deployments/*-hardhat.json
+deployments/*-31337.json

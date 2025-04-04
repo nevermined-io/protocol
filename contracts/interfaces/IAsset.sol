@@ -31,7 +31,7 @@ interface IAsset {
   /// If ONLY_GLOBAL_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
   /// If ONLY_OWNER it means the credits can be redeemed only by the owner of the Plan
   /// If ONLY_PLAN_ROLE it means the credits can be redeemed by an account with specifics grants for the plan
-  enum RedeemptionType {
+  enum RedemptionType {
     ONLY_GLOBAL_ROLE,
     ONLY_OWNER,
     ONLY_PLAN_ROLE
@@ -88,7 +88,7 @@ interface IAsset {
     /**
      * How the credits can be redeemed
      */
-    RedeemptionType redemptionType;
+    RedemptionType redemptionType;
     /**
      * The duration of the credits in seconds
      * @notice only if creditsType == EXPIRABLE
@@ -146,7 +146,7 @@ interface IAsset {
   /// @param creditsType The type of credits
   /// @param amount The amount of credits to redeem
 
-  error InvalidRedeemptionAmount(bytes32 planId, CreditsType creditsType, uint256 amount);
+  error InvalidRedemptionAmount(bytes32 planId, CreditsType creditsType, uint256 amount);
 
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 

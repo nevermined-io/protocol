@@ -26,8 +26,10 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    */
   bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
 
+  /// Internal instance of the NVMConfig contract
   INVMConfig internal nvmConfig;
 
+  /// Internal instance of the AssetsRegistry contract
   IAsset internal assetsRegistry;
 
   /// Only an account with the right role can access this function
@@ -37,21 +39,44 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
 
   /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`
   /// @param planId The identifier of the plan
-  /// @param redeemptionType The type of redemptions that can be used for the plan
+  /// @param redemptionType The type of redemptions that can be used for the plan
   /// @param sender The address of the account calling this function
   error InvalidRedemptionPermission(
     bytes32 planId,
-    IAsset.RedeemptionType redeemptionType,
+    IAsset.RedemptionType redemptionType,
     address sender
   );
 
-  function mint(address _to, uint256 _id, uint256 _value, bytes memory _data) public virtual {
-    if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
-      revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+  /**
+   * It mints credits for a plan.
+   * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+   * @notice The payment plan must exists
+   * @param _to the receiver of the credits
+   * @param _id the plan id
+   * @param _amount the number of credits to mint
+   * @param _data additional data to pass to the receiver
+   */
+  function mint(address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual {
+    bytes32 planId = bytes32(_id);
+    IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(planId);
 
-    _mint(_to, _id, _value, _data);
+    // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+    if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender)
+      revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+    
+    _mint(_to, _id, _amount, _data);
   }
 
+  /**
+   * It mints credits in batch.
+   * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+   * @notice The payment plan must exists
+   * @param _to the receiver of the credits
+   * @param _ids the plan ids
+   * @param _values the number of credits to mint
+   * @param _data additional data to pass to the receiver
+   */
   function mintBatch(
     address _to,
     uint256[] memory _ids,
@@ -64,6 +89,13 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     _mintBatch(_to, _ids, _values, _data);
   }
 
+  /**
+   * It burns/redeem credits for a plan.
+   * @notice The redemption rules depend on the plan.credits.redemptionType
+   * @param _from The address of the account that is getting the credits burned
+   * @param _id the plan id
+   * @param _amount the number of credits to burn/redeem
+   */
   function burn(address _from, uint256 _id, uint256 _amount) public virtual {
     bytes32 planId = bytes32(_id);
     IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
@@ -83,6 +115,34 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     _burn(_from, _id, creditsToRedeem);
   }
 
+
+  /**
+   * It burns/redeem credits in batch.
+   * @param _from the address of the account that is getting the credits burned
+   * @param _ids the array of plan ids
+   * @param _amounts the array of number of credits to burn/redeem
+   */
+  function burnBatch(
+    address _from,
+    uint256[] memory _ids,
+    uint256[] memory _amounts
+  ) public virtual {
+    if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
+      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+
+    _burnBatch(_from, _ids, _amounts);
+  }
+
+  /**
+   * It calculates the number of credits to redeme based on the plan and the credits type
+   * @notice The credits to redeem depend on the plan.credits.creditsType
+   * @param _planId the identifier of the plan
+   * @param _creditsType the type of credits
+   * @param _amount the number of credits requested to redeem
+   * @param _min the minimum number of credits to redeem configured in the plan
+   * @param _max the maximum number of credits to redeem configured in the plan
+   * @return the number of credits to redeem
+   */
   function _creditsToRedeem(
     bytes32 _planId,
     IAsset.CreditsType _creditsType,
@@ -98,34 +158,23 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     } else if (_creditsType == IAsset.CreditsType.EXPIRABLE) {
       return 1;
     }
-    revert IAsset.InvalidRedeemptionAmount(_planId, _creditsType, _amount);
+    revert IAsset.InvalidRedemptionAmount(_planId, _creditsType, _amount);
   }
 
   function _canRedeemCredits(
     bytes32 _planId,
     address _owner,
-    IAsset.RedeemptionType _redemptionType,
+    IAsset.RedemptionType _redemptionType,
     address _sender
   ) internal view returns (bool) {
-    if (_redemptionType == IAsset.RedeemptionType.ONLY_GLOBAL_ROLE) {
+    if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
       return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
-    } else if (_redemptionType == IAsset.RedeemptionType.ONLY_OWNER) {
+    } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {
       return _sender == _owner;
-    } else if (_redemptionType == IAsset.RedeemptionType.ONLY_PLAN_ROLE) {
+    } else if (_redemptionType == IAsset.RedemptionType.ONLY_PLAN_ROLE) {
       return nvmConfig.hasRole(_sender, _planId);
     }
     return false;
-  }
-
-  function burnBatch(
-    address _from,
-    uint256[] memory _ids,
-    uint256[] memory _values
-  ) public virtual {
-    if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
-      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
-
-    _burnBatch(_from, _ids, _values);
   }
 
   //@solhint-disable-next-line

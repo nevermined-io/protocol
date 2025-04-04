@@ -195,10 +195,6 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     return
       _calculateFeeAmount(nvmConfig.getNetworkFee(), totalAmount, nvmConfig.getFeeDenominator()) ==
       _amounts[_receiverIndex];
-    // return
-    //   (nvmConfig.getNetworkFee() * totalAmount) /
-    //     nvmConfig.getFeeDenominator() ==
-    //   _amounts[_receiverIndex];
   }
 
   function addFeesToPaymentsDistribution(
