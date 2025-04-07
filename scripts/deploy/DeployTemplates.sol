@@ -11,6 +11,7 @@ contract DeployTemplates is Script, DeployConfig {
     function run(
         address ownerAddress,
         address nvmConfigAddress,
+        address assetsRegistryAddress,
         address agreementsStoreAddress,
         address lockPaymentConditionAddress,
         address transferCreditsConditionAddress,
@@ -23,6 +24,7 @@ contract DeployTemplates is Script, DeployConfig {
         FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
         fixedPaymentTemplate.initialize(
             nvmConfigAddress,
+            assetsRegistryAddress,
             agreementsStoreAddress,
             lockPaymentConditionAddress,
             transferCreditsConditionAddress,
