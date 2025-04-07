@@ -104,6 +104,7 @@ contract DeployAll is Script, DeployConfig {
         FixedPaymentTemplate fixedPaymentTemplate = deployTemplates.run(
             ownerAddress,
             address(nvmConfig),
+            address(assetsRegistry),
             address(agreementsStore),
             address(lockPaymentCondition),
             address(transferCreditsCondition),

@@ -216,7 +216,7 @@ describe('AssetsRegistry', function () {
     it('I can find a planId on-chain because it was registered', async () => {
       const asset = await assetsRegistry.read.getAsset([did])
       planId = asset.plans[0]
-      expect(planId >0n).to.be.true
+      expect(planId > 0n).to.be.true
       const plan = await assetsRegistry.read.getPlan([planId])
       console.log('Plan:', plan)
       expect(plan.lastUpdated > 0n).to.be.true

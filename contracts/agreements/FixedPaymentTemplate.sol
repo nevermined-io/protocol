@@ -94,12 +94,12 @@ contract FixedPaymentTemplate is BaseTemplate {
     );
 
     // Lock the payment
-    _lockPayment(conditionIds[0], agreementId, _did, _planId, msg.sender);
-    _transferPlan(conditionIds[1], agreementId, _did, _planId, conditionIds[0], msg.sender);
+    _lockPayment(conditionIds[0], agreementId, _planId, msg.sender);
+    _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], msg.sender);
     _distributePayments(
       conditionIds[2],
       agreementId,
-      _did,
+      // _did,
       _planId,
       conditionIds[0],
       conditionIds[1]
@@ -109,15 +109,14 @@ contract FixedPaymentTemplate is BaseTemplate {
   function _lockPayment(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
+    // bytes32 _did,
     uint256 _planId,
     address _senderAddress
   ) internal {
-    
     lockPaymentCondition.fulfill{ value: msg.value }(
       _conditionId,
       _agreementId,
-      _did,
+      // _did,
       _planId,
       _senderAddress
     );
@@ -126,18 +125,17 @@ contract FixedPaymentTemplate is BaseTemplate {
   function _transferPlan(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
+    // bytes32 _did,
     uint256 _planId,
     bytes32 _lockPaymentCondition,
     address _receiverAddress
   ) internal {
-    
     bytes32[] memory _requiredConditons = new bytes32[](1);
     _requiredConditons[0] = _lockPaymentCondition;
     transferCondition.fulfill(
       _conditionId,
       _agreementId,
-      _did,
+      // _did,
       _planId,
       _requiredConditons,
       _receiverAddress
@@ -147,16 +145,15 @@ contract FixedPaymentTemplate is BaseTemplate {
   function _distributePayments(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
+    // bytes32 _did,
     uint256 _planId,
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
   ) internal {
-    
     distributePaymentsCondition.fulfill(
       _conditionId,
       _agreementId,
-      _did,
+      // _did,
       _planId,
       _lockPaymentCondition,
       _releaseCondition

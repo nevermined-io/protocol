@@ -131,7 +131,10 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
   }
 
-  function balanceOf(address _owner, uint256 _planId) public view virtual override returns (uint256) {
+  function balanceOf(
+    address _owner,
+    uint256 _planId
+  ) public view virtual override returns (uint256) {
     bytes32 _key = _getTokenKey(_owner, _planId);
     uint256 _amountBurned;
     uint256 _amountMinted;

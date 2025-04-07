@@ -33,17 +33,12 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
     uint256 _planId,
     bytes32[] memory _requiredConditions,
     address _receiverAddress
   ) external payable nonReentrant {
     // Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
-
-    // Check if the DID & Plan are registered in the AssetsRegistry
-    // if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    // if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // Check if the required conditions (LockPayment) are already fulfilled
     if (!agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions))

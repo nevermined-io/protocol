@@ -113,7 +113,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Asset = :', asset)
     expect(asset.lastUpdated > 0n).to.be.true
     planId = asset.plans[0]
-    expect(planId >0n).to.be.true
+    expect(planId > 0n).to.be.true
 
     console.log('Plan ID:', planId)
     const plan = await _deployment.assetsRegistry.read.getPlan([planId])

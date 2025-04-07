@@ -97,7 +97,7 @@ export async function registerAssetAndPlan(
   creator: any,
   creatorAddress: `0x${string}`,
   nftAddress?: `0x${string}`,
-): Promise<{ did: `0x${string}`; planId: `0x${string}` }> {
+): Promise<{ did: `0x${string}`; planId: bigint }> {
   const didSeed = generateId()
   const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
 
@@ -140,7 +140,7 @@ export async function createAgreement(
   agreementsStore: any,
   lockPaymentCondition: any,
   did: `0x${string}`,
-  planId: `0x${string}`,
+  planId: bigint,
   user: any,
   template: any,
 ): Promise<{ agreementId: `0x${string}`; conditionId: `0x${string}` }> {

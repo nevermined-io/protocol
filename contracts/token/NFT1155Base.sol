@@ -56,7 +56,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    * @param _amount the number of credits to mint
    * @param _data additional data to pass to the receiver
    */
-  function mint(address _to, uint256 _planId, uint256 _amount, bytes memory _data) public virtual {    
+  function mint(address _to, uint256 _planId, uint256 _amount, bytes memory _data) public virtual {
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
     if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
@@ -96,7 +96,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    * @param _amount the number of credits to burn/redeem
    */
   function burn(address _from, uint256 _planId, uint256 _amount) public virtual {
-    
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
     if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
@@ -165,7 +164,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     IAsset.RedemptionType _redemptionType,
     address _sender
   ) internal view returns (bool) {
-    
     if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
       return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
     } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {

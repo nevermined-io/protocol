@@ -37,17 +37,17 @@ contract MockNVMConfig {
     }
     
     // Mock implementation of grantCondition
-    function grantCondition(address condition) external returns (bool) {
+    function grantCondition(address /*condition*/) external pure returns (bool) {
         return true;
     }
     
     // Mock implementation of grantTemplate
-    function grantTemplate(address template) external returns (bool) {
+    function grantTemplate(address /*template*/) external pure returns (bool) {
         return true;
     }
     
     // Mock implementation of grantRole
-    function grantRole(bytes32 role, address account) external returns (bool) {
+    function grantRole(bytes32 /*role*/, address /*account*/) external pure returns (bool) {
         return true;
     }
     

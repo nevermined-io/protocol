@@ -45,7 +45,6 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 /*_did*/,
     uint256 _planId,
     address _senderAddress
   ) external payable nonReentrant {
@@ -55,10 +54,6 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     // Check if the agreementId is registered in the AssetsRegistry
     if (!agreementStore.agreementExists(_agreementId))
       revert IAgreement.AgreementNotFound(_agreementId);
-
-    // // Check if the DID & Plan are registered in the AssetsRegistry
-    // if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    // if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // Check if the plan config (token, amount) is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
