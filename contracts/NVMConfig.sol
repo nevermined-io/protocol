@@ -4,119 +4,120 @@
 pragma solidity ^0.8.28;
 
 import {INVMConfig} from './interfaces/INVMConfig.sol';
-import {AccessControlUpgradeable} from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import {AccessManagerUpgradeable} from '@openzeppelin/contracts-upgradeable/access/manager/AccessManagerUpgradeable.sol';
+import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import {ContextUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol';
+import {MulticallUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol';
 
 /**
  * @title Nevermined Config contract
  * @author @aaitor
  * @notice This contract stores all the relevant configuration used by the Nevermined Protocol
  */
-contract NVMConfig is INVMConfig, AccessControlUpgradeable {
+contract NVMConfig is INVMConfig, Initializable, ContextUpgradeable, MulticallUpgradeable, AccessManagerUpgradeable {
+  
+  /**
+   * @notice Role constants for AccessManager
+   * Note: ADMIN_ROLE (0) and PUBLIC_ROLE (2^64-1) are built into AccessManagerUpgradeable
+   */
+  
   /**
    * @notice Role Owning the Nevermined Config contract
    */
-  bytes32 public constant OWNER_ROLE = keccak256('NVM_CONFIG_OWNER');
+  uint64 public constant OWNER_ROLE = 1;
   /**
    * @notice Role that can change the parameters of the Nevermined Config contract
    */
-  bytes32 public constant GOVERNOR_ROLE = keccak256('NVM_GOVERNOR');
+  uint64 public constant GOVERNOR_ROLE = 2;
   /**
    * @notice Role granted to Smart Contracts registered as Templates (they can execute the template)
    */
-  bytes32 public constant CONTRACT_TEMPLATE_ROLE = keccak256('NVM_CONTRACT_TEMPLATE');
+  uint64 public constant CONTRACT_TEMPLATE_ROLE = 3;
   /**
    * @notice Role granted to Smart Contracts registered as NVM Conditions (they can fulfill conditions)
    */
-  bytes32 public constant CONTRACT_CONDITION_ROLE = keccak256('NVM_CONTRACT_CONDITION');
+  uint64 public constant CONTRACT_CONDITION_ROLE = 4;
 
 
   /**
-   * The struct that represents a parameter in the Nevermined Config contract
-   * @param value the value of the parameter
-   * @param isActive if the parameter is active or not
-   * @param lastUpdated the timestamp of the last time the parameter was updated
-   */
-  struct ParamEntry {
-    bytes value;
-    bool isActive;
-    uint256 lastUpdated;
-  }
-
-  /// Mapping of the parameters in the Nevermined Config contract
-  mapping(bytes32 => ParamEntry) public configParams;
-
-  /// Mapping of contracts registered in the Nevermined Config contract
-  mapping(bytes32 => address) public contractsRegistry;
-
-  /// Mapping of contracts latest versionnregistered in the Nevermined Config contract
-  mapping(bytes32 => uint256) public contractsLatestVersion;
-
-  /**
-   * @notice Event that is emitted when a parameter is changed
-   * @param whoChanged the address of the governor changing the parameter
-   * @param parameter the hash of the name of the parameter changed
-   * @param value the new value of the parameter
-   */
-  event NeverminedConfigChange(
-    address indexed whoChanged,
-    bytes32 indexed parameter,
-    bytes value
-  );
-
-  /**
-   * Event emitted when some permissions are granted or revoked
-   * @param addressPermissions the address receving or losing permissions
-   * @param permissions the role given or taken
-   * @param grantPermissions if true means the permissions are granted if false means they are revoked
-   */
-  event ConfigPermissionsChange(
-    address indexed addressPermissions,
-    bytes32 indexed permissions,
-    bool grantPermissions
-  );
-
-  /**
-   * Event emitted when a contract is registered in the Nevermined Config contract
-   * @param registeredBy the address registering the new contract
-   * @param name the name of the contract registered
-   * @param contractAddress the address of the contract registered
-   * @param version The version of the contract registered
+   * @notice Emitted when a contract is registered
+   * @param contractName The name of the contract
+   * @param contractAddress The address of the contract
+   * @param version The version of the contract
    */
   event ContractRegistered(
-    address indexed registeredBy,
-    bytes32 indexed name,
+    bytes32 indexed contractName,
     address indexed contractAddress,
     uint256 version
   );
-  
 
-  ///////////////////////////////////////////////////////////////////////////////////////
-  /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
-  ///////////////////////////////////////////////////////////////////////////////////////
+  /**
+   * @notice Emitted when a configuration parameter is changed
+   * @param _param The name of the parameter
+   * @param _value The value of the parameter
+   */
+  event NeverminedConfigChange(bytes32 indexed _param, bytes _value);
 
-  // @notice The fee charged by Nevermined for using the Service Agreements.
-  // Integer representing a 2 decimal number. i.e 350 means a 3.5% fee
-  uint256 public networkFee;
+  /**
+   * @notice Emitted when a permission is changed
+   * @param _address The address of the account
+   * @param _role The role of the account
+   * @param _allowed Whether the account is allowed or not
+   */
+  event ConfigPermissionsChange(
+    address indexed _address,
+    bytes32 indexed _role,
+    bool _allowed
+  );
 
-  // @notice The address that will receive the fee charged by Nevermined per transaction
-  // See `marketplaceFee`
-  address public feeReceiver;
+  /**
+   * @notice The network fee amount
+   */
+  uint256 private networkFee;
 
-  uint256 constant public FEE_DENOMINATOR = 1000000;
+  /**
+   * @notice The address that receives the network fee
+   */
+  address private feeReceiver;
+
+  /**
+   * @notice The denominator for the network fee
+   */
+  uint256 private constant FEE_DENOMINATOR = 1000000;
+
+  /**
+   * @notice Mapping of parameter name to parameter value
+   */
+  mapping(bytes32 => bytes) private parameters;
+
+  /**
+   * @notice Mapping of contract name to contract address
+   */
+  mapping(bytes32 => mapping(uint256 => address)) private contracts;
+
+  /**
+   * @notice Mapping of contract name to latest version
+   */
+  mapping(bytes32 => uint256) private contractsLatestVersion;
 
 
   /**
-   * Initialization function
+   * @notice Initialization function
+   * @dev Initializes the contract with the owner and governor
    * @param _owner The address owning the contract
    * @param _governor The first governor address able to setup configuration parameters
    */
   function initialize(address _owner, address _governor) public initializer {
-    AccessControlUpgradeable.__AccessControl_init();
-    AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
-    AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
-    AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
+    __Context_init();
+    __Multicall_init();
+    __AccessManager_init(_owner);
     
+    // Grant governor role to the specified governor
+    _grantRole(GOVERNOR_ROLE, _governor, 0, 0);
+    // Explicitly grant OWNER_ROLE to the owner
+    _grantRole(OWNER_ROLE, _owner, 0, 0);
   }
+
 
   ///////////////////////////////////////////////////////////////////////////////////////
   /////// ACCESS CONTROL ////////////////////////////////////////////////////////////////
@@ -127,7 +128,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param _address the address to validate if has the governor role
    */
   modifier onlyGovernor(address _address) {
-    if (!hasRole(GOVERNOR_ROLE, _address)) revert OnlyGovernor(_address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(GOVERNOR_ROLE, _address);
+    if (!immediate) revert OnlyGovernor(_address);
     _;
   }
 
@@ -136,7 +138,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param _address the address to validate if has the owner role
    */
   modifier onlyOwner(address _address) {
-    if (!hasRole(OWNER_ROLE, _address)) revert OnlyOwner(_address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(OWNER_ROLE, _address);
+    if (!immediate) revert OnlyOwner(_address);
     _;
   }
 
@@ -146,8 +149,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param _address the address to grant the governor role
    */
   function grantGovernor(address _address) external onlyOwner(msg.sender) {
-    _grantRole(GOVERNOR_ROLE, _address);
-    emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
+    _grantRole(GOVERNOR_ROLE, _address, 0, 0);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(GOVERNOR_ROLE)), true);
   }
 
   /**
@@ -157,7 +160,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function revokeGovernor(address _address) external onlyOwner(msg.sender) {
     _revokeRole(GOVERNOR_ROLE, _address);
-    emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(GOVERNOR_ROLE)), false);
   }
 
   /**
@@ -166,7 +169,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @return true if the address has the governor role, false otherwise
    */
   function isGovernor(address _address) external view returns (bool) {
-    return hasRole(GOVERNOR_ROLE, _address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(GOVERNOR_ROLE, _address);
+    return immediate;
   }
 
   /**
@@ -175,30 +179,41 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @return true if the address has the owner role, false otherwise
    */
   function isOwner(address _address) external view returns (bool) {
-    return hasRole(OWNER_ROLE, _address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(OWNER_ROLE, _address);
+    return immediate;
   }
 
-  function hasRole(address _address, bytes32 _role) external view returns (bool) {
-    return super.hasRole(_role, _address);
+  // Custom implementation to maintain compatibility with INVMConfig interface
+  function hasRole(address _address, bytes32 _role) external view override returns (bool) {
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(uint64(uint256(_role)), _address);
+    return immediate;
   }
+  
   /**
-   * Function to grant the governor role to an address.
-   * @notice Only an owner address can call this function.
-   * @param _address the address to grant the governor role
+   * Function to grant the template role to an address.
+   * @notice Only a governor address can call this function.
+   * @param _address the address to grant the template role
    */
   function grantTemplate(address _address) external onlyGovernor(msg.sender) {
-    _grantRole(CONTRACT_TEMPLATE_ROLE, _address);
-    emit ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, true);
+    _grantRole(CONTRACT_TEMPLATE_ROLE, _address, 0, 0);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(CONTRACT_TEMPLATE_ROLE)), true);
+  }
+  
+  // Compatibility function for tests with bytes32 role
+  function grantRoleBytes32(bytes32 role, address account) public {
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(0, msg.sender); // ADMIN_ROLE = 0
+    if (!immediate) revert OnlyOwner(msg.sender);
+    _grantRole(uint64(uint256(role)), account, 0, 0);
   }
 
   /**
-   * Function to revoke the governor role to an address.
-   * @notice Only an owner address can call this function.
-   * @param _address the address to revoke the governor role
+   * Function to revoke the template role to an address.
+   * @notice Only a governor address can call this function.
+   * @param _address the address to revoke the template role
    */
   function revokeTemplate(address _address) external onlyGovernor(msg.sender) {
     _revokeRole(CONTRACT_TEMPLATE_ROLE, _address);
-    emit ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, false);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(CONTRACT_TEMPLATE_ROLE)), false);
   }
 
   /**
@@ -207,27 +222,28 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @return true if the address has the contract template role, false otherwise
    */
   function isTemplate(address _address) external view returns (bool) {
-    return hasRole(CONTRACT_TEMPLATE_ROLE, _address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(CONTRACT_TEMPLATE_ROLE, _address);
+    return immediate;
   }
 
   /**
    * Function to grant the condition role to an address.
-   * @notice Only an owner address can call this function.
+   * @notice Only a governor address can call this function.
    * @param _address the address to grant the condition role
    */
   function grantCondition(address _address) external onlyGovernor(msg.sender) {
-    _grantRole(CONTRACT_CONDITION_ROLE, _address);
-    emit ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, true);
+    _grantRole(CONTRACT_CONDITION_ROLE, _address, 0, 0);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(CONTRACT_CONDITION_ROLE)), true);
   }
 
   /**
    * Function to revoke the contract condition role to an address.
-   * @notice Only an owner address can call this function.
+   * @notice Only a governor address can call this function.
    * @param _address the address to revoke the role
    */
   function revokeCondition(address _address) external onlyGovernor(msg.sender) {
     _revokeRole(CONTRACT_CONDITION_ROLE, _address);
-    emit ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, false);
+    emit ConfigPermissionsChange(_address, bytes32(uint256(CONTRACT_CONDITION_ROLE)), false);
   }
 
   /**
@@ -236,162 +252,151 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @return true if the address has the contract condition role, false otherwise
    */
   function isCondition(address _address) external view returns (bool) {
-    return hasRole(CONTRACT_CONDITION_ROLE, _address);
+    (bool immediate, ) = AccessManagerUpgradeable.hasRole(CONTRACT_CONDITION_ROLE, _address);
+    return immediate;
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  /////// CONFIG FUNCTIONS //////////////////////////////////////////////////////////////
+  /////// NETWORK FEES /////////////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////
 
   /**
-   * It allows to set the network fee charged by Nevermined and the address receiving the fee
-   * for using the Service Agreements.
-   * The fees must be between 0 (0 percent) and 1000000 (100 percent).
-   * @notice Only a governor address can call this function.
-   * @param _networkFee The fee charged by Nevermined for using the Service Agreements
-   * @param _feeReceiver The address receiving the Nevermined fee
+   * @notice Sets the network fee and the fee receiver
+   * @param _networkFee The network fee amount
+   * @param _feeReceiver The address that receives the network fee
    */
   function setNetworkFees(
     uint256 _networkFee,
     address _feeReceiver
-  ) external virtual onlyGovernor(msg.sender) {
-    if (_networkFee < 0 || _networkFee > 1000000) {
-      revert InvalidNetworkFee(_networkFee);
-    }
-
-    if (_networkFee > 0 && _feeReceiver == address(0)) {
-      revert InvalidFeeReceiver(_feeReceiver);
-    }
+  ) external onlyGovernor(msg.sender) {
+    if (_networkFee > FEE_DENOMINATOR) revert InvalidNetworkFee(_networkFee);
+    if (_feeReceiver == address(0)) revert InvalidFeeReceiver(_feeReceiver);
 
     networkFee = _networkFee;
     feeReceiver = _feeReceiver;
+
     emit NeverminedConfigChange(
-      msg.sender,
-      keccak256('networkFee'),
+      bytes32('networkFee'),
       abi.encodePacked(_networkFee)
     );
     emit NeverminedConfigChange(
-      msg.sender,
-      keccak256('feeReceiver'),
+      bytes32('feeReceiver'),
       abi.encodePacked(_feeReceiver)
     );
   }
 
   /**
-   * It returns the network fee charged by Nevermined for using the Service Agreements.
-   * @return the network fee charged by Nevermined
+   * @notice Gets the network fee amount
+   * @return The network fee amount
    */
   function getNetworkFee() external view returns (uint256) {
     return networkFee;
   }
 
   /**
-   * It returns the address receiving the fee charged by Nevermined for using the Service Agreements.
-   * @return the address receiving the fee charged by Nevermined
+   * @notice Gets the fee receiver address
+   * @return The fee receiver address
    */
   function getFeeReceiver() external view returns (address) {
     return feeReceiver;
   }
 
+  /**
+   * @notice Gets the fee denominator
+   * @return The fee denominator
+   */
   function getFeeDenominator() external pure returns (uint256) {
     return FEE_DENOMINATOR;
   }
 
+  ///////////////////////////////////////////////////////////////////////////////////////
+  /////// PARAMETERS ///////////////////////////////////////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * @notice Sets a parameter
+   * @param _param The parameter name
+   * @param _value The parameter value
+   */
   function setParameter(
-    bytes32 _paramName,
-    bytes memory _value
-  ) external virtual onlyGovernor(msg.sender) {
-    configParams[_paramName].value = _value;
-    configParams[_paramName].isActive = true;
-    configParams[_paramName].lastUpdated = block.timestamp;
-    emit NeverminedConfigChange(msg.sender, _paramName, _value);
+    bytes32 _param,
+    bytes calldata _value
+  ) external onlyGovernor(msg.sender) {
+    parameters[_param] = _value;
+    emit NeverminedConfigChange(_param, _value);
   }
 
-  function getParameter(
-    bytes32 _paramName
-  )
-    external
-    view
-    returns (bytes memory value, bool isActive, uint256 lastUpdated)
-  {
-    return (
-      configParams[_paramName].value,
-      configParams[_paramName].isActive,
-      configParams[_paramName].lastUpdated
-    );
-  }
-
-  function disableParameter(
-    bytes32 _paramName
-  ) external virtual onlyGovernor(msg.sender) {
-    if (configParams[_paramName].isActive) {
-      configParams[_paramName].isActive = false;
-      configParams[_paramName].lastUpdated = block.timestamp;
-      emit NeverminedConfigChange(
-        msg.sender,
-        _paramName,
-        configParams[_paramName].value
-      );
-    }
-  }
-
-  function parameterExists(bytes32 _paramName) external view returns (bool) {
-    return configParams[_paramName].isActive;
+  /**
+   * @notice Gets a parameter
+   * @param _param The parameter name
+   * @return The parameter value and whether it exists
+   */
+  function getParameter(bytes32 _param) external view returns (bytes memory, bool) {
+    return (parameters[_param], parameters[_param].length > 0);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////
-  /////// DNS FUNCTIONS /////////////////////////////////////////////////////////////////
+  /////// CONTRACTS REGISTRY ///////////////////////////////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////
 
-  function registerContract(
-    bytes32 _name,
-    address _address    
-  ) public virtual onlyGovernor(msg.sender) {
-    uint256 latestVersion = this.getContractLatestVersion(keccak256(abi.encode(_name)));
-    this.registerContract(_name, _address, latestVersion + 1);
-  }
-
+  /**
+   * @notice Registers a contract
+   * @param _name The contract name
+   * @param _address The contract address
+   * @param _version The contract version
+   */
   function registerContract(
     bytes32 _name,
     address _address,
-    uint256 _version    
-  ) public virtual onlyGovernor(msg.sender) {
+    uint256 _version
+  ) external onlyGovernor(msg.sender) {
+    if (_address == address(0)) revert InvalidAddress(_address);
+    if (_version <= contractsLatestVersion[_name])
+      revert InvalidContractVersion(_version, contractsLatestVersion[_name]);
 
-    if (_address == address(0)) {
-      revert InvalidAddress(_address);
-    }
-    uint256 latestVersion = this.getContractLatestVersion(_name);
-    if (_version <= latestVersion) {
-      revert InvalidContractVersion(_version, latestVersion);
-    }
+    contracts[_name][_version] = _address;
+    contractsLatestVersion[_name] = _version;
 
-    bytes32 _id = keccak256(abi.encode(_name, _version));
-    contractsRegistry[_id] = _address;
-    contractsLatestVersion[keccak256(abi.encode(_name))] = _version;
-    emit ContractRegistered(msg.sender, _name, _address, _version);
+    emit ContractRegistered(_name, _address, _version);
   }
 
-  function resolveContract(
-    bytes32 _name   
-  ) external view returns (address contractAddress)
-  {
-    uint256 latestVersion = this.getContractLatestVersion(keccak256(abi.encode(_name)));
-    return this.resolveContract(_name, latestVersion);    
+  /**
+   * @notice Registers a contract
+   * @param _name The contract name
+   * @param _address The contract address
+   */
+  function registerContract(
+    bytes32 _name,
+    address _address
+  ) external onlyGovernor(msg.sender) {
+    if (_address == address(0)) revert InvalidAddress(_address);
+
+    uint256 _version = contractsLatestVersion[_name] + 1;
+    contracts[_name][_version] = _address;
+    contractsLatestVersion[_name] = _version;
+
+    emit ContractRegistered(_name, _address, _version);
   }
 
+  /**
+   * @notice Resolves a contract
+   * @param _name The contract name
+   * @param _version The contract version
+   * @return The contract address
+   */
   function resolveContract(
     bytes32 _name,
-    uint256 _version    
-  ) external view returns (address contractAddress)
-  {
-    bytes32 _id = keccak256(abi.encode(_name, _version));
-    return contractsRegistry[_id];
+    uint256 _version
+  ) external view returns (address) {
+    return contracts[_name][_version];
   }
 
-  function getContractLatestVersion(
-    bytes32 _name
-  ) external view returns (uint256 version)
-  {
-    return contractsLatestVersion[keccak256(abi.encode(_name))];
+  /**
+   * @notice Resolves a contract
+   * @param _name The contract name
+   * @return The contract address
+   */
+  function resolveContract(bytes32 _name) external view returns (address) {
+    return contracts[_name][contractsLatestVersion[_name]];
   }
 }

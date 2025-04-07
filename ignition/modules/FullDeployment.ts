@@ -28,7 +28,7 @@ const NVMConfigModule = buildModule("NVMConfigModule", (m) => {
 	const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
 
 	const nvmConfig = m.contract("NVMConfig", [], { from: owner })
-	m.call(nvmConfig, 'initialize', [owner, governor])
+	m.call(nvmConfig, 'initialize(address,address)', [owner, governor])
 
 	m.call(nvmConfig, 'setNetworkFees', [NVM_FEE_AMOUNT, NVM_FEE_RECEIVER || owner], { from: governor })
 
@@ -181,12 +181,12 @@ const DeploymentOfContractsModule = buildModule("DeploymentOfContractsModule", (
 	// Grant Deposit and Withdrawal permissions to Payments Vault
 	const DEPOSITOR_ROLE = m.staticCall(paymentsVault, 'DEPOSITOR_ROLE', [])
 	const WITHDRAW_ROLE = m.staticCall(paymentsVault, 'WITHDRAW_ROLE', [])	
-	m.call(nvmConfig, 'grantRole', [DEPOSITOR_ROLE, lockPaymentCondition], { from: owner, id: 'grantRole_depositor_lockPayment' })
-	m.call(nvmConfig, 'grantRole', [WITHDRAW_ROLE, distributePaymentsCondition], { from: owner, id: 'grantRole_withdraw_distributePayments' })
+	m.call(nvmConfig, 'grantRoleBytes32', [DEPOSITOR_ROLE, lockPaymentCondition], { from: owner, id: 'grantRole_depositor_lockPayment' })
+	m.call(nvmConfig, 'grantRoleBytes32', [WITHDRAW_ROLE, distributePaymentsCondition], { from: owner, id: 'grantRole_withdraw_distributePayments' })
 	
 	// Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
 	const CREDITS_MINTER_ROLE = m.staticCall(nftCredits, 'CREDITS_MINTER_ROLE', [])
-	m.call(nvmConfig, 'grantRole', [CREDITS_MINTER_ROLE, transferCreditsCondition], { from: owner, id: 'grantRole_minter_transferCredits' })
+	m.call(nvmConfig, 'grantRoleBytes32', [CREDITS_MINTER_ROLE, transferCreditsCondition], { from: owner, id: 'grantRole_minter_transferCredits' })
 
 	return { 
 		nvmConfig, 		
