@@ -12,13 +12,12 @@ contract NFT1155Credits is NFT1155Base {
     function initialize(
         address _nvmConfigAddress,
         address _assetsRegistryAddress,
-        string memory, /*_name*/
-        string memory /*_symbol*/
-    ) public virtual initializer {
-        ERC1155Upgradeable.__ERC1155_init("");
-        nvmConfig = INVMConfig(_nvmConfigAddress);
-        assetsRegistry = IAsset(_assetsRegistryAddress);
+        string memory, // name
+        string memory // symbol
+    ) external initializer {
         __Ownable_init(msg.sender);
+        ERC1155Upgradeable.__ERC1155_init("");
+        __NFT1155Credits_init(_nvmConfigAddress, _assetsRegistryAddress);
     }
 
     function mint(address _to, uint256 _planId, uint256 _value, bytes memory _data) public virtual override {
@@ -39,5 +38,12 @@ contract NFT1155Credits is NFT1155Base {
 
     function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
         super.burnBatch(_from, _ids, _values);
+    }
+
+    function __NFT1155Credits_init(address _nvmConfigAddress, address _assetsRegistryAddress)
+        internal
+        onlyInitializing
+    {
+        __NFT1155Base_init(_nvmConfigAddress, _assetsRegistryAddress);
     }
 }

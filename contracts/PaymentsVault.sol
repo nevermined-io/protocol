@@ -20,7 +20,14 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
      */
     bytes32 public constant WITHDRAW_ROLE = keccak256("VAULT_WITHDRAW_ROLE");
 
-    INVMConfig internal nvmConfig;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.paymentsvault.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant PAYMENTS_VAULT_STORAGE_LOCATION =
+        0x80a73158257d9dc2a97871b2d2c51b86390aa280667a4b04612145b2777aba00;
+
+    /// @custom:storage-location erc7201:nevermined.paymentsvault.storage
+    struct PaymentsVaultStorage {
+        INVMConfig nvmConfig;
+    }
 
     /// Only an account with the right role can access this function
     /// @param sender The address of the account calling this function
@@ -42,26 +49,27 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
 
     function initialize(address _nvmConfigAddress) public initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-        nvmConfig = INVMConfig(_nvmConfigAddress);
+        PaymentsVaultStorage storage $ = _getPaymentsVaultStorage();
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
         __Ownable_init(msg.sender);
     }
 
     receive() external payable {
-        if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
+        if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
         }
         emit ReceivedNativeToken(msg.sender, msg.value);
     }
 
     function depositNativeToken() external payable nonReentrant {
-        if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
+        if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
         }
         emit ReceivedNativeToken(msg.sender, msg.value);
     }
 
     function withdrawNativeToken(uint256 _amount, address _receiver) external nonReentrant {
-        if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
+        if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
             revert InvalidRole(msg.sender, WITHDRAW_ROLE);
         }
 
@@ -76,14 +84,14 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) external nonReentrant {
-        if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
+        if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
         }
         emit ReceivedERC20(_erc20TokenAddress, _from, _amount);
     }
 
     function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver) external nonReentrant {
-        if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
+        if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
             revert InvalidRole(msg.sender, WITHDRAW_ROLE);
         }
 
@@ -105,5 +113,11 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
     function getBalanceERC20(address _erc20TokenAddress) external view returns (uint256 balance) {
         IERC20 token = IERC20(_erc20TokenAddress);
         return token.balanceOf(address(this));
+    }
+
+    function _getPaymentsVaultStorage() internal pure returns (PaymentsVaultStorage storage $) {
+        assembly {
+            $.slot := PAYMENTS_VAULT_STORAGE_LOCATION
+        }
     }
 }

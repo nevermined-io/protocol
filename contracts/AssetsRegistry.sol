@@ -8,14 +8,19 @@ import {IAsset} from "./interfaces/IAsset.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 contract AssetsRegistry is IAsset, OwnableUpgradeable {
+    // keccak256(abi.encode(uint256(keccak256("nevermined.assetsregistry.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ASSETS_REGISTRY_STORAGE_LOCATION =
+        0x6c9566430157c5ec4491fdbbed7bf67f82d06a6dee70d9aaa3ede461d7d98900;
+
     bytes32 public constant OWNER_ROLE = keccak256("REGISTRY_OWNER");
 
-    INVMConfig internal nvmConfig;
-
-    mapping(bytes32 => DIDAsset) public assets;
-
-    /// The mapping of the plans registered in the contract
-    mapping(uint256 => Plan) public plans;
+    /// @custom:storage-location erc7201:nevermined.assetsregistry.storage
+    struct AssetsRegistryStorage {
+        INVMConfig nvmConfig;
+        mapping(bytes32 => DIDAsset) assets;
+        /// The mapping of the plans registered in the contract
+        mapping(uint256 => Plan) plans;
+    }
 
     /**
      * @notice Event that is emitted when a new Asset is registered
@@ -45,16 +50,18 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     error NotPlansAttached(bytes32 did);
 
     function initialize(address _nvmConfigAddress) public initializer {
-        nvmConfig = INVMConfig(_nvmConfigAddress);
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
         __Ownable_init(msg.sender);
     }
 
     function getAsset(bytes32 _did) external view returns (DIDAsset memory) {
-        return assets[_did];
+        return _getAssetsRegistryStorage().assets[_did];
     }
 
     function assetExists(bytes32 _did) external view returns (bool) {
-        return assets[_did].lastUpdated != 0;
+        return _getAssetsRegistryStorage().assets[_did].lastUpdated != 0;
     }
 
     /**
@@ -68,15 +75,17 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     }
 
     function register(bytes32 _didSeed, string memory _url, uint256[] memory _plans) public virtual {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
         bytes32 did = hashDID(_didSeed, msg.sender);
-        if (assets[did].owner != address(0x0)) {
+        if ($.assets[did].owner != address(0x0)) {
             revert DIDAlreadyRegistered(did);
         }
 
         if (_plans.length == 0) {
             revert NotPlansAttached(did);
         }
-        assets[did] =
+        $.assets[did] =
             DIDAsset({owner: msg.sender, creator: msg.sender, url: _url, lastUpdated: block.timestamp, plans: _plans});
 
         emit AssetRegistered(did, msg.sender);
@@ -111,15 +120,17 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         CreditsConfig memory _creditsConfig,
         address _nftAddress
     ) internal {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
         uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner);
-        if (plans[planId].lastUpdated != 0) {
+        if ($.plans[planId].lastUpdated != 0) {
             revert PlanAlreadyRegistered(planId);
         }
         if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
             revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
         }
 
-        plans[planId] = Plan({
+        $.plans[planId] = Plan({
             owner: _owner,
             price: _priceConfig,
             credits: _creditsConfig,
@@ -130,11 +141,11 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     }
 
     function getPlan(uint256 _planId) public view returns (Plan memory) {
-        return plans[_planId];
+        return _getAssetsRegistryStorage().plans[_planId];
     }
 
     function planExists(uint256 _planId) external view returns (bool) {
-        return plans[_planId].lastUpdated != 0;
+        return _getAssetsRegistryStorage().plans[_planId].lastUpdated != 0;
     }
 
     /**
@@ -159,7 +170,9 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         view
         returns (bool)
     {
-        if (nvmConfig.getNetworkFee() == 0 || nvmConfig.getFeeReceiver() == address(0)) return true;
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if ($.nvmConfig.getNetworkFee() == 0 || $.nvmConfig.getFeeReceiver() == address(0)) return true;
 
         uint256 totalAmount = 0;
         uint256 amountsLength = _amounts.length;
@@ -173,7 +186,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
 
         bool _feeReceiverIncluded = false;
         uint256 _receiverIndex = 0;
-        address feeReceiver = nvmConfig.getFeeReceiver();
+        address feeReceiver = $.nvmConfig.getFeeReceiver();
         uint256 receiversLength = _receivers.length;
 
         for (uint256 i = 0; i < receiversLength; i++) {
@@ -185,7 +198,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         if (!_feeReceiverIncluded) return false;
 
         // Return if fee calculation is correct
-        return _calculateFeeAmount(nvmConfig.getNetworkFee(), totalAmount, nvmConfig.getFeeDenominator())
+        return _calculateFeeAmount($.nvmConfig.getNetworkFee(), totalAmount, $.nvmConfig.getFeeDenominator())
             == _amounts[_receiverIndex];
     }
 
@@ -194,6 +207,8 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         view
         returns (uint256[] memory amounts, address[] memory receivers)
     {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
         // If the fees are already added we don't need to do anything
         if (this.areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
 
@@ -208,7 +223,8 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         // If the total amount is zero we don't need to add fees
         if (totalAmount == 0) return (_amounts, _receivers);
 
-        uint256 feeAmount = _calculateFeeAmount(nvmConfig.getNetworkFee(), totalAmount, nvmConfig.getFeeDenominator());
+        uint256 feeAmount =
+            _calculateFeeAmount($.nvmConfig.getNetworkFee(), totalAmount, $.nvmConfig.getFeeDenominator());
 
         uint256 _length = amountsLength;
 
@@ -224,7 +240,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         for (uint256 i; i < _length; i++) {
             receiversWithFees[i] = _receivers[i];
         }
-        receiversWithFees[_length] = nvmConfig.getFeeReceiver();
+        receiversWithFees[_length] = $.nvmConfig.getFeeReceiver();
 
         return (amountsWithFees, receiversWithFees);
     }
@@ -235,5 +251,11 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         returns (uint256)
     {
         return (_feeAmount * _totalAmount) / _feeDenominator;
+    }
+
+    function _getAssetsRegistryStorage() internal pure returns (AssetsRegistryStorage storage $) {
+        assembly {
+            $.slot := ASSETS_REGISTRY_STORAGE_LOCATION
+        }
     }
 }

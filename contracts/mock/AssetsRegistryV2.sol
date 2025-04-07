@@ -12,16 +12,23 @@ import {INVMConfig} from "../interfaces/INVMConfig.sol";
  * @notice This contract extends AssetsRegistry with new functionality for testing upgrades
  */
 contract AssetsRegistryV2 is AssetsRegistry {
-    // New state variable added at the end of the contract
-    string public version;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.assetsregistryv2.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant ASSETS_REGISTRY_V2_STORAGE_LOCATION =
+        0xfb8a89f709568928aef7149587aed044b47ec77b8aa8d90b5de19055793b5600;
+
+    /// @custom:storage-location erc7201:nevermined.assetsregistryv2.storage
+    struct AssetsRegistryV2Storage {
+        string version;
+    }
 
     /**
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
     function initializeV2(string memory _version) external {
-        if (!nvmConfig.isGovernor(msg.sender)) revert INVMConfig.OnlyGovernor(msg.sender);
-        version = _version;
+        AssetsRegistryV2Storage storage $ = _getAssetsRegistryV2Storage();
+        if (!_getAssetsRegistryStorage().nvmConfig.isGovernor(msg.sender)) revert INVMConfig.OnlyGovernor(msg.sender);
+        $.version = _version;
     }
 
     /**
@@ -29,6 +36,13 @@ contract AssetsRegistryV2 is AssetsRegistry {
      * @return The current version string
      */
     function getVersion() external view returns (string memory) {
-        return version;
+        AssetsRegistryV2Storage storage $ = _getAssetsRegistryV2Storage();
+        return $.version;
+    }
+
+    function _getAssetsRegistryV2Storage() internal pure returns (AssetsRegistryV2Storage storage $) {
+        assembly {
+            $.slot := ASSETS_REGISTRY_V2_STORAGE_LOCATION
+        }
     }
 }

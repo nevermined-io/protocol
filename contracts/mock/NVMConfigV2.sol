@@ -11,15 +11,22 @@ import {NVMConfig} from "../NVMConfig.sol";
  * @notice This contract extends NVMConfig with new functionality for testing upgrades
  */
 contract NVMConfigV2 is NVMConfig {
-    // New state variable added at the end of the contract
-    string public version;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.nvmconfigv2.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant NVM_CONFIG_V2_STORAGE_LOCATION =
+        0xb5bb4068c8b208c83c281a1aca2086fb61708189787baebdb5fa9085d27f5d00;
+
+    /// @custom:storage-location erc7201:nevermined.nvmconfigv2.storage
+    struct NVMConfigV2Storage {
+        string version;
+    }
 
     /**
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
     function initializeV2(string memory _version) external onlyGovernor(msg.sender) {
-        version = _version;
+        NVMConfigV2Storage storage $ = _getNVMConfigV2Storage();
+        $.version = _version;
     }
 
     /**
@@ -27,6 +34,13 @@ contract NVMConfigV2 is NVMConfig {
      * @return The current version string
      */
     function getVersion() external view returns (string memory) {
-        return version;
+        NVMConfigV2Storage storage $ = _getNVMConfigV2Storage();
+        return $.version;
+    }
+
+    function _getNVMConfigV2Storage() internal pure returns (NVMConfigV2Storage storage $) {
+        assembly {
+            $.slot := NVM_CONFIG_V2_STORAGE_LOCATION
+        }
     }
 }

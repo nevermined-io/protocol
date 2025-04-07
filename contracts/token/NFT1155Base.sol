@@ -26,11 +26,15 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
      */
     bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256("CREDITS_TRANSFER_ROLE");
 
-    /// Internal instance of the NVMConfig contract
-    INVMConfig internal nvmConfig;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155base.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant NFT1155_BASE_STORAGE_LOCATION =
+        0x5dc28ad3de163acbf47a88082c92b50b1954ae8a6818aca0c0ef6cb317ac6500;
 
-    /// Internal instance of the AssetsRegistry contract
-    IAsset internal assetsRegistry;
+    /// @custom:storage-location erc7201:nevermined.nft1155base.storage
+    struct NFT1155BaseStorage {
+        INVMConfig nvmConfig;
+        IAsset assetsRegistry;
+    }
 
     /// Only an account with the right role can access this function
     /// @param sender The address of the account calling this function
@@ -43,6 +47,13 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     /// @param sender The address of the account calling this function
     error InvalidRedemptionPermission(uint256 planId, IAsset.RedemptionType redemptionType, address sender);
 
+    function __NFT1155Base_init(address _nvmConfigAddress, address _assetsRegistryAddress) public onlyInitializing {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
+        $.assetsRegistry = IAsset(_assetsRegistryAddress);
+    }
+
     /**
      * It mints credits for a plan.
      * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
@@ -53,11 +64,13 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
      * @param _data additional data to pass to the receiver
      */
     function mint(address _to, uint256 _planId, uint256 _amount, bytes memory _data) public virtual {
-        IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
         if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
         // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
-        if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender) {
+        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender) {
             revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
         }
 
@@ -77,7 +90,9 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
         public
         virtual
     {
-        if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE)) {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE)) {
             revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
         }
 
@@ -92,7 +107,9 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
      * @param _amount the number of credits to burn/redeem
      */
     function burn(address _from, uint256 _planId, uint256 _amount) public virtual {
-        IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
         if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
         if (!_canRedeemCredits(_planId, plan.owner, plan.credits.redemptionType, msg.sender)) {
@@ -112,7 +129,9 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
      * @param _amounts the array of number of credits to burn/redeem
      */
     function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _amounts) public virtual {
-        if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
             revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
         }
 
@@ -152,12 +171,14 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
         view
         returns (bool)
     {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
         if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
-            return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
+            return $.nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
         } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {
             return _sender == _owner;
         } else if (_redemptionType == IAsset.RedemptionType.ONLY_PLAN_ROLE) {
-            return nvmConfig.hasRole(_sender, keccak256(abi.encode(_planId)));
+            return $.nvmConfig.hasRole(_sender, keccak256(abi.encode(_planId)));
         }
         return false;
     }
@@ -186,5 +207,11 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
 
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return ERC1155Upgradeable.supportsInterface(interfaceId) || interfaceId == type(IERC2981).interfaceId;
+    }
+
+    function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {
+        assembly {
+            $.slot := NFT1155_BASE_STORAGE_LOCATION
+        }
     }
 }
