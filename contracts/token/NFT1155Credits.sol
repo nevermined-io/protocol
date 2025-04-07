@@ -3,51 +3,41 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
-import { IAsset } from '../interfaces/IAsset.sol';
-import { NFT1155Base } from './NFT1155Base.sol';
+import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {INVMConfig} from "../interfaces/INVMConfig.sol";
+import {IAsset} from "../interfaces/IAsset.sol";
+import {NFT1155Base} from "./NFT1155Base.sol";
 
 contract NFT1155Credits is NFT1155Base {
-  function initialize(
-    address _nvmConfigAddress,
-    address _assetsRegistryAddress,
-    string memory /*_name*/,
-    string memory /*_symbol*/
-  ) public virtual initializer {
-    ERC1155Upgradeable.__ERC1155_init('');
-    nvmConfig = INVMConfig(_nvmConfigAddress);
-    assetsRegistry = IAsset(_assetsRegistryAddress);
-    __Ownable_init(msg.sender);
-  }
+    function initialize(
+        address _nvmConfigAddress,
+        address _assetsRegistryAddress,
+        string memory, /*_name*/
+        string memory /*_symbol*/
+    ) public virtual initializer {
+        ERC1155Upgradeable.__ERC1155_init("");
+        nvmConfig = INVMConfig(_nvmConfigAddress);
+        assetsRegistry = IAsset(_assetsRegistryAddress);
+        __Ownable_init(msg.sender);
+    }
 
-  function mint(
-    address _to,
-    uint256 _planId,
-    uint256 _value,
-    bytes memory _data
-  ) public virtual override {
-    super.mint(_to, _planId, _value, _data);
-  }
+    function mint(address _to, uint256 _planId, uint256 _value, bytes memory _data) public virtual override {
+        super.mint(_to, _planId, _value, _data);
+    }
 
-  function mintBatch(
-    address _to,
-    uint256[] memory _ids,
-    uint256[] memory _values,
-    bytes memory _data
-  ) public virtual override {
-    super.mintBatch(_to, _ids, _values, _data);
-  }
+    function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data)
+        public
+        virtual
+        override
+    {
+        super.mintBatch(_to, _ids, _values, _data);
+    }
 
-  function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
-    super.burn(_from, _planId, _value);
-  }
+    function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
+        super.burn(_from, _planId, _value);
+    }
 
-  function burnBatch(
-    address _from,
-    uint256[] memory _ids,
-    uint256[] memory _values
-  ) public virtual override {
-    super.burnBatch(_from, _ids, _values);
-  }
+    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
+        super.burnBatch(_from, _ids, _values);
+    }
 }
