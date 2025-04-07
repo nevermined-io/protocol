@@ -22,6 +22,18 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
    */
   event AgreementRegistered(bytes32 indexed agreementId, address indexed creator);
 
+  /**
+   * @notice Event that is emitted when a condition status is updated
+   * @param agreementId the unique identifier of the agreement
+   * @param conditionId the unique identifier of the condition
+   * @param state the new state of the condition
+   */
+  event ConditionUpdated(
+    bytes32 indexed agreementId,
+    bytes32 indexed conditionId,
+    ConditionState state
+  );
+
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
     __Ownable_init(msg.sender);
@@ -52,18 +64,6 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     });
     emit AgreementRegistered(_agreementId, _agreementCreator);
   }
-
-  /**
-   * @notice Event that is emitted when a condition status is updated
-   * @param agreementId the unique identifier of the agreement
-   * @param conditionId the unique identifier of the condition
-   * @param state the new state of the condition
-   */
-  event ConditionUpdated(
-    bytes32 indexed agreementId,
-    bytes32 indexed conditionId,
-    ConditionState state
-  );
 
   function updateConditionStatus(
     bytes32 _agreementId,

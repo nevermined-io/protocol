@@ -157,7 +157,10 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftExpirableCredits.read.balanceOf([bob.account.address, did])
+    const balance = await _deployment.nftExpirableCredits.read.balanceOf([
+      bob.account.address,
+      planId,
+    ])
     console.log('Credits Balance:', balance)
     expect(balance > 0n).to.be.true
   })
@@ -186,7 +189,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     // First verify Bob has credits
     const balanceBefore = await _deployment.nftExpirableCredits.read.balanceOf([
       bob.account.address,
-      did,
+      planId,
     ])
     expect(balanceBefore > 0n).to.be.true
     console.log('Credits Balance Before Time Advance:', balanceBefore)

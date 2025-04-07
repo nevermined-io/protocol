@@ -505,9 +505,10 @@ describe('NFT1155ExpirableCredits', function () {
     })
 
     it('balanceOf should correctly account for multiple expirable credits with different expiration times', async function () {
-      const { nftExpirableCredits, minter, unauthorized } = await loadFixture(deployInstance)
+      const { nftExpirableCredits, minter, unauthorized, planId } =
+        await loadFixture(deployInstance)
 
-      const tokenId = 1n
+      const tokenId = planId
       const amount1 = 50n
       const amount2 = 75n
       const amount3 = 100n

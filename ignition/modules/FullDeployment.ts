@@ -330,6 +330,7 @@ const DeploymentOfContractsModule = buildModule(
     // Fixed Payment Template
     m.call(fixedPaymentTemplate, 'initialize', [
       fixedPaymentTemplate, 
+      assetsRegistry,
       agreementsStore, 
       lockPaymentCondition, 
       transferCreditsCondition, 

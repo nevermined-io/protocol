@@ -36,7 +36,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
+    bytes32 /*_did*/,
     bytes32 _planId,
     bytes32 _lockCondition,
     bytes32 _releaseCondition
@@ -48,8 +48,8 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
     if (agreement.lastUpdated == 0) revert IAgreement.AgreementNotFound(_agreementId);
 
     // Check if the DID & Plan are registered in the AssetsRegistry
-    if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
+    // if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+    // if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // Check if the plan credits config is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);

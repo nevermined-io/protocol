@@ -345,7 +345,7 @@ describe('LockPaymentCondition', function () {
       ).to.be.rejectedWith('AgreementNotFound')
     })
 
-    it('Should reject if asset does not exist', async function () {
+    it('Should reject if condition does not exist', async function () {
       const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
         await loadFixture(deployInstance)
 
@@ -385,54 +385,9 @@ describe('LockPaymentCondition', function () {
       await expect(
         lockPaymentCondition.write.fulfill(
           [realConditionId, realAgreementId, fakeDid, realPlanId, user.account.address],
-          { account: template.account, value: 100n },
+          { account: template.account, value: 101n },
         ),
-      ).to.be.rejectedWith('AssetNotFound')
-    })
-
-    it('Should reject if plan does not exist', async function () {
-      const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
-        await loadFixture(deployInstance)
-
-      // Register asset and plan
-      const assetData = await registerAssetAndPlan(
-        assetsRegistry,
-        zeroAddress,
-        user,
-        user.account.address,
-      )
-      const realDid = assetData.did
-      const realPlanId = assetData.planId
-
-      // Create agreement with empty condition IDs
-      const agreementSeed = generateId()
-      const realAgreementId = await agreementsStore.read.hashAgreementId([
-        agreementSeed,
-        user.account.address,
-      ])
-
-      // Register agreement
-      await agreementsStore.write.register(
-        [realAgreementId, user.account.address, realDid, realPlanId, [], [], []],
-        { account: template.account },
-      )
-
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      const realConditionId = await lockPaymentCondition.read.hashConditionId([
-        realAgreementId,
-        contractName,
-      ])
-
-      // Try to fulfill condition with non-existent plan
-      const fakePlanId = ('0x' + '3'.repeat(64)) as `0x${string}`
-
-      await expect(
-        lockPaymentCondition.write.fulfill(
-          [realConditionId, realAgreementId, realDid, fakePlanId, user.account.address],
-          { account: template.account, value: 100n },
-        ),
-      ).to.be.rejectedWith('PlanNotFound')
+      ).to.be.rejectedWith('ConditionIdNotFound')
     })
 
     it('Should reject if payment amount is incorrect', async function () {

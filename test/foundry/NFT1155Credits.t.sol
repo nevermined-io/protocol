@@ -58,6 +58,18 @@ contract NFT1155CreditsTest is Test {
     nft1155.burn(owner, 1, 1);
   }
 
+  function test_burn_correct() public {
+    nvmConfig.grantRole(nft1155.CREDITS_MINTER_ROLE(), address(this));
+    nvmConfig.grantRole(nft1155.CREDITS_BURNER_ROLE(), address(this));
+
+    bytes32 planId = _createPlan();
+
+    nft1155.mint(receiver, uint256(planId), 5, "");
+    nft1155.burn(receiver, uint256(planId), 1);
+    uint256 balance = nft1155.balanceOf(receiver, uint256(planId));
+    assertEq(balance, 4);
+  }
+
   function _createPlan() internal returns (bytes32) {
     uint256[] memory _amounts = new uint256[](1);
     _amounts[0] = 100;

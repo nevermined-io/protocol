@@ -10,11 +10,15 @@ import { IAgreement } from '../interfaces/IAgreement.sol';
 import { LockPaymentCondition } from '../conditions/LockPaymentCondition.sol';
 import { TransferCreditsCondition } from '../conditions/TransferCreditsCondition.sol';
 import { DistributePaymentsCondition } from '../conditions/DistributePaymentsCondition.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
+// import 'hardhat/console.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
 
   INVMConfig internal nvmConfig;
+  IAsset internal assetsRegistry;
+
   // Conditions required to execute this template
   LockPaymentCondition internal lockPaymentCondition;
   TransferCreditsCondition internal transferCondition;
@@ -22,12 +26,14 @@ contract FixedPaymentTemplate is BaseTemplate {
 
   function initialize(
     address _nvmConfigAddress,
+    address _assetsRegistryAddress,
     address _agreementStoreAddress,
     address _lockPaymentConditionAddress,
     address _transferCondtionAddress,
     address _distributePaymentsCondition
   ) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = AgreementsStore(_agreementStoreAddress);
     lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     transferCondition = TransferCreditsCondition(_transferCondtionAddress);
@@ -45,6 +51,10 @@ contract FixedPaymentTemplate is BaseTemplate {
     if (_seed == bytes32(0)) revert InvalidSeed(_seed);
     if (_did == bytes32(0)) revert InvalidDID(_did);
     if (_planId == bytes32(0)) revert InvalidPlanId(_planId);
+
+    // Check if the DID & Plan are registered in the AssetsRegistry
+    if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // Calculate agreementId
     bytes32 agreementId = keccak256(
@@ -103,6 +113,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _planId,
     address _senderAddress
   ) internal {
+    
     lockPaymentCondition.fulfill{ value: msg.value }(
       _conditionId,
       _agreementId,
@@ -120,6 +131,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _lockPaymentCondition,
     address _receiverAddress
   ) internal {
+    
     bytes32[] memory _requiredConditons = new bytes32[](1);
     _requiredConditons[0] = _lockPaymentCondition;
     transferCondition.fulfill(
@@ -140,6 +152,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
   ) internal {
+    
     distributePaymentsCondition.fulfill(
       _conditionId,
       _agreementId,

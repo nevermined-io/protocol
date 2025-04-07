@@ -64,7 +64,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender)
       revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
-    
+
     _mint(_to, _id, _amount, _data);
   }
 
@@ -114,7 +114,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
 
     _burn(_from, _id, creditsToRedeem);
   }
-
 
   /**
    * It burns/redeem credits in batch.
