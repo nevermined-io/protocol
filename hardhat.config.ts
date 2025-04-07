@@ -8,13 +8,23 @@ import '@nomicfoundation/hardhat-foundry'
 
 const MNEMONIC =
   process.env.MNEMONIC ||
-  'taxi music thumb unique chat sand crew more leg another off lamp'
+  'test test test test test test test test test test test junk'
 const accounts = {
   mnemonic: MNEMONIC,
 }
 
 const config: HardhatUserConfig = {
-  solidity: '0.8.28',
+
+  solidity: {
+    version: '0.8.28',
+    settings: {
+      evmVersion: 'cancun',
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    },
+  },
   networks: {
     hardhat: {
       accounts,
