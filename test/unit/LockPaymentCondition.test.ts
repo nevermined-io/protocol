@@ -78,7 +78,7 @@ describe('LockPaymentCondition', function () {
 
   describe('Fulfill Method - Native Token', function () {
     let did: `0x${string}`
-    let planId: `0x${string}`
+    let planId: bigint
     let agreementId: `0x${string}`
     let conditionId: `0x${string}`
 
@@ -148,7 +148,7 @@ describe('LockPaymentCondition', function () {
 
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
+        [testConditionId, testAgreementId, testPlanId, user.account.address],
         { account: template.account, value: totalAmount },
       )
 
@@ -175,7 +175,7 @@ describe('LockPaymentCondition', function () {
 
   describe('Fulfill Method - ERC20 Token', function () {
     let did: `0x${string}`
-    let planId: `0x${string}`
+    let planId: bigint
     let agreementId: `0x${string}`
     let conditionId: `0x${string}`
 
@@ -261,7 +261,7 @@ describe('LockPaymentCondition', function () {
 
       // Fulfill condition
       const txHash = await lockPaymentCondition.write.fulfill(
-        [testConditionId, testAgreementId, testDid, testPlanId, user.account.address],
+        [testConditionId, testAgreementId, testPlanId, user.account.address],
         { account: template.account },
       )
 
@@ -288,7 +288,7 @@ describe('LockPaymentCondition', function () {
 
   describe('Error Conditions', function () {
     let did: `0x${string}`
-    let planId: `0x${string}`
+    let planId: bigint
     let agreementId: `0x${string}`
     let conditionId: `0x${string}`
 
@@ -325,7 +325,7 @@ describe('LockPaymentCondition', function () {
       // Try to fulfill condition from non-template account
       await expect(
         lockPaymentCondition.write.fulfill(
-          [conditionId, agreementId, did, planId, user.account.address],
+          [conditionId, agreementId, planId, user.account.address],
           { account: user.account, value: 100n },
         ),
       ).to.be.rejectedWith('OnlyTemplate')
@@ -339,13 +339,13 @@ describe('LockPaymentCondition', function () {
 
       await expect(
         lockPaymentCondition.write.fulfill(
-          [conditionId, fakeAgreementId, did, planId, user.account.address],
+          [conditionId, fakeAgreementId, planId, user.account.address],
           { account: template.account, value: 100n },
         ),
       ).to.be.rejectedWith('AgreementNotFound')
     })
 
-    it('Should reject if asset does not exist', async function () {
+    it('Should reject if condition does not exist', async function () {
       const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
         await loadFixture(deployInstance)
 
@@ -379,60 +379,12 @@ describe('LockPaymentCondition', function () {
         contractName,
       ])
 
-      // Try to fulfill condition with non-existent asset
-      const fakeDid = ('0x' + '2'.repeat(64)) as `0x${string}`
-
       await expect(
         lockPaymentCondition.write.fulfill(
-          [realConditionId, realAgreementId, fakeDid, realPlanId, user.account.address],
-          { account: template.account, value: 100n },
+          [realConditionId, realAgreementId, realPlanId, user.account.address],
+          { account: template.account, value: 101n },
         ),
-      ).to.be.rejectedWith('AssetNotFound')
-    })
-
-    it('Should reject if plan does not exist', async function () {
-      const { lockPaymentCondition, agreementsStore, assetsRegistry, template, user } =
-        await loadFixture(deployInstance)
-
-      // Register asset and plan
-      const assetData = await registerAssetAndPlan(
-        assetsRegistry,
-        zeroAddress,
-        user,
-        user.account.address,
-      )
-      const realDid = assetData.did
-      const realPlanId = assetData.planId
-
-      // Create agreement with empty condition IDs
-      const agreementSeed = generateId()
-      const realAgreementId = await agreementsStore.read.hashAgreementId([
-        agreementSeed,
-        user.account.address,
-      ])
-
-      // Register agreement
-      await agreementsStore.write.register(
-        [realAgreementId, user.account.address, realDid, realPlanId, [], [], []],
-        { account: template.account },
-      )
-
-      // Generate condition ID
-      const contractName = await lockPaymentCondition.read.NVM_CONTRACT_NAME()
-      const realConditionId = await lockPaymentCondition.read.hashConditionId([
-        realAgreementId,
-        contractName,
-      ])
-
-      // Try to fulfill condition with non-existent plan
-      const fakePlanId = ('0x' + '3'.repeat(64)) as `0x${string}`
-
-      await expect(
-        lockPaymentCondition.write.fulfill(
-          [realConditionId, realAgreementId, realDid, fakePlanId, user.account.address],
-          { account: template.account, value: 100n },
-        ),
-      ).to.be.rejectedWith('PlanNotFound')
+      ).to.be.rejectedWith('ConditionIdNotFound')
     })
 
     it('Should reject if payment amount is incorrect', async function () {
@@ -476,7 +428,7 @@ describe('LockPaymentCondition', function () {
       // Try to fulfill condition with incorrect payment amount
       await expect(
         lockPaymentCondition.write.fulfill(
-          [realConditionId, realAgreementId, realDid, realPlanId, user.account.address],
+          [realConditionId, realAgreementId, realPlanId, user.account.address],
           { account: template.account, value: totalAmount - 1n },
         ),
       ).to.be.rejectedWith('InvalidTransactionAmount')
@@ -543,7 +495,7 @@ describe('LockPaymentCondition', function () {
       // Try to fulfill condition with FIXED_FIAT_PRICE
       await expect(
         lockPaymentCondition.write.fulfill(
-          [newConditionId, newAgreementId, newDid, newPlanId, user.account.address],
+          [newConditionId, newAgreementId, newPlanId, user.account.address],
           { account: template.account },
         ),
       ).to.be.rejectedWith('UnsupportedPriceTypeOption')

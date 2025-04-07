@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { expect } from 'chai'
 import hre from 'hardhat'
-import { getTxParsedLogs } from '../common/utils'
+import { createCreditsConfig, createPriceConfig, registerPlan } from '../common/utils'
 import { zeroAddress } from 'viem'
 import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 
@@ -16,7 +16,8 @@ describe('NFT1155Credits', function () {
     // Contracts are deployed using the first signer/account by default
     const [owner, minter, burner, unauthorized] = await hre.viem.getWalletClients()
 
-    const { nvmConfig, nftCredits } = await hre.ignition.deploy(FullDeploymentModule)
+    const { nvmConfig, assetsRegistry, nftCredits } =
+      await hre.ignition.deploy(FullDeploymentModule)
     const publicClient = await hre.viem.getPublicClient()
 
     // Get the role constants
@@ -31,13 +32,40 @@ describe('NFT1155Credits', function () {
       account: owner.account,
     })
 
+    const priceConfig = createPriceConfig(zeroAddress, owner.account.address)
+    const creditsConfig = createCreditsConfig()
+    const planId = await registerPlan(
+      assetsRegistry,
+      owner,
+      priceConfig,
+      creditsConfig,
+      nftCredits.address,
+    )
+
+    const priceConfig2 = { ...priceConfig }
+    const creditsConfig2 = { ...creditsConfig, amount: 200n, minAmount: 2n }
+    const planId2 = await registerPlan(
+      assetsRegistry,
+      owner,
+      priceConfig2,
+      creditsConfig2,
+      nftCredits.address,
+    )
+
     return {
       nftCredits,
       nvmConfig,
+      assetsRegistry,
       owner,
       minter,
       burner,
       unauthorized,
+      planId,
+      planId2,
+      priceConfig,
+      creditsConfig,
+      priceConfig2,
+      creditsConfig2,
       publicClient,
       CREDITS_MINTER_ROLE,
       CREDITS_BURNER_ROLE,
@@ -57,44 +85,44 @@ describe('NFT1155Credits', function () {
 
   describe('Role-based access control for minting', function () {
     it('Account with CREDITS_MINTER_ROLE can mint credits', async function () {
-      const { nftCredits, minter, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, minter, unauthorized, planId, creditsConfig } =
+        await loadFixture(deployInstance)
 
-      const tokenId = 1n
-      const amount = 100n
+      const amount = creditsConfig.amount
 
       // Mint credits as authorized minter
       const txHash = await nftCredits.write.mint(
-        [unauthorized.account.address, tokenId, amount, '0x'],
+        [unauthorized.account.address, planId, amount, '0x'],
         { account: minter.account },
       )
 
       expect(txHash).to.be.a('string')
 
       // Check balance was updated correctly
-      const balance = await nftCredits.read.balanceOf([unauthorized.account.address, tokenId])
+      const balance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
 
       expect(balance).to.equal(amount)
     })
 
     it('Account without CREDITS_MINTER_ROLE cannot mint credits', async function () {
-      const { nftCredits, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, unauthorized, planId, creditsConfig } = await loadFixture(deployInstance)
 
-      const tokenId = 1n
-      const amount = 100n
+      const amount = creditsConfig.amount
 
       // Try to mint as unauthorized account
       await expect(
-        nftCredits.write.mint([unauthorized.account.address, tokenId, amount, '0x'], {
+        nftCredits.write.mint([unauthorized.account.address, planId, amount, '0x'], {
           account: unauthorized.account,
         }),
       ).to.be.rejectedWith('InvalidRole')
     })
 
     it('Account with CREDITS_MINTER_ROLE can mint batch credits', async function () {
-      const { nftCredits, minter, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, minter, unauthorized, planId, planId2, creditsConfig, creditsConfig2 } =
+        await loadFixture(deployInstance)
 
-      const tokenIds = [1n, 2n]
-      const amounts = [100n, 200n]
+      const tokenIds = [planId, planId2]
+      const amounts = [creditsConfig.amount, creditsConfig2.amount]
 
       // Mint batch credits as authorized minter
       const txHash = await nftCredits.write.mintBatch(
@@ -114,10 +142,11 @@ describe('NFT1155Credits', function () {
     })
 
     it('Account without CREDITS_MINTER_ROLE cannot mint batch credits', async function () {
-      const { nftCredits, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, unauthorized, planId, planId2, creditsConfig, creditsConfig2 } =
+        await loadFixture(deployInstance)
 
-      const tokenIds = [1n, 2n]
-      const amounts = [100n, 200n]
+      const tokenIds = [planId, planId2]
+      const amounts = [creditsConfig.amount, creditsConfig2.amount]
 
       // Try to mint batch as unauthorized account
       await expect(
@@ -129,71 +158,86 @@ describe('NFT1155Credits', function () {
   })
 
   describe('Role-based access control for burning', function () {
+    it('Account can not burn if plan doesnt exist', async function () {
+      const { nftCredits, burner, unauthorized } = await loadFixture(deployInstance)
+      const randomTokenId = 1n
+      await expect(
+        nftCredits.write.burn([unauthorized.account.address, randomTokenId, 1n], {
+          account: burner.account,
+        }),
+      ).to.be.rejectedWith('PlanNotFound')
+    })
     it('Account with CREDITS_BURNER_ROLE can burn credits', async function () {
-      const { nftCredits, minter, burner, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, minter, burner, unauthorized, planId, creditsConfig } =
+        await loadFixture(deployInstance)
 
-      const tokenId = 1n
-      const mintAmount = 100n
-      const burnAmount = 50n
+      const mintAmount = creditsConfig.amount
+      const burnAmount = creditsConfig.minAmount
 
       // First mint some credits to burn
-      await nftCredits.write.mint([unauthorized.account.address, tokenId, mintAmount, '0x'], {
+      await nftCredits.write.mint([unauthorized.account.address, planId, mintAmount, '0x'], {
         account: minter.account,
       })
 
       // Check initial balance
-      const initialBalance = await nftCredits.read.balanceOf([
-        unauthorized.account.address,
-        tokenId,
-      ])
+      const initialBalance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
 
       expect(initialBalance).to.equal(mintAmount)
 
       // Burn credits as authorized burner
       const txHash = await nftCredits.write.burn(
-        [unauthorized.account.address, tokenId, burnAmount],
+        [unauthorized.account.address, planId, burnAmount],
         { account: burner.account },
       )
 
       expect(txHash).to.be.a('string')
 
       // Check balance was updated correctly after burn
-      const finalBalance = await nftCredits.read.balanceOf([unauthorized.account.address, tokenId])
+      const finalBalance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
 
       expect(finalBalance).to.equal(mintAmount - burnAmount)
     })
 
     it('Account without CREDITS_BURNER_ROLE cannot burn credits', async function () {
-      const { nftCredits, minter, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, minter, unauthorized, planId, creditsConfig } =
+        await loadFixture(deployInstance)
 
-      const tokenId = 1n
-      const mintAmount = 100n
-      const burnAmount = 50n
+      const mintAmount = creditsConfig.amount
+      const burnAmount = creditsConfig.minAmount
 
       // First mint some credits
-      await nftCredits.write.mint([unauthorized.account.address, tokenId, mintAmount, '0x'], {
+      await nftCredits.write.mint([unauthorized.account.address, planId, mintAmount, '0x'], {
         account: minter.account,
       })
 
       // Try to burn as unauthorized account
       await expect(
-        nftCredits.write.burn([unauthorized.account.address, tokenId, burnAmount], {
+        nftCredits.write.burn([unauthorized.account.address, planId, burnAmount], {
           account: unauthorized.account,
         }),
-      ).to.be.rejectedWith('InvalidRole')
+      ).to.be.rejectedWith('InvalidRedemptionPermission')
 
       // Verify balance hasn't changed
-      const balance = await nftCredits.read.balanceOf([unauthorized.account.address, tokenId])
+      const balance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
 
       expect(balance).to.equal(mintAmount)
     })
 
     it('Account with CREDITS_BURNER_ROLE can burn batch credits', async function () {
-      const { nftCredits, minter, burner, unauthorized } = await loadFixture(deployInstance)
+      const {
+        nftCredits,
+        minter,
+        burner,
+        unauthorized,
+        planId,
+        planId2,
+        creditsConfig,
+        creditsConfig2,
+      } = await loadFixture(deployInstance)
 
-      const tokenIds = [1n, 2n]
-      const mintAmounts = [100n, 200n]
-      const burnAmounts = [50n, 100n]
+      const tokenIds = [planId, planId2]
+      const mintAmounts = [creditsConfig.amount, creditsConfig2.amount]
+      const burnAmounts = [creditsConfig.minAmount, creditsConfig2.minAmount]
 
       // First mint some batch credits to burn
       await nftCredits.write.mintBatch(
@@ -239,11 +283,12 @@ describe('NFT1155Credits', function () {
     })
 
     it('Account without CREDITS_BURNER_ROLE cannot burn batch credits', async function () {
-      const { nftCredits, minter, unauthorized } = await loadFixture(deployInstance)
+      const { nftCredits, minter, unauthorized, planId, planId2, creditsConfig, creditsConfig2 } =
+        await loadFixture(deployInstance)
 
-      const tokenIds = [1n, 2n]
-      const mintAmounts = [100n, 200n]
-      const burnAmounts = [50n, 100n]
+      const tokenIds = [planId, planId2]
+      const mintAmounts = [creditsConfig.amount, creditsConfig2.amount]
+      const burnAmounts = [creditsConfig.minAmount, creditsConfig2.minAmount]
 
       // First mint some batch credits
       await nftCredits.write.mintBatch(
@@ -265,6 +310,38 @@ describe('NFT1155Credits', function () {
 
       expect(balance1).to.equal(mintAmounts[0])
       expect(balance2).to.equal(mintAmounts[1])
+    })
+  })
+
+  describe('Credits can not be burned out of their threshold', function () {
+    it('Can not be burned more credits than defined', async function () {
+      const { nftCredits, minter, burner, unauthorized, planId, creditsConfig } =
+        await loadFixture(deployInstance)
+
+      const mintAmount = creditsConfig.amount
+      const burnAmount = creditsConfig.maxAmount + 1n
+
+      // First mint some credits to burn
+      await nftCredits.write.mint([unauthorized.account.address, planId, mintAmount, '0x'], {
+        account: minter.account,
+      })
+
+      // Check initial balance
+      const initialBalance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
+      expect(initialBalance).to.equal(mintAmount)
+
+      // Burn credits as authorized burner
+      const txHash = await nftCredits.write.burn(
+        [unauthorized.account.address, planId, burnAmount],
+        { account: burner.account },
+      )
+
+      expect(txHash).to.be.a('string')
+
+      // Check balance was updated correctly after burn
+      const finalBalance = await nftCredits.read.balanceOf([unauthorized.account.address, planId])
+
+      expect(finalBalance).to.equal(mintAmount - creditsConfig.minAmount)
     })
   })
 })

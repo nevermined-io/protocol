@@ -26,6 +26,17 @@ interface IAsset {
     DYNAMIC
   }
 
+  /// Different types of redemptions criterias that can be used when redeeming credits
+  /// @notice 0 - ONLY_GLOBAL_ROLE, 1 - ONLY_OWNER, 2 - ROLE_AND_OWNER
+  /// If ONLY_GLOBAL_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
+  /// If ONLY_OWNER it means the credits can be redeemed only by the owner of the Plan
+  /// If ONLY_PLAN_ROLE it means the credits can be redeemed by an account with specifics grants for the plan
+  enum RedemptionType {
+    ONLY_GLOBAL_ROLE,
+    ONLY_OWNER,
+    ONLY_PLAN_ROLE
+  }
+
   struct DIDAsset {
     // The owner of the asset
     address owner;
@@ -36,7 +47,7 @@ interface IAsset {
     // When was the DID last updated
     uint256 lastUpdated;
     // Array of plans that can be used to purchase access to the asset
-    bytes32[] plans;
+    uint256[] plans;
   }
 
   /// Definition of the price configuration for a plan
@@ -75,6 +86,10 @@ interface IAsset {
      */
     CreditsType creditsType;
     /**
+     * How the credits can be redeemed
+     */
+    RedemptionType redemptionType;
+    /**
      * The duration of the credits in seconds
      * @notice only if creditsType == EXPIRABLE
      */
@@ -97,6 +112,8 @@ interface IAsset {
 
   /// Definition of a plan
   struct Plan {
+    // The owner of the Plan
+    address owner;
     // The price configuration of the plan
     PriceConfig price;
     // The credits configuration of the plan
@@ -113,7 +130,7 @@ interface IAsset {
 
   /// The `planId` representing the unique identifier of Plan doesn't exist
   /// @param planId The unique identifier of a Plan
-  error PlanNotFound(bytes32 planId);
+  error PlanNotFound(uint256 planId);
 
   /// The `amounts` and `receivers` do not include the Nevermined fees
   /// @param amounts The distribution of the payment amounts
@@ -124,13 +141,20 @@ interface IAsset {
   /// @param creditsType The type of credits
   error InvalidCreditsType(CreditsType creditsType);
 
+  /// The `amount` of credits to redeem is not valid
+  /// @param planId The identifier of the plan
+  /// @param creditsType The type of credits
+  /// @param amount The amount of credits to redeem
+
+  error InvalidRedemptionAmount(uint256 planId, CreditsType creditsType, uint256 amount);
+
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
   function assetExists(bytes32 _did) external view returns (bool);
 
-  function getPlan(bytes32 _planId) external view returns (Plan memory);
+  function getPlan(uint256 _planId) external view returns (Plan memory);
 
-  function planExists(bytes32 _planId) external view returns (bool);
+  function planExists(uint256 _planId) external view returns (bool);
 
   function areNeverminedFeesIncluded(
     uint256[] memory _amounts,

@@ -1,5 +1,4 @@
 import { keccak256, parseEventLogs, toBytes } from 'viem'
-import { execSync } from 'child_process';
 
 export function generateId(): `0x${string}` {
   return keccak256(toBytes(Math.random().toString()))
@@ -19,21 +18,6 @@ export async function getTxParsedLogs(publicClient: any, txHash: string, abi: an
   const logs = await getTxEvents(publicClient, txHash)
   if (logs.length > 0) return parseEventLogs({ abi, logs }) as any[]
   return []
-}
-
-export interface ForgeAccount {
-  mnemonic: string
-  index: number
-  address: `0x${string}`
-}
-
-export function deployContractsWithForge(rpcUrl: string, accountAttributes: ForgeAccount) {
-  const command = `forge script scripts/deploy/DeployAll.sol /n
-  --extra-output-files abi --rpc-url ${rpcUrl} --broadcast --mnemonics "${accountAttributes.mnemonic}" 
-  --mnemonic-indexes ${accountAttributes.index} --sender ${accountAttributes.address} `;
-
-  const output = execSync(command, { encoding: 'utf8' })
-  console.log(output)  
 }
 
 /**
@@ -59,11 +43,44 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
 export function createCreditsConfig(): any {
   return {
     creditsType: 1, // FIXED
+    redemptionType: 0, // ONLY_GLOBAL_ROLE
     durationSecs: 0n,
     amount: 100n,
     minAmount: 1n,
     maxAmount: 1n,
   }
+}
+
+export async function registerPlan(
+  assetsRegistry: any,
+  publisher: any,
+  priceConfig: any,
+  creditsConfig: any,
+  nftCreditsAddress: string,
+): Promise<any> {
+  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+    priceConfig.amounts,
+    priceConfig.receivers,
+  ])
+  const [_amounts, _receivers] = result
+  priceConfig.amounts = _amounts
+  priceConfig.receivers = _receivers
+
+  const planId = await assetsRegistry.read.hashPlanId([
+    priceConfig,
+    creditsConfig,
+    nftCreditsAddress,
+    publisher.account.address,
+  ])
+  try {
+    await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftCreditsAddress], {
+      account: publisher.account,
+    })
+  } catch (e) {
+    console.log('Plan already registered: ', planId)
+  }
+
+  return planId
 }
 
 /**
@@ -80,7 +97,7 @@ export async function registerAssetAndPlan(
   creator: any,
   creatorAddress: `0x${string}`,
   nftAddress?: `0x${string}`,
-): Promise<{ did: `0x${string}`; planId: `0x${string}` }> {
+): Promise<{ did: `0x${string}`; planId: bigint }> {
   const didSeed = generateId()
   const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
 
@@ -123,7 +140,7 @@ export async function createAgreement(
   agreementsStore: any,
   lockPaymentCondition: any,
   did: `0x${string}`,
-  planId: `0x${string}`,
+  planId: bigint,
   user: any,
   template: any,
 ): Promise<{ agreementId: `0x${string}`; conditionId: `0x${string}` }> {

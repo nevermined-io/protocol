@@ -9,7 +9,7 @@ import {NFT1155Credits} from "../../contracts/token/NFT1155Credits.sol";
 import {NFT1155ExpirableCredits} from "../../contracts/token/NFT1155ExpirableCredits.sol";
 
 contract DeployNFTContracts is Script, DeployConfig {
-    function run(address nvmConfigAddress, address ownerAddress) 
+    function run(address nvmConfigAddress, address assetsRegistryAddress, address ownerAddress) 
     public returns (
         NFT1155Credits, 
         NFT1155ExpirableCredits
@@ -19,11 +19,11 @@ contract DeployNFTContracts is Script, DeployConfig {
                 
         // Deploy NFT1155Credits
         NFT1155Credits nftCredits = new NFT1155Credits();
-        nftCredits.initialize(nvmConfigAddress, "Nevermined Credits", "NMCR");
+        nftCredits.initialize(nvmConfigAddress, assetsRegistryAddress, "Nevermined Credits", "NMCR");
         
         // Deploy NFT1155Credits
         NFT1155ExpirableCredits nftExpirableCredits = new NFT1155ExpirableCredits();
-        nftExpirableCredits.initialize(nvmConfigAddress, "Nevermined Expirable Credits", "NMEX");
+        nftExpirableCredits.initialize(nvmConfigAddress, assetsRegistryAddress, "Nevermined Expirable Credits", "NMEX");
         
         vm.stopBroadcast();
         

@@ -30,7 +30,7 @@ interface IAgreement {
 
   struct Agreement {
     bytes32 did;
-    bytes32 planId;
+    uint256 planId;
     address agreementCreator;
     bytes32[] conditionIds;
     ConditionState[] conditionStates;

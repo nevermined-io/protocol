@@ -21,7 +21,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   let alice: any
   let bob: any
   let did: string
-  let planId: string
+  let planId: bigint
   let agreementId: string
   let publicClient: any
   let aliceBalanceBefore: bigint
@@ -40,6 +40,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   }
   const creditsConfig = {
     creditsType: 0, // Means Expirable Credits
+    redemptionType: 2, // Means Role and Owner can redeem credits
     durationSecs: 600, // 10 minutes expiration time
     amount: 500,
     minAmount: 1,
@@ -112,7 +113,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Asset = :', asset)
     expect(asset.lastUpdated > 0n).to.be.true
     planId = asset.plans[0]
-    expect(planId).to.be.a('string').to.startWith('0x')
+    expect(planId > 0n).to.be.true
 
     console.log('Plan ID:', planId)
     const plan = await _deployment.assetsRegistry.read.getPlan([planId])
@@ -156,7 +157,10 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftExpirableCredits.read.balanceOf([bob.account.address, did])
+    const balance = await _deployment.nftExpirableCredits.read.balanceOf([
+      bob.account.address,
+      planId,
+    ])
     console.log('Credits Balance:', balance)
     expect(balance > 0n).to.be.true
   })
@@ -185,7 +189,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     // First verify Bob has credits
     const balanceBefore = await _deployment.nftExpirableCredits.read.balanceOf([
       bob.account.address,
-      did,
+      planId,
     ])
     expect(balanceBefore > 0n).to.be.true
     console.log('Credits Balance Before Time Advance:', balanceBefore)

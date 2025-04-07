@@ -33,17 +33,12 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
   function fulfill(
     bytes32 _conditionId,
     bytes32 _agreementId,
-    bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32[] memory _requiredConditions,
     address _receiverAddress
   ) external payable nonReentrant {
     // Validate if the account calling this function is a registered template
     if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
-
-    // Check if the DID & Plan are registered in the AssetsRegistry
-    if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-    if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
     // Check if the required conditions (LockPayment) are already fulfilled
     if (!agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions))
@@ -65,14 +60,14 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
         NFT1155ExpirableCredits nft1155 = NFT1155ExpirableCredits(plan.nftAddress);
         nft1155.mint(
           _receiverAddress,
-          uint256(_did),
+          uint256(_planId),
           plan.credits.amount,
           plan.credits.durationSecs,
           ''
         );
       } else if (plan.credits.creditsType == IAsset.CreditsType.FIXED) {
         NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
-        nft1155.mint(_receiverAddress, uint256(_did), plan.credits.amount, '');
+        nft1155.mint(_receiverAddress, uint256(_planId), plan.credits.amount, '');
       } else if (plan.credits.creditsType == IAsset.CreditsType.DYNAMIC) {
         revert IAsset.InvalidCreditsType(plan.credits.creditsType);
       } else {

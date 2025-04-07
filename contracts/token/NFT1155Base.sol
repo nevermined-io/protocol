@@ -7,6 +7,7 @@ import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ER
 import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import { IERC2981 } from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 
 abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   /**
@@ -25,20 +26,56 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    */
   bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
 
+  /// Internal instance of the NVMConfig contract
   INVMConfig internal nvmConfig;
+
+  /// Internal instance of the AssetsRegistry contract
+  IAsset internal assetsRegistry;
 
   /// Only an account with the right role can access this function
   /// @param sender The address of the account calling this function
   /// @param role The role required to call this function
   error InvalidRole(address sender, bytes32 role);
 
-  function mint(address _to, uint256 _id, uint256 _value, bytes memory _data) public virtual {
-    if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
+  /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`
+  /// @param planId The identifier of the plan
+  /// @param redemptionType The type of redemptions that can be used for the plan
+  /// @param sender The address of the account calling this function
+  error InvalidRedemptionPermission(
+    uint256 planId,
+    IAsset.RedemptionType redemptionType,
+    address sender
+  );
+
+  /**
+   * It mints credits for a plan.
+   * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+   * @notice The payment plan must exists
+   * @param _to the receiver of the credits
+   * @param _planId the plan id
+   * @param _amount the number of credits to mint
+   * @param _data additional data to pass to the receiver
+   */
+  function mint(address _to, uint256 _planId, uint256 _amount, bytes memory _data) public virtual {
+    IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
+
+    // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+    if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender)
       revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
 
-    _mint(_to, _id, _value, _data);
+    _mint(_to, _planId, _amount, _data);
   }
 
+  /**
+   * It mints credits in batch.
+   * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
+   * @notice The payment plan must exists
+   * @param _to the receiver of the credits
+   * @param _ids the plan ids
+   * @param _values the number of credits to mint
+   * @param _data additional data to pass to the receiver
+   */
   function mintBatch(
     address _to,
     uint256[] memory _ids,
@@ -51,22 +88,90 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     _mintBatch(_to, _ids, _values, _data);
   }
 
-  function burn(address _from, uint256 _id, uint256 _value) public virtual {
-    if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
-      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+  /**
+   * It burns/redeem credits for a plan.
+   * @notice The redemption rules depend on the plan.credits.redemptionType
+   * @param _from The address of the account that is getting the credits burned
+   * @param _planId the plan id
+   * @param _amount the number of credits to burn/redeem
+   */
+  function burn(address _from, uint256 _planId, uint256 _amount) public virtual {
+    IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
-    _burn(_from, _id, _value);
+    if (!_canRedeemCredits(_planId, plan.owner, plan.credits.redemptionType, msg.sender))
+      revert InvalidRedemptionPermission(_planId, plan.credits.redemptionType, msg.sender);
+
+    uint256 creditsToRedeem = _creditsToRedeem(
+      _planId,
+      plan.credits.creditsType,
+      _amount,
+      plan.credits.minAmount,
+      plan.credits.maxAmount
+    );
+
+    _burn(_from, _planId, creditsToRedeem);
   }
 
+  /**
+   * It burns/redeem credits in batch.
+   * @param _from the address of the account that is getting the credits burned
+   * @param _ids the array of plan ids
+   * @param _amounts the array of number of credits to burn/redeem
+   */
   function burnBatch(
     address _from,
     uint256[] memory _ids,
-    uint256[] memory _values
+    uint256[] memory _amounts
   ) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
       revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
 
-    _burnBatch(_from, _ids, _values);
+    _burnBatch(_from, _ids, _amounts);
+  }
+
+  /**
+   * It calculates the number of credits to redeme based on the plan and the credits type
+   * @notice The credits to redeem depend on the plan.credits.creditsType
+   * @param _planId the identifier of the plan
+   * @param _creditsType the type of credits
+   * @param _amount the number of credits requested to redeem
+   * @param _min the minimum number of credits to redeem configured in the plan
+   * @param _max the maximum number of credits to redeem configured in the plan
+   * @return the number of credits to redeem
+   */
+  function _creditsToRedeem(
+    uint256 _planId,
+    IAsset.CreditsType _creditsType,
+    uint256 _amount,
+    uint256 _min,
+    uint256 _max
+  ) internal pure returns (uint256) {
+    if (_creditsType == IAsset.CreditsType.DYNAMIC) {
+      if (_amount < _min || _amount > _max) return _min;
+      else return _amount;
+    } else if (_creditsType == IAsset.CreditsType.FIXED) {
+      return _min;
+    } else if (_creditsType == IAsset.CreditsType.EXPIRABLE) {
+      return 1;
+    }
+    revert IAsset.InvalidRedemptionAmount(_planId, _creditsType, _amount);
+  }
+
+  function _canRedeemCredits(
+    uint256 _planId,
+    address _owner,
+    IAsset.RedemptionType _redemptionType,
+    address _sender
+  ) internal view returns (bool) {
+    if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
+      return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
+    } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {
+      return _sender == _owner;
+    } else if (_redemptionType == IAsset.RedemptionType.ONLY_PLAN_ROLE) {
+      return nvmConfig.hasRole(_sender, keccak256(abi.encode(_planId)));
+    }
+    return false;
   }
 
   //@solhint-disable-next-line

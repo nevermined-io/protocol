@@ -35,7 +35,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
    * @param value the value of the parameter
    * @param isActive if the parameter is active or not
    * @param lastUpdated the timestamp of the last time the parameter was updated
-   */
+   */  
   struct ParamEntry {
     bytes value;
     bool isActive;

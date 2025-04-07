@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 
 import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 import { NFT1155Base } from './NFT1155Base.sol';
 
 contract NFT1155ExpirableCredits is NFT1155Base {
@@ -24,35 +25,39 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
   function initialize(
     address _nvmConfigAddress,
+    address _assetsRegistryAddress,
     string memory /*_name*/,
     string memory /*_symbol*/
   ) public virtual initializer {
     ERC1155Upgradeable.__ERC1155_init('');
+
     nvmConfig = INVMConfig(_nvmConfigAddress);
+    assetsRegistry = IAsset(_assetsRegistryAddress);
+
     __Ownable_init(msg.sender);
   }
 
   function mint(
     address _to,
-    uint256 _id,
+    uint256 _planId,
     uint256 _value,
     bytes memory _data
   ) public virtual override {
-    mint(_to, _id, _value, 0, _data);
+    mint(_to, _planId, _value, 0, _data);
   }
 
   function mint(
     address _to,
-    uint256 _id,
+    uint256 _planId,
     uint256 _value,
     uint256 _secsDuration,
     bytes memory _data
   ) public virtual {
-    bytes32 _key = _getTokenKey(_to, _id);
+    bytes32 _key = _getTokenKey(_to, _planId);
 
     _credits[_key].push(MintedCredits(_value, _secsDuration, block.timestamp, true));
 
-    super.mint(_to, _id, _value, _data);
+    super.mint(_to, _planId, _value, _data);
   }
 
   function mintBatch(
@@ -82,11 +87,11 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
   }
 
-  function burn(address _from, uint256 _id, uint256 _value) public virtual override {
+  function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
       revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
 
-    bytes32 _key = _getTokenKey(_from, _id);
+    bytes32 _key = _getTokenKey(_from, _planId);
     uint256 _pendingToBurn = _value;
 
     uint256 _numEntries = _credits[_key].length;
@@ -110,7 +115,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
       }
     }
 
-    super.burn(_from, _id, _value);
+    super.burn(_from, _planId, _value);
   }
 
   function burnBatch(
@@ -126,8 +131,11 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
   }
 
-  function balanceOf(address _owner, uint256 _id) public view virtual override returns (uint256) {
-    bytes32 _key = _getTokenKey(_owner, _id);
+  function balanceOf(
+    address _owner,
+    uint256 _planId
+  ) public view virtual override returns (uint256) {
+    bytes32 _key = _getTokenKey(_owner, _planId);
     uint256 _amountBurned;
     uint256 _amountMinted;
 
@@ -162,8 +170,8 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     return _balances;
   }
 
-  function whenWasMinted(address _owner, uint256 _id) public view returns (uint256[] memory) {
-    bytes32 _key = _getTokenKey(_owner, _id);
+  function whenWasMinted(address _owner, uint256 _planId) public view returns (uint256[] memory) {
+    bytes32 _key = _getTokenKey(_owner, _planId);
     uint256 _length = _credits[_key].length;
 
     uint256[] memory _whenMinted = new uint256[](_length);
@@ -175,12 +183,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
   function getMintedEntries(
     address _owner,
-    uint256 _id
+    uint256 _planId
   ) public view returns (MintedCredits[] memory) {
-    return _credits[_getTokenKey(_owner, _id)];
+    return _credits[_getTokenKey(_owner, _planId)];
   }
 
-  function _getTokenKey(address _account, uint256 _id) internal pure returns (bytes32) {
-    return keccak256(abi.encode(_account, _id));
+  function _getTokenKey(address _account, uint256 _planId) internal pure returns (bytes32) {
+    return keccak256(abi.encode(_account, _planId));
   }
 }
