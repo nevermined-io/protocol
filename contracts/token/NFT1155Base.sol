@@ -42,7 +42,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   /// @param redemptionType The type of redemptions that can be used for the plan
   /// @param sender The address of the account calling this function
   error InvalidRedemptionPermission(
-    bytes32 planId,
+    uint256 planId,
     IAsset.RedemptionType redemptionType,
     address sender
   );
@@ -52,20 +52,19 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
    * @notice The payment plan must exists
    * @param _to the receiver of the credits
-   * @param _id the plan id
+   * @param _planId the plan id
    * @param _amount the number of credits to mint
    * @param _data additional data to pass to the receiver
    */
-  function mint(address _to, uint256 _id, uint256 _amount, bytes memory _data) public virtual {
-    bytes32 planId = bytes32(_id);
-    IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
-    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(planId);
+  function mint(address _to, uint256 _planId, uint256 _amount, bytes memory _data) public virtual {    
+    IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
     // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender)
       revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
 
-    _mint(_to, _id, _amount, _data);
+    _mint(_to, _planId, _amount, _data);
   }
 
   /**
@@ -93,26 +92,26 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    * It burns/redeem credits for a plan.
    * @notice The redemption rules depend on the plan.credits.redemptionType
    * @param _from The address of the account that is getting the credits burned
-   * @param _id the plan id
+   * @param _planId the plan id
    * @param _amount the number of credits to burn/redeem
    */
-  function burn(address _from, uint256 _id, uint256 _amount) public virtual {
-    bytes32 planId = bytes32(_id);
-    IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
-    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(planId);
+  function burn(address _from, uint256 _planId, uint256 _amount) public virtual {
+    
+    IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+    if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
-    if (!_canRedeemCredits(planId, plan.owner, plan.credits.redemptionType, msg.sender))
-      revert InvalidRedemptionPermission(planId, plan.credits.redemptionType, msg.sender);
+    if (!_canRedeemCredits(_planId, plan.owner, plan.credits.redemptionType, msg.sender))
+      revert InvalidRedemptionPermission(_planId, plan.credits.redemptionType, msg.sender);
 
     uint256 creditsToRedeem = _creditsToRedeem(
-      planId,
+      _planId,
       plan.credits.creditsType,
       _amount,
       plan.credits.minAmount,
       plan.credits.maxAmount
     );
 
-    _burn(_from, _id, creditsToRedeem);
+    _burn(_from, _planId, creditsToRedeem);
   }
 
   /**
@@ -143,7 +142,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
    * @return the number of credits to redeem
    */
   function _creditsToRedeem(
-    bytes32 _planId,
+    uint256 _planId,
     IAsset.CreditsType _creditsType,
     uint256 _amount,
     uint256 _min,
@@ -161,17 +160,18 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
   }
 
   function _canRedeemCredits(
-    bytes32 _planId,
+    uint256 _planId,
     address _owner,
     IAsset.RedemptionType _redemptionType,
     address _sender
   ) internal view returns (bool) {
+    
     if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
       return nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
     } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {
       return _sender == _owner;
     } else if (_redemptionType == IAsset.RedemptionType.ONLY_PLAN_ROLE) {
-      return nvmConfig.hasRole(_sender, _planId);
+      return nvmConfig.hasRole(_sender, keccak256(abi.encode(_planId)));
     }
     return false;
   }

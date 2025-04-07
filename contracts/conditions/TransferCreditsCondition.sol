@@ -34,7 +34,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32[] memory _requiredConditions,
     address _receiverAddress
   ) external payable nonReentrant {

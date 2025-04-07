@@ -46,7 +46,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 /*_did*/,
-    bytes32 _planId,
+    uint256 _planId,
     address _senderAddress
   ) external payable nonReentrant {
     // Validate if the account calling this function is a registered template

@@ -43,7 +43,7 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     bytes32 _agreementId,
     address _agreementCreator,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32[] memory _conditionIds,
     ConditionState[] memory _conditionStates,
     bytes[] memory _params

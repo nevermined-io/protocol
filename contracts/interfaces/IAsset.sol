@@ -47,7 +47,7 @@ interface IAsset {
     // When was the DID last updated
     uint256 lastUpdated;
     // Array of plans that can be used to purchase access to the asset
-    bytes32[] plans;
+    uint256[] plans;
   }
 
   /// Definition of the price configuration for a plan
@@ -130,7 +130,7 @@ interface IAsset {
 
   /// The `planId` representing the unique identifier of Plan doesn't exist
   /// @param planId The unique identifier of a Plan
-  error PlanNotFound(bytes32 planId);
+  error PlanNotFound(uint256 planId);
 
   /// The `amounts` and `receivers` do not include the Nevermined fees
   /// @param amounts The distribution of the payment amounts
@@ -146,15 +146,15 @@ interface IAsset {
   /// @param creditsType The type of credits
   /// @param amount The amount of credits to redeem
 
-  error InvalidRedemptionAmount(bytes32 planId, CreditsType creditsType, uint256 amount);
+  error InvalidRedemptionAmount(uint256 planId, CreditsType creditsType, uint256 amount);
 
   function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
   function assetExists(bytes32 _did) external view returns (bool);
 
-  function getPlan(bytes32 _planId) external view returns (Plan memory);
+  function getPlan(uint256 _planId) external view returns (Plan memory);
 
-  function planExists(bytes32 _planId) external view returns (bool);
+  function planExists(uint256 _planId) external view returns (bool);
 
   function areNeverminedFeesIncluded(
     uint256[] memory _amounts,

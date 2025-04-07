@@ -44,13 +44,13 @@ contract FixedPaymentTemplate is BaseTemplate {
   function createAgreement(
     bytes32 _seed,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes[] memory _params
   ) external payable {
     // Validate inputs
     if (_seed == bytes32(0)) revert InvalidSeed(_seed);
     if (_did == bytes32(0)) revert InvalidDID(_did);
-    if (_planId == bytes32(0)) revert InvalidPlanId(_planId);
+    if (_planId == 0) revert InvalidPlanId(_planId);
 
     // Check if the DID & Plan are registered in the AssetsRegistry
     if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
@@ -110,7 +110,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     address _senderAddress
   ) internal {
     
@@ -127,7 +127,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32 _lockPaymentCondition,
     address _receiverAddress
   ) internal {
@@ -148,7 +148,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 _did,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32 _lockPaymentCondition,
     bytes32 _releaseCondition
   ) internal {

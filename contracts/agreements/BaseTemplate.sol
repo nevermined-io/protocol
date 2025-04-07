@@ -21,5 +21,5 @@ abstract contract BaseTemplate is OwnableUpgradeable {
 
   /// The `planId` provided is not valid
   /// @param planId The unique identifier of the plan being used in the agreement
-  error InvalidPlanId(bytes32 planId);
+  error InvalidPlanId(uint256 planId);
 }

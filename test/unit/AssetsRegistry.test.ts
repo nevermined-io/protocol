@@ -45,7 +45,7 @@ describe('AssetsRegistry', function () {
     let did: string
     let url = 'https://nevermined.io'
     let didSeed = generateId()
-    let planId: string
+    let planId: bigint
 
     before(async () => {
       const config = await loadFixture(deployInstance)
@@ -98,7 +98,7 @@ describe('AssetsRegistry', function () {
     let assetsRegistry: any
     let publicClient: any
     let did: string
-    let planId: string
+    let planId: bigint
 
     let priceConfig = {
       priceType: 0, // Means Fixed Price
@@ -136,8 +136,7 @@ describe('AssetsRegistry', function () {
         owner.account.address,
       ])
       console.log(`planId hash: ${planId}`)
-      expect(planId).to.be.a('string')
-      expect(planId).startsWith('0x')
+      expect(planId > 0n).to.be.true
     })
 
     it('I can not find a planId on-chain that doesnt exist', async () => {
@@ -217,7 +216,7 @@ describe('AssetsRegistry', function () {
     it('I can find a planId on-chain because it was registered', async () => {
       const asset = await assetsRegistry.read.getAsset([did])
       planId = asset.plans[0]
-      expect(planId).to.be.a('string')
+      expect(planId >0n).to.be.true
       const plan = await assetsRegistry.read.getPlan([planId])
       console.log('Plan:', plan)
       expect(plan.lastUpdated > 0n).to.be.true

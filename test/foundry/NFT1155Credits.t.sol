@@ -46,10 +46,10 @@ contract NFT1155CreditsTest is Test {
   function test_mint_correct() public {
     nvmConfig.grantRole(nft1155.CREDITS_MINTER_ROLE(), address(this));
     
-    bytes32 planId = _createPlan();
+    uint256 planId = _createPlan();
 
-    nft1155.mint(receiver, uint256(planId), 1, "");
-    uint256 balance = nft1155.balanceOf(receiver, uint256(planId));
+    nft1155.mint(receiver, planId, 1, "");
+    uint256 balance = nft1155.balanceOf(receiver, planId);
     assertEq(balance, 1);
   }
 
@@ -62,15 +62,15 @@ contract NFT1155CreditsTest is Test {
     nvmConfig.grantRole(nft1155.CREDITS_MINTER_ROLE(), address(this));
     nvmConfig.grantRole(nft1155.CREDITS_BURNER_ROLE(), address(this));
 
-    bytes32 planId = _createPlan();
+    uint256 planId = _createPlan();
 
-    nft1155.mint(receiver, uint256(planId), 5, "");
-    nft1155.burn(receiver, uint256(planId), 1);
-    uint256 balance = nft1155.balanceOf(receiver, uint256(planId));
+    nft1155.mint(receiver, planId, 5, "");
+    nft1155.burn(receiver, planId, 1);
+    uint256 balance = nft1155.balanceOf(receiver, planId);
     assertEq(balance, 4);
   }
 
-  function _createPlan() internal returns (bytes32) {
+  function _createPlan() internal returns (uint256) {
     uint256[] memory _amounts = new uint256[](1);
     _amounts[0] = 100;
     address[] memory _receivers = new address[](1);

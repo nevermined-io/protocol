@@ -15,7 +15,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
   mapping(bytes32 => DIDAsset) public assets;
 
   /// The mapping of the plans registered in the contract
-  mapping(bytes32 => Plan) public plans;
+  mapping(uint256 => Plan) public plans;
 
   /**
    * @notice Event that is emitted when a new Asset is registered
@@ -29,12 +29,12 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
    * @param planId the unique identifier of the plan
    * @param creator the address of the account registering the plan
    */
-  event PlanRegistered(bytes32 indexed planId, address indexed creator);
+  event PlanRegistered(uint256 indexed planId, address indexed creator);
 
   /// A plan with the same `plainId` is already registered and can not be registered again.abi
   /// The `planId` is computed using the hash of the `PriceConfig`, `CreditsConfig`, `nftAddress` and the creator of the plan
   /// @param planId The identifier of the plan
-  error PlanAlreadyRegistered(bytes32 planId);
+  error PlanAlreadyRegistered(uint256 planId);
 
   /// The DID `did` representing the key for an Asset is already registered
   /// @param did The identifier of the asset to register
@@ -46,8 +46,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
-    __Ownable_init(msg.sender);
-    // console.log('AssetsRegistry initialized', _nvmConfigAddress);
+    __Ownable_init(msg.sender);    
   }
 
   function getAsset(bytes32 _did) external view returns (DIDAsset memory) {
@@ -68,7 +67,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     return keccak256(abi.encode(_didSeed, _creator));
   }
 
-  function register(bytes32 _didSeed, string memory _url, bytes32[] memory _plans) public virtual {
+  function register(bytes32 _didSeed, string memory _url, uint256[] memory _plans) public virtual {
     bytes32 did = hashDID(_didSeed, msg.sender);
     if (assets[did].owner != address(0x0)) {
       revert DIDAlreadyRegistered(did);
@@ -103,12 +102,12 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     CreditsConfig memory _creditsConfig,
     address _nftAddress
   ) external {
-    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
+    uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
     if (!this.planExists(planId)) {
       _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress);
     }
 
-    bytes32[] memory _assetPlans = new bytes32[](1);
+    uint256[] memory _assetPlans = new uint256[](1);
     _assetPlans[0] = planId;
     register(_didSeed, _url, _assetPlans);
   }
@@ -119,7 +118,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     CreditsConfig memory _creditsConfig,
     address _nftAddress
   ) internal {
-    bytes32 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner);
+    uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner);
     if (plans[planId].lastUpdated != 0) {
       revert PlanAlreadyRegistered(planId);
     }
@@ -137,11 +136,11 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     emit PlanRegistered(planId, _owner);
   }
 
-  function getPlan(bytes32 _planId) public view returns (Plan memory) {
+  function getPlan(uint256 _planId) public view returns (Plan memory) {
     return plans[_planId];
   }
 
-  function planExists(bytes32 _planId) external view returns (bool) {
+  function planExists(uint256 _planId) external view returns (bool) {
     return plans[_planId].lastUpdated != 0;
   }
 
@@ -158,8 +157,8 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     CreditsConfig memory _creditsConfig,
     address _nftAddress,
     address _creator
-  ) public pure returns (bytes32) {
-    return keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator));
+  ) public pure returns (uint256) {
+    return uint256(keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator)));
   }
 
   function areNeverminedFeesIncluded(

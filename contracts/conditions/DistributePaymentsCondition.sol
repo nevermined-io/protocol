@@ -37,7 +37,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
     bytes32 _conditionId,
     bytes32 _agreementId,
     bytes32 /*_did*/,
-    bytes32 _planId,
+    uint256 _planId,
     bytes32 _lockCondition,
     bytes32 _releaseCondition
   ) external payable nonReentrant {

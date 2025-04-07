@@ -27,7 +27,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   let fixedPaymentTemplate: any
   let agreementsStore: any
   let did: any
-  let planId: any
+  let planId: bigint
   let owner: any
   let alice: any
   let bob: any
@@ -394,7 +394,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       planId = result.planId
 
       expect(did).to.be.a('string').to.startWith('0x')
-      expect(planId).to.be.a('string').to.startWith('0x')
+      expect(planId >0n).to.be.true
 
       // Verify plan uses ERC20 token
       const plan = await assetsRegistry.read.getPlan([planId])
