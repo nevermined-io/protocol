@@ -4,15 +4,10 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {ICommon} from '../interfaces/ICommon.sol';
 
 library TokenUtils {
-  /// Error sending native token (i.e ETH)
-  error FailedToSendNativeToken();
-
-  /// The msg.value (`msgValue`) doesn't match the amount (`amount`)
-  /// @param msgValue The value sent in the transaction
-  /// @param amount The amount to be transferred
-  error InvalidTransactionAmount(uint256 msgValue, uint256 amount);
+  // Error definitions moved to ICommon
 
   /**
    * @notice _transferERC20 transfer ERC20 tokens
@@ -46,10 +41,10 @@ library TokenUtils {
   ) public {
     if (_amount > 0) {
       if (msg.value != _amount)
-        revert InvalidTransactionAmount(msg.value, _amount);
+        revert ICommon.InvalidTransactionAmount(msg.value, _amount);
       // solhint-disable-next-line
       (bool sent, ) = _receiverAddress.call{value: _amount}('');
-      if (!sent) revert FailedToSendNativeToken();
+      if (!sent) revert ICommon.FailedToSendNativeToken();
     }
   }
 
