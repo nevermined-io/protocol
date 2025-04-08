@@ -3,6 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+import {IAsset} from './IAsset.sol';
+
 /**
  * @title ICommon
  * @notice Common errors and events used throughout the Nevermined contracts
@@ -119,7 +121,7 @@ interface ICommon {
 
     /// The `priceType` given is not supported by the condition
     /// @param priceType The price type supported by the condition
-    error UnsupportedPriceTypeOption(uint8 priceType);
+    error UnsupportedPriceTypeOption(IAsset.PriceType priceType);
 
     /// The `amounts` and `receivers` are incorrect
     /// @param amounts The distribution of the payment amounts
