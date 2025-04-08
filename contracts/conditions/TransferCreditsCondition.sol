@@ -12,20 +12,29 @@ import {NFT1155Credits} from "../token/NFT1155Credits.sol";
 import {NFT1155ExpirableCredits} from "../token/NFT1155ExpirableCredits.sol";
 
 contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
+    // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION =
+        0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
+
     bytes32 public constant NVM_CONTRACT_NAME = keccak256("TransferCreditsCondition");
 
-    INVMConfig internal nvmConfig;
-    IAsset internal assetsRegistry;
-    IAgreement internal agreementStore;
+    /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
+    struct TransferCreditsConditionStorage {
+        INVMConfig nvmConfig;
+        IAsset assetsRegistry;
+        IAgreement agreementStore;
+    }
 
     function initialize(address _nvmConfigAddress, address _assetsRegistryAddress, address _agreementStoreAddress)
         public
         initializer
     {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-        nvmConfig = INVMConfig(_nvmConfigAddress);
-        assetsRegistry = IAsset(_assetsRegistryAddress);
-        agreementStore = IAgreement(_agreementStoreAddress);
+        TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
+
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
+        $.assetsRegistry = IAsset(_assetsRegistryAddress);
+        $.agreementStore = IAgreement(_agreementStoreAddress);
         __Ownable_init(msg.sender);
     }
 
@@ -36,19 +45,21 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
         bytes32[] memory _requiredConditions,
         address _receiverAddress
     ) external payable nonReentrant {
+        TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
+
         // Validate if the account calling this function is a registered template
-        if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
+        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         // Check if the required conditions (LockPayment) are already fulfilled
-        if (!agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions)) {
+        if (!$.agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions)) {
             revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);
         }
 
         // Check if the plan credits config is correct
-        IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+        IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
 
         // FULFILL THE CONDITION first (before external calls)
-        agreementStore.updateConditionStatus(_agreementId, _conditionId, IAgreement.ConditionState.Fulfilled);
+        $.agreementStore.updateConditionStatus(_agreementId, _conditionId, IAgreement.ConditionState.Fulfilled);
 
         // Only mint if amount is greater than zero
         if (plan.credits.amount > 0) {
@@ -63,6 +74,12 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
             } else {
                 revert IAsset.InvalidCreditsType(plan.credits.creditsType);
             }
+        }
+    }
+
+    function _getTransferCreditsConditionStorage() internal pure returns (TransferCreditsConditionStorage storage $) {
+        assembly {
+            $.slot := TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION
         }
     }
 }

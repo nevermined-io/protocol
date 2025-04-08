@@ -11,18 +11,23 @@ import {LockPaymentCondition} from "../conditions/LockPaymentCondition.sol";
 import {TransferCreditsCondition} from "../conditions/TransferCreditsCondition.sol";
 import {DistributePaymentsCondition} from "../conditions/DistributePaymentsCondition.sol";
 import {IAsset} from "../interfaces/IAsset.sol";
-// import 'hardhat/console.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256("FixedPaymentTemplate");
 
-    INVMConfig internal nvmConfig;
-    IAsset internal assetsRegistry;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.fixedpaymenttemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant FIXED_PAYMENT_TEMPLATE_STORAGE_LOCATION =
+        0x580af4080cef39e217d40ca96879bdddb787c795da23b8872b06762fc7e20f00;
 
-    // Conditions required to execute this template
-    LockPaymentCondition internal lockPaymentCondition;
-    TransferCreditsCondition internal transferCondition;
-    DistributePaymentsCondition internal distributePaymentsCondition;
+    /// @custom:storage-location erc7201:nevermined.fixedpaymenttemplate.storage
+    struct FixedPaymentTemplateStorage {
+        INVMConfig nvmConfig;
+        IAsset assetsRegistry;
+        // Conditions required to execute this template
+        LockPaymentCondition lockPaymentCondition;
+        TransferCreditsCondition transferCondition;
+        DistributePaymentsCondition distributePaymentsCondition;
+    }
 
     function initialize(
         address _nvmConfigAddress,
@@ -32,30 +37,35 @@ contract FixedPaymentTemplate is BaseTemplate {
         address _transferCondtionAddress,
         address _distributePaymentsCondition
     ) public initializer {
-        nvmConfig = INVMConfig(_nvmConfigAddress);
-        assetsRegistry = IAsset(_assetsRegistryAddress);
-        agreementStore = AgreementsStore(_agreementStoreAddress);
-        lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
-        transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-        distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
+        FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
+
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
+        $.assetsRegistry = IAsset(_assetsRegistryAddress);
+        _getBaseTemplateStorage().agreementStore = AgreementsStore(_agreementStoreAddress);
+        $.lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
+        $.transferCondition = TransferCreditsCondition(_transferCondtionAddress);
+        $.distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
         __Ownable_init(msg.sender);
     }
 
     function createAgreement(bytes32 _seed, bytes32 _did, uint256 _planId, bytes[] memory _params) external payable {
+        FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
+        BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
+
         // Validate inputs
         if (_seed == bytes32(0)) revert InvalidSeed(_seed);
         if (_did == bytes32(0)) revert InvalidDID(_did);
         if (_planId == 0) revert InvalidPlanId(_planId);
 
         // Check if the DID & Plan are registered in the AssetsRegistry
-        if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
-        if (!assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
+        if (!$.assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+        if (!$.assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
         // Calculate agreementId
         bytes32 agreementId = keccak256(abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _params));
 
         // Check if the agreement is already registered
-        IAgreement.Agreement memory agreement = agreementStore.getAgreement(agreementId);
+        IAgreement.Agreement memory agreement = $bt.agreementStore.getAgreement(agreementId);
 
         if (agreement.lastUpdated != 0) {
             revert IAgreement.AgreementAlreadyRegistered(agreementId);
@@ -63,12 +73,14 @@ contract FixedPaymentTemplate is BaseTemplate {
 
         // Register the agreement in the AgreementsStore
         bytes32[] memory conditionIds = new bytes32[](3);
-        conditionIds[0] = lockPaymentCondition.hashConditionId(agreementId, lockPaymentCondition.NVM_CONTRACT_NAME());
-        conditionIds[1] = transferCondition.hashConditionId(agreementId, transferCondition.NVM_CONTRACT_NAME());
-        conditionIds[2] =
-            distributePaymentsCondition.hashConditionId(agreementId, distributePaymentsCondition.NVM_CONTRACT_NAME());
+        conditionIds[0] =
+            $.lockPaymentCondition.hashConditionId(agreementId, $.lockPaymentCondition.NVM_CONTRACT_NAME());
+        conditionIds[1] = $.transferCondition.hashConditionId(agreementId, $.transferCondition.NVM_CONTRACT_NAME());
+        conditionIds[2] = $.distributePaymentsCondition.hashConditionId(
+            agreementId, $.distributePaymentsCondition.NVM_CONTRACT_NAME()
+        );
 
-        agreementStore.register(
+        $bt.agreementStore.register(
             agreementId, msg.sender, _did, _planId, conditionIds, new IAgreement.ConditionState[](3), _params
         );
 
@@ -92,7 +104,9 @@ contract FixedPaymentTemplate is BaseTemplate {
         uint256 _planId,
         address _senderAddress
     ) internal {
-        lockPaymentCondition.fulfill{value: msg.value}(
+        FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
+
+        $.lockPaymentCondition.fulfill{value: msg.value}(
             _conditionId,
             _agreementId,
             // _did,
@@ -110,8 +124,10 @@ contract FixedPaymentTemplate is BaseTemplate {
         address _receiverAddress
     ) internal {
         bytes32[] memory _requiredConditons = new bytes32[](1);
+        FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
+
         _requiredConditons[0] = _lockPaymentCondition;
-        transferCondition.fulfill(
+        $.transferCondition.fulfill(
             _conditionId,
             _agreementId,
             // _did,
@@ -129,7 +145,9 @@ contract FixedPaymentTemplate is BaseTemplate {
         bytes32 _lockPaymentCondition,
         bytes32 _releaseCondition
     ) internal {
-        distributePaymentsCondition.fulfill(
+        FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
+
+        $.distributePaymentsCondition.fulfill(
             _conditionId,
             _agreementId,
             // _did,
@@ -137,5 +155,11 @@ contract FixedPaymentTemplate is BaseTemplate {
             _lockPaymentCondition,
             _releaseCondition
         );
+    }
+
+    function _getFixedPaymentTemplateStorage() internal pure returns (FixedPaymentTemplateStorage storage $) {
+        assembly {
+            $.slot := FIXED_PAYMENT_TEMPLATE_STORAGE_LOCATION
+        }
     }
 }

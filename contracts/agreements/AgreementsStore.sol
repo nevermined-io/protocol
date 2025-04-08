@@ -10,10 +10,16 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 contract AgreementsStore is IAgreement, OwnableUpgradeable {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256("AgreementsStore");
 
-    INVMConfig internal nvmConfig;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.agreementsstore.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant AGREEMENTS_STORE_STORAGE_LOCATION =
+        0x22178a4c33a657e121fdb7f7ff8e08c307799179d05b9d9f8e256841a6d9d000;
 
-    /// The mapping of the agreements registered in the contract
-    mapping(bytes32 => IAgreement.Agreement) public agreements;
+    /// @custom:storage-location erc7201:nevermined.agreementsstore.storage
+    struct AgreementsStoreStorage {
+        INVMConfig nvmConfig;
+        /// The mapping of the agreements registered in the contract
+        mapping(bytes32 => IAgreement.Agreement) agreements;
+    }
 
     /**
      * @notice Event that is emitted when a new Agreement is stored
@@ -31,7 +37,7 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     event ConditionUpdated(bytes32 indexed agreementId, bytes32 indexed conditionId, ConditionState state);
 
     function initialize(address _nvmConfigAddress) public initializer {
-        nvmConfig = INVMConfig(_nvmConfigAddress);
+        _getAgreementsStoreStorage().nvmConfig = INVMConfig(_nvmConfigAddress);
         __Ownable_init(msg.sender);
     }
 
@@ -44,12 +50,14 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
         ConditionState[] memory _conditionStates,
         bytes[] memory _params
     ) public {
-        if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
 
-        if (agreements[_agreementId].lastUpdated != 0) {
+        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
+
+        if ($.agreements[_agreementId].lastUpdated != 0) {
             revert AgreementAlreadyRegistered(_agreementId);
         }
-        agreements[_agreementId] = IAgreement.Agreement({
+        $.agreements[_agreementId] = IAgreement.Agreement({
             did: _did,
             planId: _planId,
             agreementCreator: _agreementCreator,
@@ -62,11 +70,13 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     }
 
     function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state) external {
-        if (!nvmConfig.isTemplate(msg.sender) && !nvmConfig.isCondition(msg.sender)) {
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+
+        if (!$.nvmConfig.isTemplate(msg.sender) && !$.nvmConfig.isCondition(msg.sender)) {
             revert INVMConfig.OnlyTemplateOrCondition(msg.sender);
         }
 
-        IAgreement.Agreement storage agreement = agreements[_agreementId];
+        IAgreement.Agreement storage agreement = $.agreements[_agreementId];
         if (agreement.lastUpdated == 0) {
             revert AgreementNotFound(_agreementId);
         }
@@ -81,8 +91,9 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
         revert IAgreement.ConditionIdNotFound(_conditionId);
     }
 
-    function getAgreement(bytes32 _agreementId) external view returns (Agreement memory) {
-        return agreements[_agreementId];
+    function getAgreement(bytes32 _agreementId) external view returns (IAgreement.Agreement memory) {
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+        return $.agreements[_agreementId];
     }
 
     function getConditionState(bytes32 _agreementId, bytes32 _conditionId)
@@ -90,7 +101,8 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
         view
         returns (ConditionState state)
     {
-        IAgreement.Agreement memory agreement = agreements[_agreementId];
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+        IAgreement.Agreement storage agreement = $.agreements[_agreementId];
         if (agreement.lastUpdated == 0) {
             revert AgreementNotFound(_agreementId);
         }
@@ -101,7 +113,8 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     }
 
     function agreementExists(bytes32 _agreementId) external view returns (bool) {
-        return agreements[_agreementId].lastUpdated != 0;
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+        return $.agreements[_agreementId].lastUpdated != 0;
     }
 
     function areConditionsFulfilled(bytes32 _agreementId, bytes32 _conditionId, bytes32[] memory _dependantConditions)
@@ -109,7 +122,8 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
         view
         returns (bool)
     {
-        IAgreement.Agreement memory agreement = agreements[_agreementId];
+        AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+        IAgreement.Agreement storage agreement = $.agreements[_agreementId];
         if (agreement.lastUpdated == 0) {
             revert AgreementNotFound(_agreementId);
         }
@@ -149,5 +163,11 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
      */
     function hashAgreementId(bytes32 _seed, address _creator) public pure returns (bytes32) {
         return keccak256(abi.encode(_seed, _creator));
+    }
+
+    function _getAgreementsStoreStorage() internal pure returns (AgreementsStoreStorage storage $) {
+        assembly {
+            $.slot := AGREEMENTS_STORE_STORAGE_LOCATION
+        }
     }
 }

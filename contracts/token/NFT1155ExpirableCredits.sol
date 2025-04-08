@@ -4,11 +4,13 @@
 pragma solidity ^0.8.28;
 
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import {INVMConfig} from "../interfaces/INVMConfig.sol";
-import {IAsset} from "../interfaces/IAsset.sol";
 import {NFT1155Base} from "./NFT1155Base.sol";
 
 contract NFT1155ExpirableCredits is NFT1155Base {
+    // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155expirablecredits.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant NFT1155_EXPIRABLE_CREDITS_STORAGE_LOCATION =
+        0xad13115e659bb74b20198931946852537615445c0d1e91655e57181f5cb10400;
+
     struct MintedCredits {
         uint256 amountMinted; // uint64
         uint256 expirationSecs;
@@ -16,7 +18,10 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         bool isMintOps; // true means mint, false means burn
     }
 
-    mapping(bytes32 => MintedCredits[]) internal _credits;
+    /// @custom:storage-location erc7201:nevermined.nft1155expirablecredits.storage
+    struct NFT1155ExpirableCreditsStorage {
+        mapping(bytes32 => MintedCredits[]) credits;
+    }
 
     /// The lentgh of the ids and values arrays must be the same
     /// @param idsLength The length of the ids array
@@ -26,15 +31,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     function initialize(
         address _nvmConfigAddress,
         address _assetsRegistryAddress,
-        string memory, /*_name*/
-        string memory /*_symbol*/
+        string memory, // name
+        string memory // symbol
     ) public virtual initializer {
         ERC1155Upgradeable.__ERC1155_init("");
-
-        nvmConfig = INVMConfig(_nvmConfigAddress);
-        assetsRegistry = IAsset(_assetsRegistryAddress);
-
         __Ownable_init(msg.sender);
+        __NFT1155Base_init(_nvmConfigAddress, _assetsRegistryAddress);
     }
 
     function mint(address _to, uint256 _planId, uint256 _value, bytes memory _data) public virtual override {
@@ -47,7 +49,9 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     {
         bytes32 _key = _getTokenKey(_to, _planId);
 
-        _credits[_key].push(MintedCredits(_value, _secsDuration, block.timestamp, true));
+        _getNFT1155ExpirableCreditsStorage().credits[_key].push(
+            MintedCredits(_value, _secsDuration, block.timestamp, true)
+        );
 
         super.mint(_to, _planId, _value, _data);
     }
@@ -79,24 +83,28 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
 
     function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
-        if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
+        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
+
+        if (!_getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
             revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
         }
 
         bytes32 _key = _getTokenKey(_from, _planId);
         uint256 _pendingToBurn = _value;
 
-        uint256 _numEntries = _credits[_key].length;
+        uint256 _numEntries = $.credits[_key].length;
         for (uint256 index = 0; index < _numEntries; index++) {
-            MintedCredits memory entry = _credits[_key][index];
+            MintedCredits memory entry = $.credits[_key][index];
 
             if (entry.expirationSecs == 0 || block.timestamp < (entry.mintTimestamp + entry.expirationSecs)) {
                 if (_pendingToBurn <= entry.amountMinted) {
-                    _credits[_key].push(MintedCredits(_pendingToBurn, entry.expirationSecs, block.timestamp, false));
+                    $.credits[_key].push(MintedCredits(_pendingToBurn, entry.expirationSecs, block.timestamp, false));
                     break;
                 } else {
                     _pendingToBurn -= entry.amountMinted;
-                    _credits[_key].push(MintedCredits(entry.amountMinted, entry.expirationSecs, block.timestamp, false));
+                    $.credits[_key].push(
+                        MintedCredits(entry.amountMinted, entry.expirationSecs, block.timestamp, false)
+                    );
                 }
             }
         }
@@ -114,21 +122,23 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
 
     function balanceOf(address _owner, uint256 _planId) public view virtual override returns (uint256) {
+        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
+
         bytes32 _key = _getTokenKey(_owner, _planId);
         uint256 _amountBurned;
         uint256 _amountMinted;
 
-        uint256 _length = _credits[_key].length;
+        uint256 _length = $.credits[_key].length;
         for (uint256 index = 0; index < _length; index++) {
             if (
-                _credits[_key][index].mintTimestamp > 0
+                $.credits[_key][index].mintTimestamp > 0
                     && (
-                        _credits[_key][index].expirationSecs == 0
-                            || block.timestamp < (_credits[_key][index].mintTimestamp + _credits[_key][index].expirationSecs)
+                        $.credits[_key][index].expirationSecs == 0
+                            || block.timestamp < ($.credits[_key][index].mintTimestamp + $.credits[_key][index].expirationSecs)
                     )
             ) {
-                if (_credits[_key][index].isMintOps) _amountMinted += _credits[_key][index].amountMinted;
-                else _amountBurned += _credits[_key][index].amountMinted;
+                if ($.credits[_key][index].isMintOps) _amountMinted += $.credits[_key][index].amountMinted;
+                else _amountBurned += $.credits[_key][index].amountMinted;
             }
         }
 
@@ -154,21 +164,29 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
 
     function whenWasMinted(address _owner, uint256 _planId) public view returns (uint256[] memory) {
+        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
+
         bytes32 _key = _getTokenKey(_owner, _planId);
-        uint256 _length = _credits[_key].length;
+        uint256 _length = $.credits[_key].length;
 
         uint256[] memory _whenMinted = new uint256[](_length);
         for (uint256 index = 0; index < _length; index++) {
-            _whenMinted[index] = _credits[_key][index].mintTimestamp;
+            _whenMinted[index] = $.credits[_key][index].mintTimestamp;
         }
         return _whenMinted;
     }
 
     function getMintedEntries(address _owner, uint256 _planId) public view returns (MintedCredits[] memory) {
-        return _credits[_getTokenKey(_owner, _planId)];
+        return _getNFT1155ExpirableCreditsStorage().credits[_getTokenKey(_owner, _planId)];
     }
 
     function _getTokenKey(address _account, uint256 _planId) internal pure returns (bytes32) {
         return keccak256(abi.encode(_account, _planId));
+    }
+
+    function _getNFT1155ExpirableCreditsStorage() internal pure returns (NFT1155ExpirableCreditsStorage storage $) {
+        assembly {
+            $.slot := NFT1155_EXPIRABLE_CREDITS_STORAGE_LOCATION
+        }
     }
 }

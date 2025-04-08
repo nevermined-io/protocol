@@ -30,6 +30,12 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
      */
     bytes32 public constant CONTRACT_CONDITION_ROLE = keccak256("NVM_CONTRACT_CONDITION");
 
+    // keccak256(abi.encode(uint256(keccak256("nevermined.nvmconfig.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant NVM_CONFIG_STORAGE_LOCATION =
+        0xd8dc47a566e10bab714c93f5587c29375a3dcfd68f88494af6f1cf90589ce900;
+
+    uint256 public constant FEE_DENOMINATOR = 1000000;
+
     /**
      * The struct that represents a parameter in the Nevermined Config contract
      * @param value the value of the parameter
@@ -42,14 +48,19 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
         uint256 lastUpdated;
     }
 
-    /// Mapping of the parameters in the Nevermined Config contract
-    mapping(bytes32 => ParamEntry) public configParams;
-
-    /// Mapping of contracts registered in the Nevermined Config contract
-    mapping(bytes32 => address) public contractsRegistry;
-
-    /// Mapping of contracts latest versionnregistered in the Nevermined Config contract
-    mapping(bytes32 => uint256) public contractsLatestVersion;
+    /// @custom:storage-location erc7201:nevermined.nvmconfig.storage
+    struct NVMConfigStorage {
+        mapping(bytes32 => ParamEntry) configParams;
+        mapping(bytes32 => address) contractsRegistry;
+        mapping(bytes32 => uint256) contractsLatestVersion;
+        /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
+        // @notice The fee charged by Nevermined for using the Service Agreements.
+        // Integer representing a 2 decimal number. i.e 350 means a 3.5% fee
+        uint256 networkFee;
+        // @notice The address that will receive the fee charged by Nevermined per transaction
+        // See `marketplaceFee`
+        address feeReceiver;
+    }
 
     /**
      * @notice Event that is emitted when a parameter is changed
@@ -68,20 +79,6 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
     event ConfigPermissionsChange(
         address indexed addressPermissions, bytes32 indexed permissions, bool grantPermissions
     );
-
-    ///////////////////////////////////////////////////////////////////////////////////////
-    /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////
-
-    // @notice The fee charged by Nevermined for using the Service Agreements.
-    // Integer representing a 2 decimal number. i.e 350 means a 3.5% fee
-    uint256 public networkFee;
-
-    // @notice The address that will receive the fee charged by Nevermined per transaction
-    // See `marketplaceFee`
-    address public feeReceiver;
-
-    uint256 public constant FEE_DENOMINATOR = 1000000;
 
     /**
      * Initialization function
@@ -240,6 +237,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
      * @param _feeReceiver The address receiving the Nevermined fee
      */
     function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual onlyGovernor(msg.sender) {
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
         if (_networkFee < 0 || _networkFee > 1000000) {
             revert InvalidNetworkFee(_networkFee);
         }
@@ -248,8 +247,8 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
             revert InvalidFeeReceiver(_feeReceiver);
         }
 
-        networkFee = _networkFee;
-        feeReceiver = _feeReceiver;
+        $.networkFee = _networkFee;
+        $.feeReceiver = _feeReceiver;
         emit NeverminedConfigChange(msg.sender, keccak256("networkFee"), abi.encodePacked(_networkFee));
         emit NeverminedConfigChange(msg.sender, keccak256("feeReceiver"), abi.encodePacked(_feeReceiver));
     }
@@ -259,7 +258,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
      * @return the network fee charged by Nevermined
      */
     function getNetworkFee() external view returns (uint256) {
-        return networkFee;
+        return _getNVMConfigStorage().networkFee;
     }
 
     /**
@@ -267,7 +266,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
      * @return the address receiving the fee charged by Nevermined
      */
     function getFeeReceiver() external view returns (address) {
-        return feeReceiver;
+        return _getNVMConfigStorage().feeReceiver;
     }
 
     function getFeeDenominator() external pure returns (uint256) {
@@ -275,9 +274,11 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
     }
 
     function setParameter(bytes32 _paramName, bytes memory _value) external virtual onlyGovernor(msg.sender) {
-        configParams[_paramName].value = _value;
-        configParams[_paramName].isActive = true;
-        configParams[_paramName].lastUpdated = block.timestamp;
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
+        $.configParams[_paramName].value = _value;
+        $.configParams[_paramName].isActive = true;
+        $.configParams[_paramName].lastUpdated = block.timestamp;
         emit NeverminedConfigChange(msg.sender, _paramName, _value);
     }
 
@@ -286,18 +287,32 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
         view
         returns (bytes memory value, bool isActive, uint256 lastUpdated)
     {
-        return (configParams[_paramName].value, configParams[_paramName].isActive, configParams[_paramName].lastUpdated);
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
+        return (
+            $.configParams[_paramName].value,
+            $.configParams[_paramName].isActive,
+            $.configParams[_paramName].lastUpdated
+        );
     }
 
     function disableParameter(bytes32 _paramName) external virtual onlyGovernor(msg.sender) {
-        if (configParams[_paramName].isActive) {
-            configParams[_paramName].isActive = false;
-            configParams[_paramName].lastUpdated = block.timestamp;
-            emit NeverminedConfigChange(msg.sender, _paramName, configParams[_paramName].value);
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
+        if ($.configParams[_paramName].isActive) {
+            $.configParams[_paramName].isActive = false;
+            $.configParams[_paramName].lastUpdated = block.timestamp;
+            emit NeverminedConfigChange(msg.sender, _paramName, $.configParams[_paramName].value);
         }
     }
 
     function parameterExists(bytes32 _paramName) external view returns (bool) {
-        return configParams[_paramName].isActive;
+        return _getNVMConfigStorage().configParams[_paramName].isActive;
+    }
+
+    function _getNVMConfigStorage() internal pure returns (NVMConfigStorage storage $) {
+        assembly {
+            $.slot := NVM_CONFIG_STORAGE_LOCATION
+        }
     }
 }

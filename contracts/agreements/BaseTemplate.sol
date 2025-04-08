@@ -7,9 +7,15 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {AgreementsStore} from "./AgreementsStore.sol";
 
 abstract contract BaseTemplate is OwnableUpgradeable {
-    AgreementsStore internal agreementStore;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.basetemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant BASE_TEMPLATE_STORAGE_LOCATION =
+        0xe216fc96f789fa9c96a1eaa661bfd7aef52752717013e765adce03d67eb13e00;
 
-    address internal assetsRegistryAddress;
+    /// @custom:storage-location erc7201:nevermined.basetemplate.storage
+    struct BaseTemplateStorage {
+        AgreementsStore agreementStore;
+        address assetsRegistryAddress;
+    }
 
     /// The `seed` of the agreementId provided is not valid
     /// @param seed The seed provided to generate the agreementId
@@ -22,4 +28,10 @@ abstract contract BaseTemplate is OwnableUpgradeable {
     /// The `planId` provided is not valid
     /// @param planId The unique identifier of the plan being used in the agreement
     error InvalidPlanId(uint256 planId);
+
+    function _getBaseTemplateStorage() internal pure returns (BaseTemplateStorage storage $) {
+        assembly {
+            $.slot := BASE_TEMPLATE_STORAGE_LOCATION
+        }
+    }
 }

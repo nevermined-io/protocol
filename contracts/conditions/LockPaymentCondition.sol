@@ -14,10 +14,17 @@ import {TokenUtils} from "../utils/TokenUtils.sol";
 contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256("LockPaymentCondition");
 
-    INVMConfig internal nvmConfig;
-    IAsset internal assetsRegistry;
-    IAgreement internal agreementStore;
-    IVault internal vault;
+    // keccak256(abi.encode(uint256(keccak256("nevermined.lockpaymentcondition.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant LOCK_PAYMENT_CONDITION_STORAGE_LOCATION =
+        0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
+
+    /// @custom:storage-location erc7201:nevermined.lockpaymentcondition.storage
+    struct LockPaymentConditionStorage {
+        INVMConfig nvmConfig;
+        IAsset assetsRegistry;
+        IAgreement agreementStore;
+        IVault vault;
+    }
 
     /// The `priceType` given is not supported by the condition
     /// @param priceType The price type supported by the condition
@@ -35,10 +42,12 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
         address _vaultAddress
     ) public initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
-        nvmConfig = INVMConfig(_nvmConfigAddress);
-        assetsRegistry = IAsset(_assetsRegistryAddress);
-        agreementStore = IAgreement(_agreementStoreAddress);
-        vault = IVault(_vaultAddress);
+        LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
+
+        $.nvmConfig = INVMConfig(_nvmConfigAddress);
+        $.assetsRegistry = IAsset(_assetsRegistryAddress);
+        $.agreementStore = IAgreement(_agreementStoreAddress);
+        $.vault = IVault(_vaultAddress);
         __Ownable_init(msg.sender);
     }
 
@@ -47,16 +56,18 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
         payable
         nonReentrant
     {
+        LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
+
         // Validate if the account calling this function is a registered template
-        if (!nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
+        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         // Check if the agreementId is registered in the AssetsRegistry
-        if (!agreementStore.agreementExists(_agreementId)) {
+        if (!$.agreementStore.agreementExists(_agreementId)) {
             revert IAgreement.AgreementNotFound(_agreementId);
         }
 
         // Check if the plan config (token, amount) is correct
-        IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
+        IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
 
         if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
             // Check if the lengths of amounts and receivers are the same
@@ -64,7 +75,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
                 revert IncorrectPaymentDistribution(plan.price.amounts, plan.price.receivers);
             }
             // Check if the amounts and receivers include the Nevermined fees
-            if (!assetsRegistry.areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers)) {
+            if (!$.assetsRegistry.areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers)) {
                 revert IAsset.NeverminedFeesNotIncluded(plan.price.amounts, plan.price.receivers);
             }
 
@@ -76,18 +87,20 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
                     if (msg.value != amountToTransfer) {
                         revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
                     }
-                    vault.depositNativeToken{value: amountToTransfer}();
+                    $.vault.depositNativeToken{value: amountToTransfer}();
                 } else {
                     // ERC20 deposit
                     // Transfer tokens from sender to vault using TokenUtils
-                    TokenUtils.transferERC20(_senderAddress, address(vault), plan.price.tokenAddress, amountToTransfer);
+                    TokenUtils.transferERC20(
+                        _senderAddress, address($.vault), plan.price.tokenAddress, amountToTransfer
+                    );
                     // Record the deposit in the vault
-                    vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
+                    $.vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
                 }
             }
 
             // FULFILL THE CONDITION
-            agreementStore.updateConditionStatus(_agreementId, _conditionId, IAgreement.ConditionState.Fulfilled);
+            $.agreementStore.updateConditionStatus(_agreementId, _conditionId, IAgreement.ConditionState.Fulfilled);
         } else if (plan.price.priceType == IAsset.PriceType.FIXED_FIAT_PRICE) {
             // Fiat payment can not be locked via LockPaymentCondition but some Oracle integrated with the payment provider (i.e Stripe)
             revert UnsupportedPriceTypeOption(plan.price.priceType);
@@ -96,6 +109,12 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
             revert UnsupportedPriceTypeOption(plan.price.priceType);
         } else {
             revert UnsupportedPriceTypeOption(plan.price.priceType);
+        }
+    }
+
+    function _getLockPaymentConditionStorage() internal pure returns (LockPaymentConditionStorage storage $) {
+        assembly {
+            $.slot := LOCK_PAYMENT_CONDITION_STORAGE_LOCATION
         }
     }
 }
