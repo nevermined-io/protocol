@@ -78,6 +78,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
     }
 
     function _getTransferCreditsConditionStorage() internal pure returns (TransferCreditsConditionStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION
         }

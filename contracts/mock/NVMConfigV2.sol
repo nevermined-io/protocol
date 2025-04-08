@@ -39,6 +39,7 @@ contract NVMConfigV2 is NVMConfig {
     }
 
     function _getNVMConfigV2Storage() internal pure returns (NVMConfigV2Storage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := NVM_CONFIG_V2_STORAGE_LOCATION
         }

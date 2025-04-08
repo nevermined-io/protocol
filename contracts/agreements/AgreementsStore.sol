@@ -166,6 +166,7 @@ contract AgreementsStore is IAgreement, OwnableUpgradeable {
     }
 
     function _getAgreementsStoreStorage() internal pure returns (AgreementsStoreStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := AGREEMENTS_STORE_STORAGE_LOCATION
         }

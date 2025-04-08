@@ -27,7 +27,9 @@ contract AssetsRegistryV2 is AssetsRegistry {
      */
     function initializeV2(string memory _version) external {
         AssetsRegistryV2Storage storage $ = _getAssetsRegistryV2Storage();
-        if (!_getAssetsRegistryStorage().nvmConfig.isGovernor(msg.sender)) revert INVMConfig.OnlyGovernor(msg.sender);
+        if (!_getAssetsRegistryStorage().nvmConfig.isGovernor(msg.sender)) {
+            revert INVMConfig.OnlyGovernor(msg.sender);
+        }
         $.version = _version;
     }
 
@@ -41,6 +43,7 @@ contract AssetsRegistryV2 is AssetsRegistry {
     }
 
     function _getAssetsRegistryV2Storage() internal pure returns (AssetsRegistryV2Storage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := ASSETS_REGISTRY_V2_STORAGE_LOCATION
         }

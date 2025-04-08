@@ -113,6 +113,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     }
 
     function _getLockPaymentConditionStorage() internal pure returns (LockPaymentConditionStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := LOCK_PAYMENT_CONDITION_STORAGE_LOCATION
         }
