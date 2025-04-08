@@ -6,6 +6,7 @@ pragma solidity ^0.8.28;
 import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import {ICommon} from '../interfaces/ICommon.sol';
 
 contract AgreementsStore is Initializable, IAgreement {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
@@ -15,15 +16,7 @@ contract AgreementsStore is Initializable, IAgreement {
   /// The mapping of the agreements registered in the contract
   mapping(bytes32 => IAgreement.Agreement) public agreements;
 
-  /**
-   * @notice Event that is emitted when a new Agreement is stored
-   * @param agreementId the unique identifier of the agreement
-   * @param creator the address of the account storing the agreement
-   */
-  event AgreementRegistered(
-    bytes32 indexed agreementId,
-    address indexed creator
-  );
+  // Event definition moved to ICommon
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
@@ -42,7 +35,7 @@ contract AgreementsStore is Initializable, IAgreement {
       revert INVMConfig.OnlyTemplate(msg.sender);
 
     if (agreements[_agreementId].lastUpdated != 0) {
-      revert AgreementAlreadyRegistered(_agreementId);
+      revert ICommon.AgreementAlreadyRegistered(_agreementId);
     }
     agreements[_agreementId] = IAgreement.Agreement({
       did: _did,
@@ -53,7 +46,7 @@ contract AgreementsStore is Initializable, IAgreement {
       params: _params,
       lastUpdated: block.timestamp
     });
-    emit AgreementRegistered(_agreementId, _agreementCreator);
+    emit ICommon.AgreementRegistered(_agreementId, _agreementCreator);
   }
 
   function updateConditionStatus(
@@ -66,7 +59,7 @@ contract AgreementsStore is Initializable, IAgreement {
 
     IAgreement.Agreement storage agreement = agreements[_agreementId];
     if (agreement.lastUpdated == 0) {
-      revert AgreementNotFound(_agreementId);
+      revert ICommon.AgreementNotFound(_agreementId);
     }
 
     for (uint256 i = 0; i < agreement.conditionIds.length; i++) {
@@ -75,7 +68,7 @@ contract AgreementsStore is Initializable, IAgreement {
         return;
       }
     }
-    revert IAgreement.ConditionIdNotFound(_conditionId);
+    revert ICommon.ConditionIdNotFound(_conditionId);
   }
 
   function getAgreement(
@@ -90,7 +83,7 @@ contract AgreementsStore is Initializable, IAgreement {
   ) external view returns (ConditionState state) {
     IAgreement.Agreement memory agreement = agreements[_agreementId];
     if (agreement.lastUpdated == 0) {
-      revert AgreementNotFound(_agreementId);
+      revert ICommon.AgreementNotFound(_agreementId);
     }
     for (uint256 i = 0; i < agreement.conditionStates.length; i++) {
       if (agreement.conditionIds[i] == _conditionId)
@@ -110,7 +103,7 @@ contract AgreementsStore is Initializable, IAgreement {
   ) external view returns (bool) {
     IAgreement.Agreement memory agreement = agreements[_agreementId];
     if (agreement.lastUpdated == 0) {
-      revert AgreementNotFound(_agreementId);
+      revert ICommon.AgreementNotFound(_agreementId);
     }
 
     uint256 numChecksPassed = 0;

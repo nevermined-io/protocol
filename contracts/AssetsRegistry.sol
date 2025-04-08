@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IAsset} from './interfaces/IAsset.sol';
+import {ICommon} from './interfaces/ICommon.sol';
 import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 // import 'hardhat/console.sol';
 
@@ -19,32 +20,7 @@ contract AssetsRegistry is Initializable, IAsset {
   mapping(bytes32 => Plan) public plans;
 
 
-  /**
-   * @notice Event that is emitted when a new Asset is registered
-   * @param did the unique identifier of the asset
-   * @param creator the address of the account registering the asset
-   */
-  event AssetRegistered(bytes32 indexed did, address indexed creator);
-
-  /**
-   * @notice Event that is emitted when a new plan is registered
-   * @param planId the unique identifier of the plan
-   * @param creator the address of the account registering the plan
-   */
-  event PlanRegistered(bytes32 indexed planId, address indexed creator);
-
-  /// A plan with the same `plainId` is already registered and can not be registered again.abi
-  /// The `planId` is computed using the hash of the `PriceConfig`, `CreditsConfig`, `nftAddress` and the creator of the plan
-  /// @param planId The identifier of the plan
-  error PlanAlreadyRegistered(bytes32 planId);
-
-  /// The DID `did` representing the key for an Asset is already registered
-  /// @param did The identifier of the asset to register
-  error DIDAlreadyRegistered(bytes32 did);
-
-  /// When registering the asset, the plans array is empty
-  /// @param did The identifier to register
-  error NotPlansAttached(bytes32 did);
+  // Event and error definitions moved to ICommon
 
   function initialize(address _nvmConfigAddress) public initializer {
     nvmConfig = INVMConfig(_nvmConfigAddress);
@@ -81,11 +57,11 @@ contract AssetsRegistry is Initializable, IAsset {
   ) public virtual {
     bytes32 did = hashDID(_didSeed, msg.sender);
     if (assets[did].owner != address(0x0)) {
-      revert DIDAlreadyRegistered(did);
+      revert ICommon.DIDAlreadyRegistered(did);
     }
 
     if (_plans.length == 0) {
-      revert NotPlansAttached(did);
+      revert ICommon.NotPlansAttached(did);
     }
     assets[did] = DIDAsset({
       owner: msg.sender,
@@ -95,7 +71,7 @@ contract AssetsRegistry is Initializable, IAsset {
       plans: _plans
     });
 
-    emit AssetRegistered(did, msg.sender);
+    emit ICommon.AssetRegistered(did, msg.sender);
   }
 
   function createPlan(
@@ -110,10 +86,10 @@ contract AssetsRegistry is Initializable, IAsset {
       msg.sender
     );
     if (plans[planId].lastUpdated != 0) {
-      revert PlanAlreadyRegistered(planId);
+      revert ICommon.PlanAlreadyRegistered(planId);
     }
     if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
-      revert NeverminedFeesNotIncluded(
+      revert ICommon.NeverminedFeesNotIncluded(
         _priceConfig.amounts,
         _priceConfig.receivers
       );
@@ -125,7 +101,7 @@ contract AssetsRegistry is Initializable, IAsset {
       nftAddress: _nftAddress,
       lastUpdated: block.timestamp
     });
-    emit PlanRegistered(planId, msg.sender);
+    emit ICommon.PlanRegistered(planId, msg.sender);
   }
 
   function registerAssetAndPlan(

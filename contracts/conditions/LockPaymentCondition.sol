@@ -9,6 +9,7 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {IVault} from '../interfaces/IVault.sol';
+import {ICommon} from '../interfaces/ICommon.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
 import {TokenUtils} from '../utils/TokenUtils.sol';
 
@@ -24,14 +25,7 @@ contract LockPaymentCondition is
   IAgreement internal agreementStore;
   IVault internal vault;
 
-  /// The `priceType` given is not supported by the condition
-  /// @param priceType The price type supported by the condition
-  error UnsupportedPriceTypeOption(IAsset.PriceType priceType);
-
-  /// The `amounts` and `receivers` are incorrect
-  /// @param amounts The distribution of the payment amounts
-  /// @param receivers The distribution of the payment amounts receivers
-  error IncorrectPaymentDistribution(uint256[] amounts, address[] receivers);
+  // Error definitions moved to ICommon
 
   function initialize(
     address _nvmConfigAddress,
@@ -72,7 +66,7 @@ contract LockPaymentCondition is
     if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
       // Check if the lengths of amounts and receivers are the same
       if (plan.price.amounts.length != plan.price.receivers.length)
-        revert IncorrectPaymentDistribution(
+        revert ICommon.IncorrectPaymentDistribution(
           plan.price.amounts,
           plan.price.receivers
         );
@@ -88,12 +82,17 @@ contract LockPaymentCondition is
           plan.price.receivers
         );
 
-      uint256 amountToTransfer = TokenUtils.calculateAmountSum(plan.price.amounts);
+      uint256 amountToTransfer = TokenUtils.calculateAmountSum(
+        plan.price.amounts
+      );
       if (plan.price.tokenAddress == address(0)) {
         // Native token payment
         if (amountToTransfer > 0) {
           if (msg.value != amountToTransfer)
-            revert TokenUtils.InvalidTransactionAmount(msg.value, amountToTransfer);
+            revert TokenUtils.InvalidTransactionAmount(
+              msg.value,
+              amountToTransfer
+            );
           vault.depositNativeToken{value: amountToTransfer}();
         }
         // TokenUtils.transferNativeToken(
@@ -125,12 +124,12 @@ contract LockPaymentCondition is
       );
     } else if (plan.price.priceType == IAsset.PriceType.FIXED_FIAT_PRICE) {
       // Fiat payment can not be locked via LockPaymentCondition but some Oracle integrated with the payment provider (i.e Stripe)
-      revert UnsupportedPriceTypeOption(plan.price.priceType);
+      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
     } else if (plan.price.priceType == IAsset.PriceType.SMART_CONTRACT_PRICE) {
       // Smart contract payment is not implemented yet
-      revert UnsupportedPriceTypeOption(plan.price.priceType);
+      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
     } else {
-      revert UnsupportedPriceTypeOption(plan.price.priceType);
+      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
     }
   }
 }

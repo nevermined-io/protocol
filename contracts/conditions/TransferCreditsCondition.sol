@@ -8,6 +8,7 @@ import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/ut
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
+import {ICommon} from '../interfaces/ICommon.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 
@@ -33,7 +34,6 @@ contract TransferCreditsCondition is
     assetsRegistry = IAsset(_assetsRegistryAddress);
     agreementStore = IAgreement(_agreementStoreAddress);
   }
-
 
   function fulfill(
     bytes32 _conditionId,
