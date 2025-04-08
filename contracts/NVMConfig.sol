@@ -4,7 +4,7 @@
 pragma solidity ^0.8.28;
 
 import {INVMConfig} from './interfaces/INVMConfig.sol';
-import {ICommon} from './interfaces/ICommon.sol';
+import {IConfigErrors} from './interfaces/IConfigErrors.sol';
 import {AccessControlUpgradeable} from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 
 /**
@@ -92,7 +92,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param _address the address to validate if has the governor role
    */
   modifier onlyGovernor(address _address) {
-    if (!hasRole(GOVERNOR_ROLE, _address)) revert ICommon.OnlyGovernor(_address);
+    if (!hasRole(GOVERNOR_ROLE, _address)) revert IConfigErrors.OnlyGovernor(_address);
     _;
   }
 
@@ -101,7 +101,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    * @param _address the address to validate if has the owner role
    */
   modifier onlyOwner(address _address) {
-    if (!hasRole(OWNER_ROLE, _address)) revert ICommon.OnlyOwner(_address);
+    if (!hasRole(OWNER_ROLE, _address)) revert IConfigErrors.OnlyOwner(_address);
     _;
   }
 
@@ -112,7 +112,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function grantGovernor(address _address) external onlyOwner(msg.sender) {
     _grantRole(GOVERNOR_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
+    emit IConfigErrors.ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
   }
 
   /**
@@ -122,7 +122,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function revokeGovernor(address _address) external onlyOwner(msg.sender) {
     _revokeRole(GOVERNOR_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
+    emit IConfigErrors.ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
   }
 
   /**
@@ -153,7 +153,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function grantTemplate(address _address) external onlyGovernor(msg.sender) {
     _grantRole(CONTRACT_TEMPLATE_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, true);
+    emit IConfigErrors.ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, true);
   }
 
   /**
@@ -163,7 +163,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function revokeTemplate(address _address) external onlyGovernor(msg.sender) {
     _revokeRole(CONTRACT_TEMPLATE_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, false);
+    emit IConfigErrors.ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, false);
   }
 
   /**
@@ -182,7 +182,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function grantCondition(address _address) external onlyGovernor(msg.sender) {
     _grantRole(CONTRACT_CONDITION_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, true);
+    emit IConfigErrors.ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, true);
   }
 
   /**
@@ -192,7 +192,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
    */
   function revokeCondition(address _address) external onlyGovernor(msg.sender) {
     _revokeRole(CONTRACT_CONDITION_ROLE, _address);
-    emit ICommon.ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, false);
+    emit IConfigErrors.ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, false);
   }
 
   /**
@@ -221,21 +221,21 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     address _feeReceiver
   ) external virtual onlyGovernor(msg.sender) {
     if (_networkFee < 0 || _networkFee > 1000000) {
-      revert ICommon.InvalidNetworkFee(_networkFee);
+      revert IConfigErrors.InvalidNetworkFee(_networkFee);
     }
 
     if (_networkFee > 0 && _feeReceiver == address(0)) {
-      revert ICommon.InvalidFeeReceiver(_feeReceiver);
+      revert IConfigErrors.InvalidFeeReceiver(_feeReceiver);
     }
 
     networkFee = _networkFee;
     feeReceiver = _feeReceiver;
-    emit ICommon.NeverminedConfigChange(
+    emit IConfigErrors.NeverminedConfigChange(
       msg.sender,
       keccak256('networkFee'),
       abi.encodePacked(_networkFee)
     );
-    emit ICommon.NeverminedConfigChange(
+    emit IConfigErrors.NeverminedConfigChange(
       msg.sender,
       keccak256('feeReceiver'),
       abi.encodePacked(_feeReceiver)
@@ -269,7 +269,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     configParams[_paramName].value = _value;
     configParams[_paramName].isActive = true;
     configParams[_paramName].lastUpdated = block.timestamp;
-    emit ICommon.NeverminedConfigChange(msg.sender, _paramName, _value);
+    emit IConfigErrors.NeverminedConfigChange(msg.sender, _paramName, _value);
   }
 
   function getParameter(
@@ -292,7 +292,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
     if (configParams[_paramName].isActive) {
       configParams[_paramName].isActive = false;
       configParams[_paramName].lastUpdated = block.timestamp;
-      emit ICommon.NeverminedConfigChange(
+      emit IConfigErrors.NeverminedConfigChange(
         msg.sender,
         _paramName,
         configParams[_paramName].value
@@ -323,17 +323,17 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable {
   ) public virtual onlyGovernor(msg.sender) {
 
     if (_address == address(0)) {
-      revert ICommon.InvalidAddress(_address);
+      revert IConfigErrors.InvalidAddress(_address);
     }
     uint256 latestVersion = this.getContractLatestVersion(_name);
     if (_version <= latestVersion) {
-      revert ICommon.InvalidContractVersion(_version, latestVersion);
+      revert IConfigErrors.InvalidContractVersion(_version, latestVersion);
     }
 
     bytes32 _id = keccak256(abi.encode(_name, _version));
     contractsRegistry[_id] = _address;
     contractsLatestVersion[keccak256(abi.encode(_name))] = _version;
-    emit ICommon.ContractRegistered(msg.sender, _name, _address, _version);
+    emit IConfigErrors.ContractRegistered(msg.sender, _name, _address, _version);
   }
 
   function resolveContract(

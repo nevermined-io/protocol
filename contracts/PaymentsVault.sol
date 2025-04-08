@@ -6,7 +6,8 @@ pragma solidity ^0.8.28;
 import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IVault} from './interfaces/IVault.sol';
-import {ICommon} from './interfaces/ICommon.sol';
+import {IPaymentErrors} from './interfaces/IPaymentErrors.sol';
+import {ITokenErrors} from './interfaces/ITokenErrors.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
 
@@ -34,48 +35,48 @@ contract PaymentsVault is Initializable, IVault, ReentrancyGuardUpgradeable {
 
   receive() external payable {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
-      revert ICommon.InvalidRole(msg.sender, DEPOSITOR_ROLE);
-    emit ICommon.ReceivedNativeToken(msg.sender, msg.value);
+      revert ITokenErrors.InvalidRole(msg.sender, DEPOSITOR_ROLE);
+    emit IPaymentErrors.ReceivedNativeToken(msg.sender, msg.value);
   }
 
   function depositNativeToken() 
   external payable nonReentrant
   {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
-      revert ICommon.InvalidRole(msg.sender, DEPOSITOR_ROLE);
-    emit ICommon.ReceivedNativeToken(msg.sender, msg.value);
+      revert ITokenErrors.InvalidRole(msg.sender, DEPOSITOR_ROLE);
+    emit IPaymentErrors.ReceivedNativeToken(msg.sender, msg.value);
   }
 
   function withdrawNativeToken(uint256 _amount, address _receiver) 
   external nonReentrant  
   {
-    if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) revert ICommon.InvalidRole(msg.sender, WITHDRAW_ROLE);
+    if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) revert ITokenErrors.InvalidRole(msg.sender, WITHDRAW_ROLE);
     
     (bool sent, ) = _receiver.call{value: _amount}('');
-    if (!sent) revert ICommon.FailedToSendNativeToken();
+    if (!sent) revert IPaymentErrors.FailedToSendNativeToken();
 
-    emit ICommon.WithdrawNativeToken(msg.sender, _receiver, _amount);    
+    emit IPaymentErrors.WithdrawNativeToken(msg.sender, _receiver, _amount);    
   }
 
   function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) 
   external nonReentrant 
   {
     if (!nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE))
-      revert ICommon.InvalidRole(msg.sender, DEPOSITOR_ROLE);
-    emit ICommon.ReceivedERC20(_erc20TokenAddress, _from, _amount);    
+      revert ITokenErrors.InvalidRole(msg.sender, DEPOSITOR_ROLE);
+    emit IPaymentErrors.ReceivedERC20(_erc20TokenAddress, _from, _amount);    
   }
 
   function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver) 
   external nonReentrant  
   {
     if (!nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE))
-      revert ICommon.InvalidRole(msg.sender, WITHDRAW_ROLE);
+      revert ITokenErrors.InvalidRole(msg.sender, WITHDRAW_ROLE);
     
     IERC20 token = IERC20(_erc20TokenAddress);
     token.approve(_receiver, _amount);
     token.transferFrom(address(this), _receiver, _amount);
     
-    emit ICommon.WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);    
+    emit IPaymentErrors.WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);    
   }
 
   function getBalanceNativeToken() external view returns (uint256 balance) {

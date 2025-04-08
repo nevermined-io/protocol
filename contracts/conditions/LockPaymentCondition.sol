@@ -9,7 +9,9 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {IVault} from '../interfaces/IVault.sol';
-import {ICommon} from '../interfaces/ICommon.sol';
+import {IPaymentErrors} from '../interfaces/IPaymentErrors.sol';
+import {IAgreementErrors} from '../interfaces/IAgreementErrors.sol';
+import {IAssetErrors} from '../interfaces/IAssetErrors.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
 import {TokenUtils} from '../utils/TokenUtils.sol';
 
@@ -53,12 +55,12 @@ contract LockPaymentCondition is
 
     // 1. Check if the agreementId is registered in the AssetsRegistry
     if (!agreementStore.agreementExists(_agreementId))
-      revert IAgreement.AgreementNotFound(_agreementId);
+      revert IAgreementErrors.AgreementNotFound(_agreementId);
 
     // 2. Check if the DID & Plan are registered in the AssetsRegistry
-    if (!assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+    if (!assetsRegistry.assetExists(_did)) revert IAssetErrors.AssetNotFound(_did);
     if (!assetsRegistry.planExists(_planId))
-      revert IAsset.PlanNotFound(_planId);
+      revert IAssetErrors.PlanNotFound(_planId);
 
     // 3. Check if the plan config (token, amount) is correct
     IAsset.Plan memory plan = assetsRegistry.getPlan(_planId);
@@ -66,7 +68,7 @@ contract LockPaymentCondition is
     if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
       // Check if the lengths of amounts and receivers are the same
       if (plan.price.amounts.length != plan.price.receivers.length)
-        revert ICommon.IncorrectPaymentDistribution(
+        revert IPaymentErrors.IncorrectPaymentDistribution(
           plan.price.amounts,
           plan.price.receivers
         );
@@ -77,7 +79,7 @@ contract LockPaymentCondition is
           plan.price.receivers
         )
       )
-        revert IAsset.NeverminedFeesNotIncluded(
+        revert IAssetErrors.NeverminedFeesNotIncluded(
           plan.price.amounts,
           plan.price.receivers
         );
@@ -89,7 +91,7 @@ contract LockPaymentCondition is
         // Native token payment
         if (amountToTransfer > 0) {
           if (msg.value != amountToTransfer)
-            revert TokenUtils.InvalidTransactionAmount(
+            revert IPaymentErrors.InvalidTransactionAmount(
               msg.value,
               amountToTransfer
             );
@@ -99,7 +101,7 @@ contract LockPaymentCondition is
         //   payable(address(vault)),
         //   calculateAmountSum(plan.price.amounts)
         // );
-        // if (msg.value != plan.price.amount) revert IAsset.IncorrectPaymentAmount(msg.value, plan.price.amount);
+        // if (msg.value != plan.price.amount) revert IAssetErrors.IncorrectPaymentAmount(msg.value, plan.price.amount);
       } else {
         // ERC20 deposit
         if (amountToTransfer > 0)
@@ -124,12 +126,12 @@ contract LockPaymentCondition is
       );
     } else if (plan.price.priceType == IAsset.PriceType.FIXED_FIAT_PRICE) {
       // Fiat payment can not be locked via LockPaymentCondition but some Oracle integrated with the payment provider (i.e Stripe)
-      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
+      revert IPaymentErrors.UnsupportedPriceTypeOption(plan.price.priceType);
     } else if (plan.price.priceType == IAsset.PriceType.SMART_CONTRACT_PRICE) {
       // Smart contract payment is not implemented yet
-      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
+      revert IPaymentErrors.UnsupportedPriceTypeOption(plan.price.priceType);
     } else {
-      revert ICommon.UnsupportedPriceTypeOption(plan.price.priceType);
+      revert IPaymentErrors.UnsupportedPriceTypeOption(plan.price.priceType);
     }
   }
 }

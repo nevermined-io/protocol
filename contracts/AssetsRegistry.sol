@@ -5,7 +5,7 @@ pragma solidity ^0.8.28;
 
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IAsset} from './interfaces/IAsset.sol';
-import {ICommon} from './interfaces/ICommon.sol';
+import {IAssetErrors} from './interfaces/IAssetErrors.sol';
 import {Initializable} from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
 // import 'hardhat/console.sol';
 
@@ -57,11 +57,11 @@ contract AssetsRegistry is Initializable, IAsset {
   ) public virtual {
     bytes32 did = hashDID(_didSeed, msg.sender);
     if (assets[did].owner != address(0x0)) {
-      revert ICommon.DIDAlreadyRegistered(did);
+      revert IAssetErrors.DIDAlreadyRegistered(did);
     }
 
     if (_plans.length == 0) {
-      revert ICommon.NotPlansAttached(did);
+      revert IAssetErrors.NotPlansAttached(did);
     }
     assets[did] = DIDAsset({
       owner: msg.sender,
@@ -71,7 +71,7 @@ contract AssetsRegistry is Initializable, IAsset {
       plans: _plans
     });
 
-    emit ICommon.AssetRegistered(did, msg.sender);
+    emit IAssetErrors.AssetRegistered(did, msg.sender);
   }
 
   function createPlan(
@@ -86,10 +86,10 @@ contract AssetsRegistry is Initializable, IAsset {
       msg.sender
     );
     if (plans[planId].lastUpdated != 0) {
-      revert ICommon.PlanAlreadyRegistered(planId);
+      revert IAssetErrors.PlanAlreadyRegistered(planId);
     }
     if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
-      revert ICommon.NeverminedFeesNotIncluded(
+      revert IAssetErrors.NeverminedFeesNotIncluded(
         _priceConfig.amounts,
         _priceConfig.receivers
       );
@@ -101,7 +101,7 @@ contract AssetsRegistry is Initializable, IAsset {
       nftAddress: _nftAddress,
       lastUpdated: block.timestamp
     });
-    emit ICommon.PlanRegistered(planId, msg.sender);
+    emit IAssetErrors.PlanRegistered(planId, msg.sender);
   }
 
   function registerAssetAndPlan(

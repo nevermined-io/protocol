@@ -4,7 +4,7 @@
 pragma solidity ^0.8.28;
 
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import {ICommon} from '../interfaces/ICommon.sol';
+import {IPaymentErrors} from '../interfaces/IPaymentErrors.sol';
 
 library TokenUtils {
   // Error definitions moved to ICommon
@@ -41,10 +41,10 @@ library TokenUtils {
   ) public {
     if (_amount > 0) {
       if (msg.value != _amount)
-        revert ICommon.InvalidTransactionAmount(msg.value, _amount);
+        revert IPaymentErrors.InvalidTransactionAmount(msg.value, _amount);
       // solhint-disable-next-line
       (bool sent, ) = _receiverAddress.call{value: _amount}('');
-      if (!sent) revert ICommon.FailedToSendNativeToken();
+      if (!sent) revert IPaymentErrors.FailedToSendNativeToken();
     }
   }
 

@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
-import {ICommon} from '../interfaces/ICommon.sol';
+import {ITokenErrors} from '../interfaces/ITokenErrors.sol';
 
 contract NFT1155Credits is ERC1155Upgradeable {
   /**
@@ -43,7 +43,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
     bytes memory _data
   ) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
-      revert ICommon.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+      revert ITokenErrors.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
 
     _mint(_to, _id, _value, _data);
   }
@@ -55,14 +55,14 @@ contract NFT1155Credits is ERC1155Upgradeable {
     bytes memory _data
   ) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE))
-      revert ICommon.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+      revert ITokenErrors.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
 
     _mintBatch(_to, _ids, _values, _data);
   }
 
   function burn(address _from, uint256 _id, uint256 _value) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
-      revert ICommon.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+      revert ITokenErrors.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
 
     _burn(_from, _id, _value);
   }
@@ -73,7 +73,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
     uint256[] memory _values
   ) public virtual {
     if (!nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE))
-      revert ICommon.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+      revert ITokenErrors.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
 
     _burnBatch(_from, _ids, _values);
   }
@@ -86,7 +86,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
     uint256 /*value*/,
     bytes memory /*data*/
   ) public virtual override {
-    revert ICommon.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+    revert ITokenErrors.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
   }
 
   //@solhint-disable-next-line
@@ -97,7 +97,7 @@ contract NFT1155Credits is ERC1155Upgradeable {
     uint256[] memory /*values*/,
     bytes memory /*data*/
   ) public virtual override {
-    revert ICommon.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+    revert ITokenErrors.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
   }
 
   function supportsInterface(
