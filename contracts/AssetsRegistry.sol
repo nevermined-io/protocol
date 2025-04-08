@@ -50,9 +50,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     error NotPlansAttached(bytes32 did);
 
     function initialize(address _nvmConfigAddress) public initializer {
-        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
-
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
+        _getAssetsRegistryStorage().nvmConfig = INVMConfig(_nvmConfigAddress);
         __Ownable_init(msg.sender);
     }
 
@@ -94,7 +92,16 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)
         public
     {
-        _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress);
+        _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
+    }
+
+    function createPlan(
+        PriceConfig memory _priceConfig,
+        CreditsConfig memory _creditsConfig,
+        address _nftAddress,
+        uint256 _nonce
+    ) public {
+        _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, _nonce);
     }
 
     function registerAssetAndPlan(
@@ -106,7 +113,7 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
     ) external {
         uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
         if (!this.planExists(planId)) {
-            _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress);
+            _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
         }
 
         uint256[] memory _assetPlans = new uint256[](1);
@@ -118,11 +125,12 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         address _owner,
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
-        address _nftAddress
+        address _nftAddress,
+        uint256 _nonce
     ) internal {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
-        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner);
+        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner, _nonce);
         if ($.plans[planId].lastUpdated != 0) {
             revert PlanAlreadyRegistered(planId);
         }
@@ -160,9 +168,27 @@ contract AssetsRegistry is IAsset, OwnableUpgradeable {
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
         address _nftAddress,
+        address _creator,
+        uint256 _nonce
+    ) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator, _nonce)));
+    }
+
+    /**
+     * Given the plan attributes and the address of the plan creator, it computes a unique identifier for the plan
+     * @param _priceConfig the price configuration of the plan
+     * @param _creditsConfig the credits configuration of the plan
+     * @param _nftAddress the address of the NFT contract that represents the plan
+     * @param _creator the address of the user that created the plan
+     * @return the unique identifier of the plan
+     */
+    function hashPlanId(
+        PriceConfig memory _priceConfig,
+        CreditsConfig memory _creditsConfig,
+        address _nftAddress,
         address _creator
     ) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator)));
+        return hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _creator, 0);
     }
 
     function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
