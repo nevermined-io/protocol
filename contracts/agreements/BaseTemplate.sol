@@ -30,6 +30,7 @@ abstract contract BaseTemplate is OwnableUpgradeable {
     error InvalidPlanId(uint256 planId);
 
     function _getBaseTemplateStorage() internal pure returns (BaseTemplateStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := BASE_TEMPLATE_STORAGE_LOCATION
         }

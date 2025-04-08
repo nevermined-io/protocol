@@ -42,6 +42,7 @@ contract PaymentsVaultV2 is PaymentsVault {
     }
 
     function _getPaymentsVaultV2Storage() internal pure returns (PaymentsVaultV2Storage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := PAYMENTS_VAULT_V2_STORAGE_LOCATION
         }

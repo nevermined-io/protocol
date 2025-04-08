@@ -185,6 +185,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
 
     function _getNFT1155ExpirableCreditsStorage() internal pure returns (NFT1155ExpirableCreditsStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := NFT1155_EXPIRABLE_CREDITS_STORAGE_LOCATION
         }

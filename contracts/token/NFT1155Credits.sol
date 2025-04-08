@@ -4,8 +4,6 @@
 pragma solidity ^0.8.28;
 
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import {INVMConfig} from "../interfaces/INVMConfig.sol";
-import {IAsset} from "../interfaces/IAsset.sol";
 import {NFT1155Base} from "./NFT1155Base.sol";
 
 contract NFT1155Credits is NFT1155Base {
@@ -40,6 +38,7 @@ contract NFT1155Credits is NFT1155Base {
         super.burnBatch(_from, _ids, _values);
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Credits_init(address _nvmConfigAddress, address _assetsRegistryAddress)
         internal
         onlyInitializing

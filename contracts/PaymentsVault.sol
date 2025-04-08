@@ -116,6 +116,7 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
     }
 
     function _getPaymentsVaultStorage() internal pure returns (PaymentsVaultStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := PAYMENTS_VAULT_STORAGE_LOCATION
         }

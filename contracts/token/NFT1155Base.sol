@@ -47,6 +47,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     /// @param sender The address of the account calling this function
     error InvalidRedemptionPermission(uint256 planId, IAsset.RedemptionType redemptionType, address sender);
 
+    // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Base_init(address _nvmConfigAddress, address _assetsRegistryAddress) public onlyInitializing {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
@@ -210,6 +211,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable {
     }
 
     function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := NFT1155_BASE_STORAGE_LOCATION
         }

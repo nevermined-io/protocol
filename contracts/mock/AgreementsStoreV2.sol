@@ -43,6 +43,7 @@ contract AgreementsStoreV2 is AgreementsStore {
     }
 
     function _getAgreementsStoreV2Storage() internal pure returns (AgreementsStoreV2Storage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly {
             $.slot := AGREEMENTS_STORE_V2_STORAGE_LOCATION
         }
