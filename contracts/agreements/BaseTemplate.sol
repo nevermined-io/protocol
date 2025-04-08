@@ -3,36 +3,25 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {AgreementsStore} from "./AgreementsStore.sol";
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { ITemplate } from '../interfaces/ITemplate.sol';
+import { AgreementsStore } from './AgreementsStore.sol';
 
-abstract contract BaseTemplate is OwnableUpgradeable {
-    // keccak256(abi.encode(uint256(keccak256("nevermined.basetemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
-    bytes32 private constant BASE_TEMPLATE_STORAGE_LOCATION =
-        0xe216fc96f789fa9c96a1eaa661bfd7aef52752717013e765adce03d67eb13e00;
+abstract contract BaseTemplate is OwnableUpgradeable, ITemplate {
+  // keccak256(abi.encode(uint256(keccak256("nevermined.basetemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
+  bytes32 private constant BASE_TEMPLATE_STORAGE_LOCATION =
+    0xe216fc96f789fa9c96a1eaa661bfd7aef52752717013e765adce03d67eb13e00;
 
-    /// @custom:storage-location erc7201:nevermined.basetemplate.storage
-    struct BaseTemplateStorage {
-        AgreementsStore agreementStore;
-        address assetsRegistryAddress;
+  /// @custom:storage-location erc7201:nevermined.basetemplate.storage
+  struct BaseTemplateStorage {
+    AgreementsStore agreementStore;
+    address assetsRegistryAddress;
+  }
+
+  function _getBaseTemplateStorage() internal pure returns (BaseTemplateStorage storage $) {
+    // solhint-disable-next-line no-inline-assembly
+    assembly {
+      $.slot := BASE_TEMPLATE_STORAGE_LOCATION
     }
-
-    /// The `seed` of the agreementId provided is not valid
-    /// @param seed The seed provided to generate the agreementId
-    error InvalidSeed(bytes32 seed);
-
-    /// The `did` provided is not valid
-    /// @param did The unique identifier of the asset related to the agreement being created
-    error InvalidDID(bytes32 did);
-
-    /// The `planId` provided is not valid
-    /// @param planId The unique identifier of the plan being used in the agreement
-    error InvalidPlanId(uint256 planId);
-
-    function _getBaseTemplateStorage() internal pure returns (BaseTemplateStorage storage $) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            $.slot := BASE_TEMPLATE_STORAGE_LOCATION
-        }
-    }
+  }
 }
