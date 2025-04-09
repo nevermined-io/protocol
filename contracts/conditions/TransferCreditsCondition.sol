@@ -27,6 +27,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress
   ) public initializer {
@@ -36,7 +37,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
     $.nvmConfig = INVMConfig(_nvmConfigAddress);
     $.assetsRegistry = IAsset(_assetsRegistryAddress);
     $.agreementStore = IAgreement(_agreementStoreAddress);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function fulfill(

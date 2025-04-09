@@ -3,11 +3,11 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 import { ITemplate } from '../interfaces/ITemplate.sol';
 import { AgreementsStore } from './AgreementsStore.sol';
+import { AccessManagedUUPSUpgradeable } from '../proxy/AccessManagedUUPSUpgradeable.sol';
 
-abstract contract BaseTemplate is OwnableUpgradeable, ITemplate {
+abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
   // keccak256(abi.encode(uint256(keccak256("nevermined.basetemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant BASE_TEMPLATE_STORAGE_LOCATION =
     0xe216fc96f789fa9c96a1eaa661bfd7aef52752717013e765adce03d67eb13e00;
