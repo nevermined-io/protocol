@@ -29,6 +29,7 @@ contract FiatPaymentTemplate is BaseTemplate {
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress,
     address _fiatSettlementConditionAddress,

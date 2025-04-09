@@ -48,7 +48,7 @@ contract AgreementsStoreV2 is AgreementsStore {
     returns (AgreementsStoreV2Storage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := AGREEMENTS_STORE_V2_STORAGE_LOCATION
     }
   }

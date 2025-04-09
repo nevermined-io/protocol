@@ -9,13 +9,13 @@ import { NFT1155Base } from "./NFT1155Base.sol";
 contract NFT1155Credits is NFT1155Base {
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     string memory, // name
     string memory // symbol
   ) external initializer {
-    __Ownable_init(msg.sender);
     ERC1155Upgradeable.__ERC1155_init("");
-    __NFT1155Credits_init(_nvmConfigAddress, _assetsRegistryAddress);
+    __NFT1155Credits_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
   }
 
   function mint(
@@ -51,8 +51,9 @@ contract NFT1155Credits is NFT1155Base {
   // solhint-disable-next-line func-name-mixedcase
   function __NFT1155Credits_init(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress
   ) internal onlyInitializing {
-    __NFT1155Base_init(_nvmConfigAddress, _assetsRegistryAddress);
+    __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
   }
 }

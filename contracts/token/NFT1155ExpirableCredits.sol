@@ -26,13 +26,13 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     string memory, // name
     string memory // symbol
   ) public virtual initializer {
     ERC1155Upgradeable.__ERC1155_init("");
-    __Ownable_init(msg.sender);
-    __NFT1155Base_init(_nvmConfigAddress, _assetsRegistryAddress);
+    __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
   }
 
   function mint(
@@ -205,7 +205,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     returns (NFT1155ExpirableCreditsStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := NFT1155_EXPIRABLE_CREDITS_STORAGE_LOCATION
     }
   }

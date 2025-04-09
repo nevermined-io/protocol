@@ -32,10 +32,10 @@ contract FiatSettlementConditionTest is Test {
         assetsRegistry.initialize(address(nvmConfig));
 
         agreementsStore = new AgreementsStore();
-        agreementsStore.initialize(address(nvmConfig));
+        agreementsStore.initialize(address(nvmConfig), address(0));
 
         agreementsStore = new AgreementsStore();
-        agreementsStore.initialize(address(nvmConfig));
+        agreementsStore.initialize(address(nvmConfig), address(0));
 
         fiatSettlementCondition = new FiatSettlementCondition();
         fiatSettlementCondition.initialize(

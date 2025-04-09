@@ -1,50 +1,74 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {Script} from "forge-std/Script.sol";
-import {Constants} from "../../scripts/Constants.sol";
-import {DeployConfig} from "./DeployConfig.sol";
-import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
-import {FixedPaymentTemplate} from "../../contracts/agreements/FixedPaymentTemplate.sol";
-import {FiatPaymentTemplate} from "../../contracts/agreements/FiatPaymentTemplate.sol";
+import { Script } from 'forge-std/Script.sol';
+import { console } from 'forge-std/console.sol';
+import { DeployConfig } from './DeployConfig.sol';
+import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployTemplates is Script, DeployConfig {
-    function run(
-        address ownerAddress,
-        address nvmConfigAddress,
-        address assetsRegistryAddress,
-        address agreementsStoreAddress,
-        address lockPaymentConditionAddress,
-        address transferCreditsConditionAddress,
-        address distributePaymentsConditionAddress,
-        address fiatSettlementConditionAddress
-    ) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
-        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast(ownerAddress);        
-        
-        // Deploy FixedPaymentTemplate
-        FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
-        fixedPaymentTemplate.initialize(
-            nvmConfigAddress,
-            assetsRegistryAddress,
-            agreementsStoreAddress,
-            lockPaymentConditionAddress,
-            transferCreditsConditionAddress,
-            distributePaymentsConditionAddress
-        );
-        
-        // Deploy FiatPaymentTemplate
-        FiatPaymentTemplate fiatPaymentTemplate = new FiatPaymentTemplate();
-        fiatPaymentTemplate.initialize(
-            nvmConfigAddress,
-            assetsRegistryAddress,
-            agreementsStoreAddress,
-            fiatSettlementConditionAddress,
-            transferCreditsConditionAddress
-        );
+  function run(
+    address ownerAddress,
+    address nvmConfigAddress,
+    address assetsRegistryAddress,
+    address agreementsStoreAddress,
+    address lockPaymentConditionAddress,
+    address transferCreditsConditionAddress,
+    address distributePaymentsConditionAddress,
+    address fiatSettlementConditionAddress,
+    address accessManagerAddress
+  ) public returns (FixedPaymentTemplate, fiatPaymentTemplate) {
+    console.log('Deploying Templates with:');
+    console.log('\tOwner:', ownerAddress);
+    console.log('\tNVMConfig:', nvmConfigAddress);
+    console.log('\tAssetsRegistry:', assetsRegistryAddress);
+    console.log('\tAgreementsStore:', agreementsStoreAddress);
+    console.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
+    console.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
+    console.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
+    console.log('\tFiatSettlementCondition:', fiatSettlementConditionAddress);
+    console.log('\tAccessManager:', accessManagerAddress);
 
-        vm.stopBroadcast();
-        
-        return (fixedPaymentTemplate, fiatPaymentTemplate);
-    }
+    vm.startBroadcast(ownerAddress);
+
+    // Deploy FixedPaymentTemplate
+    FixedPaymentTemplate fixedPaymentTemplateImpl = new FixedPaymentTemplate();
+    bytes memory fixedPaymentTemplateData = abi.encodeCall(
+      FixedPaymentTemplate.initialize,
+      (
+        address(fixedPaymentTemplateImpl),
+        accessManagerAddress,
+        assetsRegistryAddress,
+        agreementsStoreAddress,
+        lockPaymentConditionAddress,
+        transferCreditsConditionAddress,
+        distributePaymentsConditionAddress
+      )
+    );
+    FixedPaymentTemplate fixedPaymentTemplate = FixedPaymentTemplate(
+      address(new ERC1967Proxy(address(fixedPaymentTemplateImpl), fixedPaymentTemplateData))
+    );
+
+    // Deploy FiatPaymentTemplate
+    FiatPaymentTemplate fiatPaymentTemplateImpl = new FiatPaymentTemplate();
+    bytes memory fiatPaymentTemplateData = abi.encodeCall(
+      FiatPaymentTemplate.initialize,
+      (
+        address(fiatPaymentTemplateImpl),
+        accessManagerAddress,
+        assetsRegistryAddress,
+        agreementsStoreAddress,
+        fiatSettlementConditionAddress,
+        transferCreditsConditionAddress
+      )
+    );
+    FiatPaymentTemplate fiatPaymentTemplate = FiatPaymentTemplate(
+      address(new ERC1967Proxy(address(fiatPaymentTemplateImpl), fiatPaymentTemplateData))
+    );
+
+    vm.stopBroadcast();
+
+    return ( fixedPaymentTemplate, fiatPaymentTemplate );
+  }
 }

@@ -28,6 +28,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress,
     address _vaultAddress
@@ -39,7 +40,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
     $.assetsRegistry = IAsset(_assetsRegistryAddress);
     $.agreementStore = IAgreement(_agreementStoreAddress);
     $.vault = IVault(_vaultAddress);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function fulfill(
@@ -132,7 +133,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
     returns (DistributePaymentsConditionStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := DISTRIBUTE_PAYMENTS_CONDITION_STORAGE_LOCATION
     }
   }

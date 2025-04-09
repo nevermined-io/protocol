@@ -3,7 +3,7 @@ import { expect } from 'chai'
 import hre from 'hardhat'
 import { toHex, zeroAddress } from 'viem'
 import { getTxParsedLogs, sha3 } from '../common/utils'
-import { NVMConfigModule } from '../../ignition/modules/FullDeployment'
+import FullDeploymentModule, { NVMConfigModule } from '../../ignition/modules/FullDeployment'
 
 var chai = require('chai')
 chai.use(require('chai-string'))
@@ -15,13 +15,7 @@ describe('PaymentsVault', function () {
     const [owner, governor, depositor, withdrawer, receiver] = await hre.viem.getWalletClients()
 
     // Deploy NVMConfig first
-    const { nvmConfig } = await hre.ignition.deploy(NVMConfigModule)
-
-    // Deploy PaymentsVault
-    const paymentsVault = await hre.viem.deployContract('PaymentsVault', [])
-    await paymentsVault.write.initialize([nvmConfig.address], {
-      account: owner.account,
-    })
+    const { nvmConfig, paymentsVault } = await hre.ignition.deploy(FullDeploymentModule)
 
     // Deploy MockERC20
     const mockERC20 = await hre.viem.deployContract('MockERC20', ['Mock Token', 'MTK'])

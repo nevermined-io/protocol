@@ -31,6 +31,7 @@ contract FixedPaymentTemplate is BaseTemplate {
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress,
     address _lockPaymentConditionAddress,
@@ -45,7 +46,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     $.lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
     $.transferCondition = TransferCreditsCondition(_transferCondtionAddress);
     $.distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function createAgreement(
@@ -178,7 +179,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     returns (FixedPaymentTemplateStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := FIXED_PAYMENT_TEMPLATE_STORAGE_LOCATION
     }
   }
