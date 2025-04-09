@@ -37,6 +37,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress,
     address _vaultAddress
@@ -48,7 +49,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     $.assetsRegistry = IAsset(_assetsRegistryAddress);
     $.agreementStore = IAgreement(_agreementStoreAddress);
     $.vault = IVault(_vaultAddress);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function fulfill(
@@ -126,7 +127,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     returns (LockPaymentConditionStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := LOCK_PAYMENT_CONDITION_STORAGE_LOCATION
     }
   }

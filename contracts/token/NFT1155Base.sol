@@ -4,13 +4,13 @@
 pragma solidity ^0.8.28;
 
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { AccessManagedUUPSUpgradeable } from "../proxy/AccessManagedUUPSUpgradeable.sol";
 import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import { INVMConfig } from "../interfaces/INVMConfig.sol";
 import { INFT1155 } from "../interfaces/INFT1155.sol";
 import { IAsset } from "../interfaces/IAsset.sol";
 
-abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT1155 {
+abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPSUpgradeable {
   /**
    * @notice Role allowing to mint credits
    */
@@ -40,9 +40,12 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
   // solhint-disable-next-line func-name-mixedcase
   function __NFT1155Base_init(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress
   ) public onlyInitializing {
     NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+    __AccessManagedUUPSUpgradeable_init(_authority);
 
     $.nvmConfig = INVMConfig(_nvmConfigAddress);
     $.assetsRegistry = IAsset(_assetsRegistryAddress);
@@ -219,7 +222,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
 
   function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := NFT1155_BASE_STORAGE_LOCATION
     }
   }

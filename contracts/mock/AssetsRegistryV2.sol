@@ -44,7 +44,7 @@ contract AssetsRegistryV2 is AssetsRegistry {
 
   function _getAssetsRegistryV2Storage() internal pure returns (AssetsRegistryV2Storage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := ASSETS_REGISTRY_V2_STORAGE_LOCATION
     }
   }

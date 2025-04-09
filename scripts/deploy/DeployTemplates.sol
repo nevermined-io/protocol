@@ -1,39 +1,55 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {Script} from "forge-std/Script.sol";
-import {Constants} from "../../scripts/Constants.sol";
-import {DeployConfig} from "./DeployConfig.sol";
-import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
-import {FixedPaymentTemplate} from "../../contracts/agreements/FixedPaymentTemplate.sol";
+import { Script } from 'forge-std/Script.sol';
+import { console } from 'forge-std/console.sol';
+import { DeployConfig } from './DeployConfig.sol';
+import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployTemplates is Script, DeployConfig {
-    function run(
-        address ownerAddress,
-        address nvmConfigAddress,
-        address assetsRegistryAddress,
-        address agreementsStoreAddress,
-        address lockPaymentConditionAddress,
-        address transferCreditsConditionAddress,
-        address distributePaymentsConditionAddress
-    ) public returns (FixedPaymentTemplate) {
-        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        vm.startBroadcast(ownerAddress);        
-        
-        // Deploy FixedPaymentTemplate
-        FixedPaymentTemplate fixedPaymentTemplate = new FixedPaymentTemplate();
-        fixedPaymentTemplate.initialize(
-            nvmConfigAddress,
-            assetsRegistryAddress,
-            agreementsStoreAddress,
-            lockPaymentConditionAddress,
-            transferCreditsConditionAddress,
-            distributePaymentsConditionAddress
-        );
-        
-        
-        vm.stopBroadcast();
-        
-        return fixedPaymentTemplate;
-    }
+  function run(
+    address ownerAddress,
+    address nvmConfigAddress,
+    address assetsRegistryAddress,
+    address agreementsStoreAddress,
+    address lockPaymentConditionAddress,
+    address transferCreditsConditionAddress,
+    address distributePaymentsConditionAddress,
+    address accessManagerAddress
+  ) public returns (FixedPaymentTemplate) {
+    console.log('Deploying Templates with:');
+    console.log('\tOwner:', ownerAddress);
+    console.log('\tNVMConfig:', nvmConfigAddress);
+    console.log('\tAssetsRegistry:', assetsRegistryAddress);
+    console.log('\tAgreementsStore:', agreementsStoreAddress);
+    console.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
+    console.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
+    console.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
+    console.log('\tAccessManager:', accessManagerAddress);
+
+    vm.startBroadcast(ownerAddress);
+
+    // Deploy FixedPaymentTemplate
+    FixedPaymentTemplate fixedPaymentTemplateImpl = new FixedPaymentTemplate();
+    bytes memory fixedPaymentTemplateData = abi.encodeCall(
+      FixedPaymentTemplate.initialize,
+      (
+        address(fixedPaymentTemplateImpl),
+        accessManagerAddress,
+        assetsRegistryAddress,
+        agreementsStoreAddress,
+        lockPaymentConditionAddress,
+        transferCreditsConditionAddress,
+        distributePaymentsConditionAddress
+      )
+    );
+    FixedPaymentTemplate fixedPaymentTemplate = FixedPaymentTemplate(
+      address(new ERC1967Proxy(address(fixedPaymentTemplateImpl), fixedPaymentTemplateData))
+    );
+
+    vm.stopBroadcast();
+
+    return fixedPaymentTemplate;
+  }
 }
