@@ -5,9 +5,14 @@ import { Script } from 'forge-std/Script.sol';
 import { NVMConfig } from '../../contracts/NVMConfig.sol';
 import { DeployConfig } from './DeployConfig.sol';
 import { console } from 'forge-std/console.sol';
+import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployNVMConfig is Script, DeployConfig {
-  function run(address ownerAddress, address governorAddress) public returns (NVMConfig) {
+  function run(
+    address ownerAddress,
+    address governorAddress,
+    address accessManager
+  ) public returns (NVMConfig) {
     // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
     vm.startBroadcast(ownerAddress);
 
@@ -16,14 +21,24 @@ contract DeployNVMConfig is Script, DeployConfig {
       feeReceiver = ownerAddress;
     }
 
-    // Deploy NVMConfig
-    NVMConfig nvmConfig = new NVMConfig();
+    // Deploy NVMConfig implementation
+    NVMConfig nvmConfigImpl = new NVMConfig();
 
-    // Initialize NVMConfig with owner and governor addresses
-    nvmConfig.initialize(ownerAddress, governorAddress);
+    // Deploy proxy with implementation
+    bytes memory initData = abi.encodeCall(
+      NVMConfig.initialize,
+      (ownerAddress, accessManager, governorAddress)
+    );
+    ERC1967Proxy proxy = new ERC1967Proxy(address(nvmConfigImpl), initData);
 
+    // Create NVMConfig instance pointing to proxy
+    NVMConfig nvmConfig = NVMConfig(address(proxy));
+
+    console.log('NVMConfig implementation deployed at:', address(nvmConfigImpl));
+    console.log('NVMConfig proxy deployed at:', address(proxy));
     console.log('NVMConfig initialized with Owner:', ownerAddress);
     console.log('NVMConfig initialized with Governor:', governorAddress);
+    console.log('NVMConfig initialized with AccessManager:', accessManager);
 
     vm.stopBroadcast();
 

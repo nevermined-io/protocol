@@ -11,7 +11,7 @@ import { DeployCoreContracts } from './DeployCoreContracts.sol';
 import { DeployNFTContracts } from './DeployNFTContracts.sol';
 import { DeployConditions } from './DeployConditions.sol';
 import { DeployTemplates } from './DeployTemplates.sol';
-// import {ManagePermissions} from "./ManagePermissions.sol";
+import { DeployAccessManager } from './DeployAccessManager.sol';
 import { NVMConfig } from '../../contracts/NVMConfig.sol';
 import { TokenUtils } from '../../contracts/utils/TokenUtils.sol';
 import { AssetsRegistry } from '../../contracts/AssetsRegistry.sol';
@@ -24,6 +24,7 @@ import { TransferCreditsCondition } from '../../contracts/conditions/TransferCre
 import { DistributePaymentsCondition } from '../../contracts/conditions/DistributePaymentsCondition.sol';
 import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
 import { OwnerGrantRoles } from './OwnerGrantRoles.sol';
+import { AccessManager } from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
 contract DeployAll is Script, DeployConfig {
   function run() public {
@@ -53,6 +54,7 @@ contract DeployAll is Script, DeployConfig {
     console.log('Version: ', version);
 
     // Load the deployment scripts
+    DeployAccessManager deployAccessManager = new DeployAccessManager();
     DeployNVMConfig deployNVMConfig = new DeployNVMConfig();
     DeployLibraries deployLibraries = new DeployLibraries();
     DeployCoreContracts deployCoreContracts = new DeployCoreContracts();
@@ -60,35 +62,41 @@ contract DeployAll is Script, DeployConfig {
     DeployConditions deployConditions = new DeployConditions();
     DeployTemplates deployTemplates = new DeployTemplates();
     OwnerGrantRoles ownerGrantRoles = new OwnerGrantRoles();
-    // ManagePermissions managePermissions = new ManagePermissions();
 
     // Execute the deployments in order
-    // 1. Deploy NVMConfig
-    NVMConfig nvmConfig = deployNVMConfig.run(ownerAddress, governorAddress);
+    // 1. Deploy AccessManager
+    AccessManager accessManager = deployAccessManager.run(ownerAddress);
+
+    // 2. Deploy NVMConfig
+    NVMConfig nvmConfig = deployNVMConfig.run(
+      ownerAddress,
+      governorAddress,
+      address(accessManager)
+    );
     console.log('NVMConfig deployed at:', address(nvmConfig));
 
-    // 2. Deploy Libraries
+    // 3. Deploy Libraries
     address tokenUtilsAddress = deployLibraries.run(ownerAddress);
     console.log('TokenUtils deployed at:', tokenUtilsAddress);
 
-    // 3. Deploy Core Contracts
+    // 4. Deploy Core Contracts
     (
       AssetsRegistry assetsRegistry,
       AgreementsStore agreementsStore,
       PaymentsVault paymentsVault
-    ) = deployCoreContracts.run(address(nvmConfig), ownerAddress);
+    ) = deployCoreContracts.run(address(nvmConfig), address(accessManager), ownerAddress);
     console.log('AssetsRegistry deployed at:', address(assetsRegistry));
     console.log('AgreementsStore deployed at:', address(agreementsStore));
     console.log('PaymentsVault deployed at:', address(paymentsVault));
 
-    // 4. Deploy NFT Contracts
+    // 5. Deploy NFT Contracts
     (NFT1155Credits nftCredits, NFT1155ExpirableCredits nftExpirableCredits) = deployNFTContracts
-      .run(address(nvmConfig), address(assetsRegistry), ownerAddress);
+      .run(address(nvmConfig), address(assetsRegistry), address(accessManager), ownerAddress);
 
     console.log('NFT1155Credits deployed at:', address(nftCredits));
     console.log('NFT1155ExpirableCredits deployed at:', address(nftExpirableCredits));
 
-    // 5. Deploy Conditions
+    // 6. Deploy Conditions
     (
       LockPaymentCondition lockPaymentCondition,
       TransferCreditsCondition transferCreditsCondition,
@@ -99,13 +107,14 @@ contract DeployAll is Script, DeployConfig {
         address(assetsRegistry),
         address(agreementsStore),
         address(paymentsVault),
-        tokenUtilsAddress
+        tokenUtilsAddress,
+        address(accessManager)
       );
     console.log('LockPaymentCondition deployed at:', address(lockPaymentCondition));
     console.log('TransferCreditsCondition deployed at:', address(transferCreditsCondition));
     console.log('DistributePaymentsCondition deployed at:', address(distributePaymentsCondition));
 
-    // 6. Deploy Templates
+    // 7. Deploy Templates
     FixedPaymentTemplate fixedPaymentTemplate = deployTemplates.run(
       ownerAddress,
       address(nvmConfig),
@@ -113,7 +122,8 @@ contract DeployAll is Script, DeployConfig {
       address(agreementsStore),
       address(lockPaymentCondition),
       address(transferCreditsCondition),
-      address(distributePaymentsCondition)
+      address(distributePaymentsCondition),
+      address(accessManager)
     );
     console.log('FixedPaymentTemplate deployed at:', address(fixedPaymentTemplate));
 
@@ -124,7 +134,8 @@ contract DeployAll is Script, DeployConfig {
       address(nftCredits),
       address(lockPaymentCondition),
       address(transferCreditsCondition),
-      address(distributePaymentsCondition)
+      address(distributePaymentsCondition),
+      address(accessManager)
     );
     console.log('Roles granted successfully by Owner');
 
@@ -147,6 +158,9 @@ contract DeployAll is Script, DeployConfig {
         vm.toString(block.timestamp),
         '",\n',
         '  "contracts": {\n',
+        '    "AccessManager": "',
+        vm.toString(address(accessManager)),
+        '",\n',
         '    "NVMConfig": "',
         vm.toString(address(nvmConfig)),
         '",\n',

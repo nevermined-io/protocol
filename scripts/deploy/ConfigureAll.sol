@@ -23,12 +23,13 @@ import { TransferCreditsCondition } from '../../contracts/conditions/TransferCre
 import { DistributePaymentsCondition } from '../../contracts/conditions/DistributePaymentsCondition.sol';
 import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
 import { SetNetworkFees } from './SetNetworkFees.sol';
+import { AccessManager } from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
 contract ConfigureAll is Script, DeployConfig {
   function run() public {
     address governorAddress = msg.sender;
 
-    console.log('Configuring contracts with Governor address :', governorAddress);
+    console.log('Configuring contracts with Governor address:', governorAddress);
 
     string memory addressesJson = vm.envOr(
       'DEPLOYMENT_ADDRESSES_JSON',
@@ -37,7 +38,7 @@ contract ConfigureAll is Script, DeployConfig {
 
     string memory json = vm.readFile(addressesJson);
 
-    console.log('Configuring contracts with JSON addresses from file: ', addressesJson);
+    console.log('Configuring contracts with JSON addresses from file:', addressesJson);
     console.log(json);
 
     // Load the deployment scripts
@@ -52,7 +53,8 @@ contract ConfigureAll is Script, DeployConfig {
       vm.parseJsonAddress(json, '$.contracts.LockPaymentCondition'),
       vm.parseJsonAddress(json, '$.contracts.DistributePaymentsCondition'),
       vm.parseJsonAddress(json, '$.contracts.TransferCreditsCondition'),
-      vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate')
+      vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate'),
+      vm.parseJsonAddress(json, '$.contracts.AccessManager')
     );
     console.log('Permissions configured');
 
