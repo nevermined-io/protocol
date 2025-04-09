@@ -155,7 +155,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
 
   function _getAgreementsStoreStorage() internal pure returns (AgreementsStoreStorage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := AGREEMENTS_STORE_STORAGE_LOCATION
     }
   }

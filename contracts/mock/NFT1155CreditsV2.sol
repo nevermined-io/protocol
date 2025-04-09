@@ -43,7 +43,7 @@ contract NFT1155CreditsV2 is NFT1155Credits {
 
   function _getNFT1155CreditsV2Storage() internal pure returns (NFT1155CreditsV2Storage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := NFT1155_CREDITS_V2_STORAGE_LOCATION
     }
   }

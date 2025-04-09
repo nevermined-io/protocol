@@ -183,7 +183,7 @@ contract FixedPaymentTemplate is BaseTemplate {
     returns (FixedPaymentTemplateStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := FIXED_PAYMENT_TEMPLATE_STORAGE_LOCATION
     }
   }

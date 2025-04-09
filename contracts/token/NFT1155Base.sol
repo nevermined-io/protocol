@@ -222,7 +222,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
 
   function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := NFT1155_BASE_STORAGE_LOCATION
     }
   }

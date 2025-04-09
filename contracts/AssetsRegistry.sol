@@ -266,7 +266,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
   }
 
   function _getAssetsRegistryStorage() internal pure returns (AssetsRegistryStorage storage $) {
-    assembly {
+    assembly ('memory-safe') {
       $.slot := ASSETS_REGISTRY_STORAGE_LOCATION
     }
   }

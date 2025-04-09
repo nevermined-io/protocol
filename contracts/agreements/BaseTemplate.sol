@@ -20,7 +20,7 @@ abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
 
   function _getBaseTemplateStorage() internal pure returns (BaseTemplateStorage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := BASE_TEMPLATE_STORAGE_LOCATION
     }
   }

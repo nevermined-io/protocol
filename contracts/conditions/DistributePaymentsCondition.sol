@@ -133,7 +133,7 @@ contract DistributePaymentsCondition is ReentrancyGuardUpgradeable, TemplateCond
     returns (DistributePaymentsConditionStorage storage $)
   {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := DISTRIBUTE_PAYMENTS_CONDITION_STORAGE_LOCATION
     }
   }

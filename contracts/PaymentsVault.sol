@@ -107,7 +107,7 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSU
 
   function _getPaymentsVaultStorage() internal pure returns (PaymentsVaultStorage storage $) {
     // solhint-disable-next-line no-inline-assembly
-    assembly {
+    assembly ('memory-safe') {
       $.slot := PAYMENTS_VAULT_STORAGE_LOCATION
     }
   }

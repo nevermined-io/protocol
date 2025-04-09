@@ -304,7 +304,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
   }
 
   function _getNVMConfigStorage() internal pure returns (NVMConfigStorage storage $) {
-    assembly {
+    assembly ('memory-safe') {
       $.slot := NVM_CONFIG_STORAGE_LOCATION
     }
   }
