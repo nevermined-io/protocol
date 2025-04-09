@@ -3,29 +3,29 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import { IERC2981 } from "@openzeppelin/contracts/interfaces/IERC2981.sol";
-import { INVMConfig } from "../interfaces/INVMConfig.sol";
-import { INFT1155 } from "../interfaces/INFT1155.sol";
-import { IAsset } from "../interfaces/IAsset.sol";
+import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { IERC2981 } from '@openzeppelin/contracts/interfaces/IERC2981.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { INFT1155 } from '../interfaces/INFT1155.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 
 abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT1155 {
   /**
    * @notice Role allowing to mint credits
    */
-  bytes32 public constant CREDITS_MINTER_ROLE = keccak256("CREDITS_MINTER_ROLE");
+  bytes32 public constant CREDITS_MINTER_ROLE = keccak256('CREDITS_MINTER_ROLE');
 
   /**
    * @notice Role allowing to burn credits
    */
-  bytes32 public constant CREDITS_BURNER_ROLE = keccak256("CREDITS_BURNER_ROLE");
+  bytes32 public constant CREDITS_BURNER_ROLE = keccak256('CREDITS_BURNER_ROLE');
 
   /**
    * @notice Role allowing to transfer credits
    * @dev This role is not used in the current implementation
    */
-  bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256("CREDITS_TRANSFER_ROLE");
+  bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
 
   // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155base.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant NFT1155_BASE_STORAGE_LOCATION =

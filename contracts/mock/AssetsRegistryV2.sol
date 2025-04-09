@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { AssetsRegistry } from "../AssetsRegistry.sol";
-import { INVMConfig } from "../interfaces/INVMConfig.sol";
+import { AssetsRegistry } from '../AssetsRegistry.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined Assets Registry V2 contract

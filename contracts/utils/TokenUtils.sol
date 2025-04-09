@@ -3,7 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC20 } from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 library TokenUtils {
   /// Error sending native token (i.e ETH)

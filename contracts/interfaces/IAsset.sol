@@ -54,7 +54,7 @@ interface IAsset {
   struct PriceConfig {
     /**
      * The type or configuration of the price
-     * @notice 0 - fixed price. 1 - fixed fiat price. 2 - smart contract price
+     * @notice 0 - fixed price. 1 - fiat price. 2 - smart contract price
      */
     PriceType priceType;
     /**

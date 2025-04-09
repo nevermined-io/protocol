@@ -3,7 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { PaymentsVault } from "../PaymentsVault.sol";
+import { PaymentsVault } from '../PaymentsVault.sol';
 
 /**
  * @title Nevermined Payments Vault V2 contract
