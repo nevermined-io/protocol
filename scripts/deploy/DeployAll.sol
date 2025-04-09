@@ -22,7 +22,10 @@ import {NFT1155ExpirableCredits} from "../../contracts/token/NFT1155ExpirableCre
 import {LockPaymentCondition} from "../../contracts/conditions/LockPaymentCondition.sol";
 import {TransferCreditsCondition} from "../../contracts/conditions/TransferCreditsCondition.sol";
 import {DistributePaymentsCondition} from "../../contracts/conditions/DistributePaymentsCondition.sol";
+import {FiatSettlementCondition} from "../../contracts/conditions/FiatSettlementCondition.sol";
 import {FixedPaymentTemplate} from "../../contracts/agreements/FixedPaymentTemplate.sol";
+import {FiatPaymentTemplate} from "../../contracts/agreements/FiatPaymentTemplate.sol";
+
 import {OwnerGrantRoles} from "./OwnerGrantRoles.sol";
 
 contract DeployAll is Script, DeployConfig {
