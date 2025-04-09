@@ -3,17 +3,17 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { INVMConfig } from "../interfaces/INVMConfig.sol";
-import { AgreementsStore } from "./AgreementsStore.sol";
-import { BaseTemplate } from "./BaseTemplate.sol";
-import { IAgreement } from "../interfaces/IAgreement.sol";
-import { LockPaymentCondition } from "../conditions/LockPaymentCondition.sol";
-import { TransferCreditsCondition } from "../conditions/TransferCreditsCondition.sol";
-import { DistributePaymentsCondition } from "../conditions/DistributePaymentsCondition.sol";
-import { IAsset } from "../interfaces/IAsset.sol";
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { AgreementsStore } from './AgreementsStore.sol';
+import { BaseTemplate } from './BaseTemplate.sol';
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { LockPaymentCondition } from '../conditions/LockPaymentCondition.sol';
+import { TransferCreditsCondition } from '../conditions/TransferCreditsCondition.sol';
+import { DistributePaymentsCondition } from '../conditions/DistributePaymentsCondition.sol';
+import { IAsset } from '../interfaces/IAsset.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
-  bytes32 public constant NVM_CONTRACT_NAME = keccak256("FixedPaymentTemplate");
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
 
   // keccak256(abi.encode(uint256(keccak256("nevermined.fixedpaymenttemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant FIXED_PAYMENT_TEMPLATE_STORAGE_LOCATION =

@@ -3,12 +3,12 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { IAgreement } from "../interfaces/IAgreement.sol";
-import { INVMConfig } from "../interfaces/INVMConfig.sol";
-import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import { IAgreement } from '../interfaces/IAgreement.sol';
+import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
 
 contract AgreementsStore is IAgreement, OwnableUpgradeable {
-  bytes32 public constant NVM_CONTRACT_NAME = keccak256("AgreementsStore");
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
 
   // keccak256(abi.encode(uint256(keccak256("nevermined.agreementsstore.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant AGREEMENTS_STORE_STORAGE_LOCATION =
