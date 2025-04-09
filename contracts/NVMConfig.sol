@@ -63,24 +63,6 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, OwnableUpgradeable {
     }
 
     /**
-     * @notice Event that is emitted when a parameter is changed
-     * @param whoChanged the address of the governor changing the parameter
-     * @param parameter the hash of the name of the parameter changed
-     * @param value the new value of the parameter
-     */
-    event NeverminedConfigChange(address indexed whoChanged, bytes32 indexed parameter, bytes value);
-
-    /**
-     * Event emitted when some permissions are granted or revoked
-     * @param addressPermissions the address receving or losing permissions
-     * @param permissions the role given or taken
-     * @param grantPermissions if true means the permissions are granted if false means they are revoked
-     */
-    event ConfigPermissionsChange(
-        address indexed addressPermissions, bytes32 indexed permissions, bool grantPermissions
-    );
-
-    /**
      * Initialization function
      * @param _owner The address owning the contract
      * @param _governor The first governor address able to setup configuration parameters

@@ -29,23 +29,6 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, OwnableUpgradeable
         INVMConfig nvmConfig;
     }
 
-    /// Only an account with the right role can access this function
-    /// @param sender The address of the account calling this function
-    /// @param role The role required to call this function
-    error InvalidRole(address sender, bytes32 role);
-
-    /// Error sending native token (i.e ETH)
-    error FailedToSendNativeToken();
-
-    event ReceivedNativeToken(address indexed from, uint256 value);
-
-    event WithdrawNativeToken(address indexed from, address indexed receiver, uint256 amount);
-
-    event ReceivedERC20(address indexed erc20TokenAddress, address indexed from, uint256 amount);
-
-    event WithdrawERC20(
-        address indexed erc20TokenAddress, address indexed from, address indexed receiver, uint256 amount
-    );
 
     function initialize(address _nvmConfigAddress) public initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
