@@ -3,20 +3,20 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
-import { IAgreement } from '../interfaces/IAgreement.sol';
-import { IAsset } from '../interfaces/IAsset.sol';
-import { TemplateCondition } from './TemplateCondition.sol';
-import { NFT1155Credits } from '../token/NFT1155Credits.sol';
-import { NFT1155ExpirableCredits } from '../token/NFT1155ExpirableCredits.sol';
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
+import { IAgreement } from "../interfaces/IAgreement.sol";
+import { IAsset } from "../interfaces/IAsset.sol";
+import { TemplateCondition } from "./TemplateCondition.sol";
+import { NFT1155Credits } from "../token/NFT1155Credits.sol";
+import { NFT1155ExpirableCredits } from "../token/NFT1155ExpirableCredits.sol";
 
 contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
   // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION =
     0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
 
-  bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256("TransferCreditsCondition");
 
   /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
   struct TransferCreditsConditionStorage {
@@ -76,11 +76,11 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
           uint256(_planId),
           plan.credits.amount,
           plan.credits.durationSecs,
-          ''
+          ""
         );
       } else if (plan.credits.creditsType == IAsset.CreditsType.FIXED) {
         NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
-        nft1155.mint(_receiverAddress, uint256(_planId), plan.credits.amount, '');
+        nft1155.mint(_receiverAddress, uint256(_planId), plan.credits.amount, "");
       } else if (plan.credits.creditsType == IAsset.CreditsType.DYNAMIC) {
         revert IAsset.InvalidCreditsType(plan.credits.creditsType);
       } else {

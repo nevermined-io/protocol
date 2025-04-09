@@ -3,9 +3,9 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ITemplate } from '../interfaces/ITemplate.sol';
-import { AgreementsStore } from './AgreementsStore.sol';
-import { AccessManagedUUPSUpgradeable } from '../proxy/AccessManagedUUPSUpgradeable.sol';
+import { ITemplate } from "../interfaces/ITemplate.sol";
+import { AgreementsStore } from "./AgreementsStore.sol";
+import { AccessManagedUUPSUpgradeable } from "../proxy/AccessManagedUUPSUpgradeable.sol";
 
 abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
   // keccak256(abi.encode(uint256(keccak256("nevermined.basetemplate.storage")) - 1)) & ~bytes32(uint256(0xff))

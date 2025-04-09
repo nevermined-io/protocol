@@ -2,9 +2,9 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { AccessManagedUpgradeable } from '@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol';
-import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import { IAccessManagedUUPSUpgradeable } from '../interfaces/IAccessManagedUUPSUpgradeable.sol';
+import { AccessManagedUpgradeable } from "@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol";
+import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import { IAccessManagedUUPSUpgradeable } from "../interfaces/IAccessManagedUUPSUpgradeable.sol";
 
 abstract contract AccessManagedUUPSUpgradeable is
   AccessManagedUpgradeable,

@@ -3,7 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { AccessManagedUUPSUpgradeable } from '../proxy/AccessManagedUUPSUpgradeable.sol';
+import { AccessManagedUUPSUpgradeable } from "../proxy/AccessManagedUUPSUpgradeable.sol";
 
 abstract contract TemplateCondition is AccessManagedUUPSUpgradeable {
   function hashConditionId(
