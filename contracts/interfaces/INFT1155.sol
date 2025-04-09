@@ -6,10 +6,6 @@ pragma solidity ^0.8.28;
 import { IAsset } from "../interfaces/IAsset.sol";
 
 interface INFT1155 {
-  /// Only an account with the right role can access this function
-  /// @param sender The address of the account calling this function
-  /// @param role The role required to call this function
-  error InvalidRole(address sender, bytes32 role);
 
   /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`
   /// @param planId The identifier of the plan

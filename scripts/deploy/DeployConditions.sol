@@ -8,6 +8,7 @@ import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
 import {LockPaymentCondition} from "../../contracts/conditions/LockPaymentCondition.sol";
 import {TransferCreditsCondition} from "../../contracts/conditions/TransferCreditsCondition.sol";
 import {DistributePaymentsCondition} from "../../contracts/conditions/DistributePaymentsCondition.sol";
+import {FiatSettlementCondition} from "../../contracts/conditions/FiatSettlementCondition.sol";
 
 contract DeployConditions is Script, DeployConfig {
     function run(
@@ -20,7 +21,8 @@ contract DeployConditions is Script, DeployConfig {
     ) public returns (
         LockPaymentCondition,
         TransferCreditsCondition,
-        DistributePaymentsCondition
+        DistributePaymentsCondition,
+        FiatSettlementCondition
     ) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
         vm.startBroadcast(ownerAddress);        
@@ -51,12 +53,21 @@ contract DeployConditions is Script, DeployConfig {
             paymentsVaultAddress
         );
         
+        // Deploy FiatSettlementCondition
+        FiatSettlementCondition fiatSettlementCondition = new FiatSettlementCondition();
+        fiatSettlementCondition.initialize(
+            nvmConfigAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress
+        );
+
         vm.stopBroadcast();
         
         return (
             lockPaymentCondition,
             transferCreditsCondition,
-            distributePaymentsCondition
+            distributePaymentsCondition,
+            fiatSettlementCondition
         );
     }
 }

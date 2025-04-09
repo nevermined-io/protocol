@@ -4,6 +4,7 @@
 pragma solidity ^0.8.28;
 
 import { NFT1155Credits } from "../token/NFT1155Credits.sol";
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
 
 /**
  * @title Nevermined NFT1155Credits V2 contract
@@ -27,7 +28,7 @@ contract NFT1155CreditsV2 is NFT1155Credits {
   function initializeV2(string memory _version) external {
     NFT1155CreditsV2Storage storage $ = _getNFT1155CreditsV2Storage();
     if (!_getNFT1155BaseStorage().nvmConfig.isGovernor(msg.sender)) {
-      revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+      revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
     }
     $.version = _version;
   }

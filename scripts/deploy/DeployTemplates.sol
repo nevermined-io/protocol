@@ -15,7 +15,8 @@ contract DeployTemplates is Script, DeployConfig {
         address agreementsStoreAddress,
         address lockPaymentConditionAddress,
         address transferCreditsConditionAddress,
-        address distributePaymentsConditionAddress
+        address distributePaymentsConditionAddress,
+        address fiatSettlementConditionAddress
     ) public returns (FixedPaymentTemplate) {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
         vm.startBroadcast(ownerAddress);        
@@ -31,9 +32,18 @@ contract DeployTemplates is Script, DeployConfig {
             distributePaymentsConditionAddress
         );
         
-        
+        // Deploy FiatPaymentTemplate
+        FiatPaymentTemplate fiatPaymentTemplate = new FiatPaymentTemplate();
+        fiatPaymentTemplate.initialize(
+            nvmConfigAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress,
+            fiatSettlementConditionAddress,
+            transferCreditsConditionAddress
+        );
+
         vm.stopBroadcast();
         
-        return fixedPaymentTemplate;
+        return (fixedPaymentTemplate, fiatPaymentTemplate);
     }
 }

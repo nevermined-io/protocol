@@ -290,15 +290,37 @@ const DistributePaymentsConditionModule = buildModule(
   }
 )
 
+const FiatSettlementConditionModule = buildModule(
+  'FiatSettlementConditionModule',
+  (m) => {
+    const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
+    const { nvmConfig } = m.useModule(NVMConfigModule)
+    const { paymentsVault } = m.useModule(PaymentsVaultModule)
+    const { assetsRegistry } = m.useModule(AssetsRegistryModule)
+    const { agreementsStore } = m.useModule(AgreementsStoreModule)
+    
+    // Deploy the contract (non-upgradeable)
+    const fiatSettlementCondition = m.contract('FiatSettlementCondition', [], { 
+      from: owner
+    })
+    
+    // Initialize the contract
+    m.call(fiatSettlementCondition, 'initialize', [nvmConfig, assetsRegistry, agreementsStore])
+    
+    return { fiatSettlementCondition }
+  }
+)
+
 const TemplatesDeploymentModule = buildModule(
   'TemplatesDeploymentModule',
   (m) => {
     const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
-    const governor = m.getAccount(GOVERNOR_ACCOUNT_INDEX)
 
     const fixedPaymentTemplate = m.contract('FixedPaymentTemplate', [], { from: owner })
+    const fiatPaymentTemplate = m.contract('FiatPaymentTemplate', [], { from: owner })
 
-    return { fixedPaymentTemplate }
+
+    return { fixedPaymentTemplate, fiatPaymentTemplate }
   }
 )
 
@@ -318,26 +340,39 @@ const DeploymentOfContractsModule = buildModule(
     const { lockPaymentCondition } = m.useModule(LockPaymentConditionModule)
     const { transferCreditsCondition } = m.useModule(TransferCreditsConditionModule)
     const { distributePaymentsCondition } = m.useModule(DistributePaymentsConditionModule)
-    const { fixedPaymentTemplate } = m.useModule(TemplatesDeploymentModule)
+    const { fiatSettlementCondition } = m.useModule(FiatSettlementConditionModule)
+
+    const { fixedPaymentTemplate, fiatPaymentTemplate } = m.useModule(TemplatesDeploymentModule)
     
     /////////////////// CONDITIONS //////////////////////////////////
     // Grant condition permissions to all conditions
     m.call(nvmConfig, 'grantCondition', [lockPaymentCondition], { from: governor, id: 'grantCondition_lockPayment' })
     m.call(nvmConfig, 'grantCondition', [transferCreditsCondition], { from: governor, id: 'grantCondition_transferCredits' })
     m.call(nvmConfig, 'grantCondition', [distributePaymentsCondition], { from: governor, id: 'grantCondition_distributePayments' })
+    m.call(nvmConfig, 'grantCondition', [fiatSettlementCondition], { from: governor, id: 'grantCondition_fiatSettlement' })
 
     /////////////////// TEMPLATES //////////////////////////////////
     // Fixed Payment Template
     m.call(fixedPaymentTemplate, 'initialize', [
-      fixedPaymentTemplate, 
+      nvmConfig, 
       assetsRegistry,
       agreementsStore, 
       lockPaymentCondition, 
       transferCreditsCondition, 
       distributePaymentsCondition
     ])
-    m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
-    
+    m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor, id: 'grantTemplate_fixedPayment' })
+
+    // Fiat Settlement Template
+    m.call(fiatPaymentTemplate, 'initialize', [
+      nvmConfig, 
+      assetsRegistry,
+      agreementsStore, 
+      fiatSettlementCondition, 
+      transferCreditsCondition
+    ])
+    m.call(nvmConfig, 'grantTemplate', [fiatPaymentTemplate], { from: governor, id: 'grantTemplate_fiatPayment' })
+
     /////////////////// PERMISSIONS //////////////////////////////////
     // Grant Deposit and Withdrawal permissions to Payments Vault
     const DEPOSITOR_ROLE = m.staticCall(paymentsVault, 'DEPOSITOR_ROLE', [])
@@ -363,7 +398,8 @@ const DeploymentOfContractsModule = buildModule(
       lockPaymentCondition,
       transferCreditsCondition,
       distributePaymentsCondition,
-      fixedPaymentTemplate
+      fixedPaymentTemplate,
+      fiatPaymentTemplate
     }
   }
 )
@@ -380,6 +416,7 @@ const FullDeploymentModule = buildModule('FullDeploymentModule', (m) => {
     transferCreditsCondition,
     distributePaymentsCondition,
     fixedPaymentTemplate,
+    fiatPaymentTemplate
   } = m.useModule(DeploymentOfContractsModule)
   return {
     nvmConfig,
@@ -392,6 +429,7 @@ const FullDeploymentModule = buildModule('FullDeploymentModule', (m) => {
     transferCreditsCondition,
     distributePaymentsCondition,
     fixedPaymentTemplate,
+    fiatPaymentTemplate
   }
 })
 

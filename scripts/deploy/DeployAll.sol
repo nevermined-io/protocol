@@ -86,7 +86,8 @@ contract DeployAll is Script, DeployConfig {
         (
             LockPaymentCondition lockPaymentCondition,
             TransferCreditsCondition transferCreditsCondition,
-            DistributePaymentsCondition distributePaymentsCondition
+            DistributePaymentsCondition distributePaymentsCondition,
+            FiatSettlementCondition fiatSettlementCondition
         ) = deployConditions.run(
             ownerAddress,
             address(nvmConfig),
@@ -98,20 +99,26 @@ contract DeployAll is Script, DeployConfig {
         console.log("LockPaymentCondition deployed at:", address(lockPaymentCondition));
         console.log("TransferCreditsCondition deployed at:", address(transferCreditsCondition));
         console.log("DistributePaymentsCondition deployed at:", address(distributePaymentsCondition));
+        console.log("FiatSettlementCondition deployed at:", address(fiatSettlementCondition));
         
     
         // 6. Deploy Templates
-        FixedPaymentTemplate fixedPaymentTemplate = deployTemplates.run(
+        ( 
+            FixedPaymentTemplate fixedPaymentTemplate,
+            FiatPaymentTemplate fiatPaymentTemplate
+        ) = deployTemplates.run(
             ownerAddress,
             address(nvmConfig),
             address(assetsRegistry),
             address(agreementsStore),
             address(lockPaymentCondition),
             address(transferCreditsCondition),
-            address(distributePaymentsCondition)
+            address(distributePaymentsCondition),
+            address(fiatSettlementCondition)
         );
         console.log("FixedPaymentTemplate deployed at:", address(fixedPaymentTemplate));
-        
+        console.log("FiatPaymentTemplate deployed at:", address(fiatPaymentTemplate));
+
         ownerGrantRoles.run(
             address(nvmConfig),
             ownerAddress,
@@ -141,7 +148,9 @@ contract DeployAll is Script, DeployConfig {
             '    "LockPaymentCondition": "', vm.toString(address(lockPaymentCondition)), '",\n',
             '    "TransferCreditsCondition": "', vm.toString(address(transferCreditsCondition)), '",\n',
             '    "DistributePaymentsCondition": "', vm.toString(address(distributePaymentsCondition)), '",\n',
-            '    "FixedPaymentTemplate": "', vm.toString(address(fixedPaymentTemplate)), '"\n',
+            '    "FiatSettlementCondition": "', vm.toString(address(fiatSettlementCondition)), '",\n',
+            '    "FixedPaymentTemplate": "', vm.toString(address(fixedPaymentTemplate)), '",\n',
+            '    "FiatPaymentTemplate": "', vm.toString(address(fiatPaymentTemplate)), '"\n',
             '  }\n',
             '}\n'
         ));

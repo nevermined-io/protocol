@@ -51,7 +51,9 @@ contract ConfigureAll is Script, DeployConfig {
             vm.parseJsonAddress(json, '$.contracts.LockPaymentCondition'),
             vm.parseJsonAddress(json, '$.contracts.DistributePaymentsCondition'),
             vm.parseJsonAddress(json, '$.contracts.TransferCreditsCondition'),
-            vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate')
+            vm.parseJsonAddress(json, '$.contracts.FiatSettlementCondition'),
+            vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate'),
+            vm.parseJsonAddress(json, '$.contracts.FiatPaymentTemplate')
         );
         console.log("Permissions configured");
 

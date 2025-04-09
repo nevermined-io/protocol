@@ -18,7 +18,9 @@ contract ManagePermissions is Script, DeployConfig {
         address lockPaymentConditionAddress,
         address distributePaymentsConditionAddress,
         address transferCreditsConditionAddress,
-        address fixedPaymentTemplateAddress
+        address fiatSettlementConditionAddress,
+        address fixedPaymentTemplateAddress,
+        address fiatPaymentTemplateAddress
     ) public {
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
         vm.startBroadcast(governorAddress);
@@ -51,8 +53,10 @@ contract ManagePermissions is Script, DeployConfig {
         nvmConfig.grantCondition(lockPaymentConditionAddress);
         nvmConfig.grantCondition(distributePaymentsConditionAddress);
         nvmConfig.grantCondition(transferCreditsConditionAddress);
+        nvmConfig.grantCondition(fiatSettlementConditionAddress);
 
         nvmConfig.grantTemplate(fixedPaymentTemplateAddress);
+        nvmConfig.grantTemplate(fiatPaymentTemplateAddress);
 
         vm.stopBroadcast();
     }

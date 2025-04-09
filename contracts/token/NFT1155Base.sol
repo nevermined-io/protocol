@@ -65,7 +65,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
 
     // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
     if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender) {
-      revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+      revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
     }
 
     _mint(_to, _planId, _amount, _data);
@@ -89,7 +89,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
     NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
     if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE)) {
-      revert InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
+      revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
     }
 
     _mintBatch(_to, _ids, _values, _data);
@@ -137,7 +137,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
     NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
     if (!$.nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
-      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+      revert INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
     }
 
     _burnBatch(_from, _ids, _amounts);
@@ -197,7 +197,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
     uint256 /*value*/,
     bytes memory /*data*/
   ) public virtual override {
-    revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+    revert INVMConfig.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
   }
 
   //@solhint-disable-next-line
@@ -208,7 +208,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, OwnableUpgradeable, INFT115
     uint256[] memory /*values*/,
     bytes memory /*data*/
   ) public virtual override {
-    revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+    revert INVMConfig.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
   }
 
   function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
