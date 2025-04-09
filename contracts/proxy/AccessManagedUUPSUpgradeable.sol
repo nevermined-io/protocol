@@ -20,6 +20,7 @@ abstract contract AccessManagedUUPSUpgradeable is
    * @notice Initializes the contract
    * @param _authority The address of the authority controlling the upgrade process
    */
+  // solhint-disable-next-line func-name-mixedcase
   function __AccessManagedUUPSUpgradeable_init(address _authority) internal onlyInitializing {
     __AccessManaged_init(_authority);
   }
