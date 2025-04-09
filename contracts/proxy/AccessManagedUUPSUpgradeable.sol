@@ -11,6 +11,11 @@ abstract contract AccessManagedUUPSUpgradeable is
   UUPSUpgradeable,
   IAccessManagedUUPSUpgradeable
 {
+  /// @custom:oz-upgrades-unsafe-allow constructor
+  constructor() {
+    _disableInitializers();
+  }
+
   /**
    * @notice Initializes the contract
    * @param _authority The address of the authority controlling the upgrade process
