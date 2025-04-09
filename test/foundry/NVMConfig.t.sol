@@ -5,13 +5,14 @@ pragma solidity ^0.8.28;
 
 import { Test, console } from 'forge-std/Test.sol';
 import { NVMConfig } from '../../contracts/NVMConfig.sol';
+import { Clones } from '@openzeppelin/contracts/proxy/Clones.sol';
 
 contract NVMConfigTest is Test {
   NVMConfig public nvmConfig;
   address public owner;
 
   function setUp() public {
-    nvmConfig = new NVMConfig();
+    nvmConfig = NVMConfig(Clones.clone(address(new NVMConfig())));
     owner = address(this);
     nvmConfig.initialize(owner, address(0x1), owner); // TODO: add authority
     nvmConfig.setNetworkFees(100, owner);

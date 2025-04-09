@@ -9,6 +9,7 @@ import { AssetsRegistry } from '../../contracts/AssetsRegistry.sol';
 import { IAsset } from '../../contracts/interfaces/IAsset.sol';
 import { NFT1155Credits } from '../../contracts/token/NFT1155Credits.sol';
 import { NFT1155Base } from '../../contracts/token/NFT1155Base.sol';
+import { Clones } from '@openzeppelin/contracts/proxy/Clones.sol';
 
 contract NFT1155CreditsTest is Test {
   NVMConfig public nvmConfig;
@@ -19,16 +20,16 @@ contract NFT1155CreditsTest is Test {
   address public receiver;
 
   function setUp() public {
-    nvmConfig = new NVMConfig();
+    nvmConfig = NVMConfig(Clones.clone(address(new NVMConfig())));
     owner = address(this);
     receiver = address(1);
     nvmConfig.initialize(owner, address(0x1), owner); // TODO: add authority
     nvmConfig.setNetworkFees(100, owner);
 
-    assetsRegistry = new AssetsRegistry();
+    assetsRegistry = AssetsRegistry(Clones.clone(address(new AssetsRegistry())));
     assetsRegistry.initialize(address(nvmConfig), address(0x1)); // TODO: add authority
 
-    nft1155 = new NFT1155Credits();
+    nft1155 = NFT1155Credits(Clones.clone(address(new NFT1155Credits())));
     nft1155.initialize(
       address(nvmConfig),
       address(0x1),
