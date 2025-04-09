@@ -73,7 +73,7 @@ contract FiatSettlementConditionTest is Test {
     function test_fulfill_noSettlementRoleRevert() public {
         nvmConfig.grantRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), address(this));
 
-        bytes32 agreementId = _createAgreement();
+        bytes32 agreementId = _createAgreement(address(this), 1);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
         fiatSettlementCondition.fulfill(
             bytes32(0),
@@ -88,7 +88,7 @@ contract FiatSettlementConditionTest is Test {
         nvmConfig.grantRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), address(this));
         nvmConfig.grantRole(fiatSettlementCondition.FIAT_SETTLEMENT_ROLE(), address(this));
 
-        bytes32 agreementId = _createAgreement();
+        bytes32 agreementId = _createAgreement(address(this), 1);
         vm.expectPartialRevert(FiatSettlementCondition.OnlyPlanWithFiatPrice.selector);
         fiatSettlementCondition.fulfill(
             bytes32(0),
@@ -107,11 +107,10 @@ contract FiatSettlementConditionTest is Test {
 
         uint256 planId = _createPlan();
 
-        vm.prank(caller);
-        bytes32 agreementId = _createAgreement();
+        vm.startPrank(caller);
+        bytes32 agreementId = _createAgreement(caller, planId);
 
-        vm.expectPartialRevert(IAgreement.ConditionIdNotFound.selector);
-        vm.prank(caller);
+        vm.expectPartialRevert(IAgreement.ConditionIdNotFound.selector);        
         fiatSettlementCondition.fulfill(
             bytes32(0),
             agreementId,
@@ -119,6 +118,7 @@ contract FiatSettlementConditionTest is Test {
             caller,
             new bytes[](0)
         );
+        vm.stopPrank();
     }
 
     function test_fulfill_okay() public {
@@ -129,21 +129,20 @@ contract FiatSettlementConditionTest is Test {
 
         uint256 planId = _createPlan();
 
-        vm.prank(caller);
-        bytes32 agreementId = _createAgreement();
+        vm.startPrank(caller);
+        bytes32 agreementId = _createAgreement(caller, planId);
 
-        vm.expectPartialRevert(IAgreement.ConditionIdNotFound.selector);
-        vm.prank(caller);
         fiatSettlementCondition.fulfill(
-            bytes32(0),
+            keccak256("abc"),
             agreementId,
             planId,
             caller,
             new bytes[](0)
         );
+        vm.stopPrank();
     }
 
-    function _createAgreement() internal returns (bytes32) {
+    function _createAgreement(address _caller, uint256 _planId) internal returns (bytes32) {
 
         bytes32[] memory conditionIds = new bytes32[](1);
         IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
@@ -154,9 +153,9 @@ contract FiatSettlementConditionTest is Test {
         bytes32 agreementId = keccak256("123");
         agreementsStore.register(
             agreementId,
-            address(this),
+            _caller,
             bytes32(0),
-            1,
+            _planId,
             conditionIds,
             conditionStates,
             new bytes[](0)
