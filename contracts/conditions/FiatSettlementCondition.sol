@@ -3,20 +3,20 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ReentrancyGuardUpgradeable } from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
-import { IAgreement } from '../interfaces/IAgreement.sol';
-import { IAsset } from '../interfaces/IAsset.sol';
-import { TemplateCondition } from './TemplateCondition.sol';
+import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
+import { IAgreement } from "../interfaces/IAgreement.sol";
+import { IAsset } from "../interfaces/IAsset.sol";
+import { TemplateCondition } from "./TemplateCondition.sol";
 
 contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateCondition {
-  bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatSettlementCondition');
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256("FiatSettlementCondition");
 
   /**
    * @notice Role granted to accounts allowing to settle the fiat payment conditions (they can fulfill the Fiat Settlement conditions)
    * @dev This role is granted to the accounts doing the off-chain fiat settlement validation via the integration with an external provider (i.e Stripe)
    */
-  bytes32 public constant FIAT_SETTLEMENT_ROLE = keccak256('FIAT_SETTLEMENT_ROLE');
+  bytes32 public constant FIAT_SETTLEMENT_ROLE = keccak256("FIAT_SETTLEMENT_ROLE");
 
   // keccak256(abi.encode(uint256(keccak256("nevermined.fiatsettlementcondition.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant FIAT_SETTLEMENT_CONDITION_STORAGE_LOCATION =

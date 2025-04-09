@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { NFT1155Credits } from '../token/NFT1155Credits.sol';
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
+import { NFT1155Credits } from "../token/NFT1155Credits.sol";
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
 
 /**
  * @title Nevermined NFT1155Credits V2 contract

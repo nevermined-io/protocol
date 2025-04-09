@@ -3,7 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { IAsset } from '../interfaces/IAsset.sol';
+import { IAsset } from "../interfaces/IAsset.sol";
 
 interface INFT1155 {
   /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`

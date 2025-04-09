@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 pragma solidity ^0.8.28;
 
-import { ITransparentUpgradeableProxy } from '@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol';
-import { Ownable } from '@openzeppelin/contracts/access/Ownable.sol';
+import { ITransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title ProxyAdmin
@@ -17,7 +17,7 @@ contract ProxyAdmin is Ownable {
    * @dev The version of the upgrade interface of the contract.
    */
 
-  string public constant UPGRADE_INTERFACE_VERSION = '5.0.0';
+  string public constant UPGRADE_INTERFACE_VERSION = "5.0.0";
 
   /**
    * @dev Constructor function

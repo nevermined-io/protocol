@@ -3,16 +3,16 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { INVMConfig } from '../interfaces/INVMConfig.sol';
-import { AgreementsStore } from './AgreementsStore.sol';
-import { BaseTemplate } from './BaseTemplate.sol';
-import { IAgreement } from '../interfaces/IAgreement.sol';
-import { FiatSettlementCondition } from '../conditions/FiatSettlementCondition.sol';
-import { TransferCreditsCondition } from '../conditions/TransferCreditsCondition.sol';
-import { IAsset } from '../interfaces/IAsset.sol';
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
+import { AgreementsStore } from "./AgreementsStore.sol";
+import { BaseTemplate } from "./BaseTemplate.sol";
+import { IAgreement } from "../interfaces/IAgreement.sol";
+import { FiatSettlementCondition } from "../conditions/FiatSettlementCondition.sol";
+import { TransferCreditsCondition } from "../conditions/TransferCreditsCondition.sol";
+import { IAsset } from "../interfaces/IAsset.sol";
 
 contract FiatPaymentTemplate is BaseTemplate {
-  bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatPaymentTemplate');
+  bytes32 public constant NVM_CONTRACT_NAME = keccak256("FiatPaymentTemplate");
 
   // keccak256(abi.encode(uint256(keccak256("nevermined.fiatpaymenttemplate.storage")) - 1)) & ~bytes32(uint256(0xff))
   bytes32 private constant FIAT_PAYMENT_TEMPLATE_STORAGE_LOCATION =

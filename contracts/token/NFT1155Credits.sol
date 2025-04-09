@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { ERC1155Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
-import { NFT1155Base } from './NFT1155Base.sol';
+import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import { NFT1155Base } from "./NFT1155Base.sol";
 
 contract NFT1155Credits is NFT1155Base {
   function initialize(
@@ -14,7 +14,7 @@ contract NFT1155Credits is NFT1155Base {
     string memory // symbol
   ) external initializer {
     __Ownable_init(msg.sender);
-    ERC1155Upgradeable.__ERC1155_init('');
+    ERC1155Upgradeable.__ERC1155_init("");
     __NFT1155Credits_init(_nvmConfigAddress, _assetsRegistryAddress);
   }
 
