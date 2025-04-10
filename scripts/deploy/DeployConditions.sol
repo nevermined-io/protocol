@@ -9,7 +9,7 @@ import {DeployConfig} from './DeployConfig.sol';
 
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployConditions is Script, DeployConfig {
     function run(
@@ -24,14 +24,14 @@ contract DeployConditions is Script, DeployConfig {
         public
         returns (LockPaymentCondition, TransferCreditsCondition, DistributePaymentsCondition, FiatSettlementCondition)
     {
-        console.log('Deploying Conditions with:');
-        console.log('\tOwner:', ownerAddress);
-        console.log('\tNVMConfig:', nvmConfigAddress);
-        console.log('\tAssetsRegistry:', assetsRegistryAddress);
-        console.log('\tAgreementsStore:', agreementsStoreAddress);
-        console.log('\tPaymentsVault:', paymentsVaultAddress);
-        console.log('\tTokenUtils:', tokenUtilsAddress);
-        console.log('\tAccessManager:', accessManagerAddress);
+        console2.log('Deploying Conditions with:');
+        console2.log('\tOwner:', ownerAddress);
+        console2.log('\tNVMConfig:', nvmConfigAddress);
+        console2.log('\tAssetsRegistry:', assetsRegistryAddress);
+        console2.log('\tAgreementsStore:', agreementsStoreAddress);
+        console2.log('\tPaymentsVault:', paymentsVaultAddress);
+        console2.log('\tTokenUtils:', tokenUtilsAddress);
+        console2.log('\tAccessManager:', accessManagerAddress);
 
         vm.startBroadcast(ownerAddress);
 

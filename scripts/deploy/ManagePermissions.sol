@@ -11,7 +11,7 @@ import {DeployConfig} from './DeployConfig.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract ManagePermissions is Script, DeployConfig {
     // Define roles
@@ -33,7 +33,7 @@ contract ManagePermissions is Script, DeployConfig {
         address fiatPaymentTemplate,
         address accessManager
     ) public {
-        console.log('Managing permissions for contracts...');
+        console2.log('Managing permissions for contracts...');
 
         vm.startBroadcast(governor);
 
@@ -80,7 +80,7 @@ contract ManagePermissions is Script, DeployConfig {
 
         vm.stopBroadcast();
 
-        console.log('Permissions configured successfully');
+        console2.log('Permissions configured successfully');
     }
 
     function toArray(bytes4 selector) internal pure returns (bytes4[] memory) {

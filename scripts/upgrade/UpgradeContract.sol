@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract UpgradeContract is Script {
     function run(address nvmConfigAddress, bytes32 contractName, address newImplementation) public {
@@ -28,9 +28,9 @@ contract UpgradeContract is Script {
         require(success2, 'Failed to register new contract implementation');
         vm.stopBroadcast();
 
-        console.log('Contract upgraded successfully');
-        console.log('Contract name:', vm.toString(contractName));
-        console.log('New implementation:', newImplementation);
-        console.log('New version:', currentVersion + 1);
+        console2.log('Contract upgraded successfully');
+        console2.log('Contract name:', vm.toString(contractName));
+        console2.log('New implementation:', newImplementation);
+        console2.log('New version:', currentVersion + 1);
     }
 }

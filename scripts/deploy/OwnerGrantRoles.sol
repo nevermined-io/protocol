@@ -7,7 +7,7 @@ import {NFT1155Credits} from '../../contracts/token/NFT1155Credits.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract OwnerGrantRoles is Script, DeployConfig {
     function run(
@@ -20,15 +20,15 @@ contract OwnerGrantRoles is Script, DeployConfig {
         address distributePaymentsConditionAddress,
         address accessManagerAddress
     ) public {
-        console.log('Granting roles with:');
-        console.log('\tNVMConfig:', nvmConfigAddress);
-        console.log('\tOwner:', ownerAddress);
-        console.log('\tPaymentsVault:', paymentsVaultAddress);
-        console.log('\tNFT1155Credits:', nftCreditsAddress);
-        console.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
-        console.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
-        console.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
-        console.log('\tAccessManager:', accessManagerAddress);
+        console2.log('Granting roles with:');
+        console2.log('\tNVMConfig:', nvmConfigAddress);
+        console2.log('\tOwner:', ownerAddress);
+        console2.log('\tPaymentsVault:', paymentsVaultAddress);
+        console2.log('\tNFT1155Credits:', nftCreditsAddress);
+        console2.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
+        console2.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
+        console2.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
+        console2.log('\tAccessManager:', accessManagerAddress);
 
         vm.startBroadcast(ownerAddress);
 

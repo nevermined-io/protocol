@@ -6,7 +6,7 @@ import {DeployConfig} from './DeployConfig.sol';
 
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployNVMConfig is Script, DeployConfig {
     function run(address ownerAddress, address governorAddress, address accessManager) public returns (NVMConfig) {
@@ -28,11 +28,11 @@ contract DeployNVMConfig is Script, DeployConfig {
         // Create NVMConfig instance pointing to proxy
         NVMConfig nvmConfig = NVMConfig(address(proxy));
 
-        console.log('NVMConfig implementation deployed at:', address(nvmConfigImpl));
-        console.log('NVMConfig proxy deployed at:', address(proxy));
-        console.log('NVMConfig initialized with Owner:', ownerAddress);
-        console.log('NVMConfig initialized with Governor:', governorAddress);
-        console.log('NVMConfig initialized with AccessManager:', accessManager);
+        console2.log('NVMConfig implementation deployed at:', address(nvmConfigImpl));
+        console2.log('NVMConfig proxy deployed at:', address(proxy));
+        console2.log('NVMConfig initialized with Owner:', ownerAddress);
+        console2.log('NVMConfig initialized with Governor:', governorAddress);
+        console2.log('NVMConfig initialized with AccessManager:', accessManager);
 
         vm.stopBroadcast();
 

@@ -7,7 +7,7 @@ import {DeployConfig} from './DeployConfig.sol';
 
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployTemplates is Script, DeployConfig {
     function run(
@@ -21,16 +21,16 @@ contract DeployTemplates is Script, DeployConfig {
         address fiatSettlementConditionAddress,
         address accessManagerAddress
     ) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
-        console.log('Deploying Templates with:');
-        console.log('\tOwner:', ownerAddress);
-        console.log('\tNVMConfig:', nvmConfigAddress);
-        console.log('\tAssetsRegistry:', assetsRegistryAddress);
-        console.log('\tAgreementsStore:', agreementsStoreAddress);
-        console.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
-        console.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
-        console.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
-        console.log('\tFiatSettlementCondition:', fiatSettlementConditionAddress);
-        console.log('\tAccessManager:', accessManagerAddress);
+        console2.log('Deploying Templates with:');
+        console2.log('\tOwner:', ownerAddress);
+        console2.log('\tNVMConfig:', nvmConfigAddress);
+        console2.log('\tAssetsRegistry:', assetsRegistryAddress);
+        console2.log('\tAgreementsStore:', agreementsStoreAddress);
+        console2.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
+        console2.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
+        console2.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
+        console2.log('\tFiatSettlementCondition:', fiatSettlementConditionAddress);
+        console2.log('\tAccessManager:', accessManagerAddress);
 
         vm.startBroadcast(ownerAddress);
 

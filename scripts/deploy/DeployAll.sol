@@ -30,7 +30,7 @@ import {DeployTemplates} from './DeployTemplates.sol';
 import {OwnerGrantRoles} from './OwnerGrantRoles.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployAll is Script, DeployConfig {
     function run() public {
@@ -45,11 +45,11 @@ contract DeployAll is Script, DeployConfig {
             string(abi.encodePacked('./deployments/deployment-v', version, '-', vm.toString(block.chainid), '.json'))
         );
 
-        console.log('Deploying all contracts with addresses:');
-        console.log('\tOwner:', ownerAddress);
-        console.log('\tGovernor:', governorAddress);
+        console2.log('Deploying all contracts with addresses:');
+        console2.log('\tOwner:', ownerAddress);
+        console2.log('\tGovernor:', governorAddress);
 
-        console.log('Version: ', version);
+        console2.log('Version: ', version);
 
         // Load the deployment scripts
         DeployAccessManager deployAccessManager = new DeployAccessManager();
@@ -67,25 +67,25 @@ contract DeployAll is Script, DeployConfig {
 
         // 2. Deploy NVMConfig
         NVMConfig nvmConfig = deployNVMConfig.run(ownerAddress, governorAddress, address(accessManager));
-        console.log('NVMConfig deployed at:', address(nvmConfig));
+        console2.log('NVMConfig deployed at:', address(nvmConfig));
 
         // 3. Deploy Libraries
         address tokenUtilsAddress = deployLibraries.run(ownerAddress);
-        console.log('TokenUtils deployed at:', tokenUtilsAddress);
+        console2.log('TokenUtils deployed at:', tokenUtilsAddress);
 
         // 4. Deploy Core Contracts
         (AssetsRegistry assetsRegistry, AgreementsStore agreementsStore, PaymentsVault paymentsVault) =
             deployCoreContracts.run(address(nvmConfig), address(accessManager), ownerAddress);
-        console.log('AssetsRegistry deployed at:', address(assetsRegistry));
-        console.log('AgreementsStore deployed at:', address(agreementsStore));
-        console.log('PaymentsVault deployed at:', address(paymentsVault));
+        console2.log('AssetsRegistry deployed at:', address(assetsRegistry));
+        console2.log('AgreementsStore deployed at:', address(agreementsStore));
+        console2.log('PaymentsVault deployed at:', address(paymentsVault));
 
         // 5. Deploy NFT Contracts
         (NFT1155Credits nftCredits, NFT1155ExpirableCredits nftExpirableCredits) =
             deployNFTContracts.run(address(nvmConfig), address(assetsRegistry), address(accessManager), ownerAddress);
 
-        console.log('NFT1155Credits deployed at:', address(nftCredits));
-        console.log('NFT1155ExpirableCredits deployed at:', address(nftExpirableCredits));
+        console2.log('NFT1155Credits deployed at:', address(nftCredits));
+        console2.log('NFT1155ExpirableCredits deployed at:', address(nftExpirableCredits));
 
         // 6. Deploy Conditions
         (
@@ -102,10 +102,10 @@ contract DeployAll is Script, DeployConfig {
             tokenUtilsAddress,
             address(accessManager)
         );
-        console.log('LockPaymentCondition deployed at:', address(lockPaymentCondition));
-        console.log('TransferCreditsCondition deployed at:', address(transferCreditsCondition));
-        console.log('DistributePaymentsCondition deployed at:', address(distributePaymentsCondition));
-        console.log('FiatSettlementCondition deployed at:', address(fiatSettlementCondition));
+        console2.log('LockPaymentCondition deployed at:', address(lockPaymentCondition));
+        console2.log('TransferCreditsCondition deployed at:', address(transferCreditsCondition));
+        console2.log('DistributePaymentsCondition deployed at:', address(distributePaymentsCondition));
+        console2.log('FiatSettlementCondition deployed at:', address(fiatSettlementCondition));
 
         // 7. Deploy Templates
         (FixedPaymentTemplate fixedPaymentTemplate, FiatPaymentTemplate fiatPaymentTemplate) = deployTemplates.run(
@@ -119,8 +119,8 @@ contract DeployAll is Script, DeployConfig {
             address(fiatSettlementCondition),
             address(accessManager)
         );
-        console.log('FixedPaymentTemplate deployed at:', address(fixedPaymentTemplate));
-        console.log('FiatPaymentTemplate deployed at:', address(fiatPaymentTemplate));
+        console2.log('FixedPaymentTemplate deployed at:', address(fixedPaymentTemplate));
+        console2.log('FiatPaymentTemplate deployed at:', address(fiatPaymentTemplate));
 
         ownerGrantRoles.run(
             address(nvmConfig),
@@ -132,7 +132,7 @@ contract DeployAll is Script, DeployConfig {
             address(distributePaymentsCondition),
             address(accessManager)
         );
-        console.log('Roles granted successfully by Owner');
+        console2.log('Roles granted successfully by Owner');
 
         string memory jsonContent = string(
             abi.encodePacked(
@@ -201,6 +201,6 @@ contract DeployAll is Script, DeployConfig {
         );
 
         vm.writeFile(outputJsonPath, jsonContent);
-        console.log('Deployment addresses written to %s', outputJsonPath);
+        console2.log('Deployment addresses written to %s', outputJsonPath);
     }
 }

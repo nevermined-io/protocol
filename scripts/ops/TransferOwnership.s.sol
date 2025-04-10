@@ -14,7 +14,7 @@ import {TransferCreditsCondition} from '../../contracts/conditions/TransferCredi
 import {NFT1155Credits} from '../../contracts/token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../../contracts/token/NFT1155ExpirableCredits.sol';
 import {OwnableUpgradeable} from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import {Script, console} from 'forge-std/Script.sol';
+import {Script, console2} from 'forge-std/Script.sol';
 
 /**
  * @title TransferOwnership
@@ -27,13 +27,13 @@ contract TransferOwnership is Script {
     string public json;
 
     function setUp() public {
-        console.log('Transferring ownership from address :', msg.sender);
+        console2.log('Transferring ownership from address :', msg.sender);
 
         string memory addressesJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
         json = vm.readFile(addressesJson);
 
-        console.log('Configuring contracts with JSON addresses from file: ', addressesJson);
-        console.log(json);
+        console2.log('Configuring contracts with JSON addresses from file: ', addressesJson);
+        console2.log(json);
 
         // Load new owner address
         newOwner = vm.envAddress('NEW_OWNER_ADDRESS');
@@ -63,25 +63,25 @@ contract TransferOwnership is Script {
         // Stop broadcasting transactions
         vm.stopBroadcast();
 
-        console.log('Ownership transfer complete');
+        console2.log('Ownership transfer complete');
     }
 
     function transferOwnership(address contractAddress, string memory contractName) internal {
-        console.log('Transferring ownership of %s:%s to address %s', contractName, contractAddress, newOwner);
+        console2.log('Transferring ownership of %s:%s to address %s', contractName, contractAddress, newOwner);
         // Skip if contract address is not set
         if (contractAddress == address(0)) {
-            console.log('Skipping %s: address not set', contractName);
+            console2.log('Skipping %s: address not set', contractName);
             return;
         }
 
         try OwnableUpgradeable(contractAddress).owner() returns (address currentOwner) {
-            console.log('Current owner of %s: %s', contractName, currentOwner);
+            console2.log('Current owner of %s: %s', contractName, currentOwner);
 
             // Transfer ownership
             OwnableUpgradeable(contractAddress).transferOwnership(newOwner);
-            console.log('Ownership of %s transferred to %s', contractName, newOwner);
+            console2.log('Ownership of %s transferred to %s', contractName, newOwner);
         } catch {
-            console.log('Failed to transfer ownership of %s', contractName);
+            console2.log('Failed to transfer ownership of %s', contractName);
         }
     }
 }

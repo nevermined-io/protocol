@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 /**
  * @notice This script sets the network fees in the NVMConfig contract
@@ -25,7 +25,7 @@ contract SetNetworkFees is Script, DeployConfig {
         // Set network fees (requires governor role)
         nvmConfig.setNetworkFees(feeAmount, feeReceiver);
 
-        console.log('Network fees set to:', feeAmount, 'to address:', feeReceiver);
+        console2.log('Network fees set to:', feeAmount, 'to address:', feeReceiver);
 
         vm.stopBroadcast();
     }

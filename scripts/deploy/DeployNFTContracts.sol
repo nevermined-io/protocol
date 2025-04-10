@@ -6,7 +6,7 @@ import {NFT1155ExpirableCredits} from '../../contracts/token/NFT1155ExpirableCre
 import {DeployConfig} from './DeployConfig.sol';
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployNFTContracts is Script, DeployConfig {
     function run(
@@ -15,11 +15,11 @@ contract DeployNFTContracts is Script, DeployConfig {
         address accessManagerAddress,
         address ownerAddress
     ) public returns (NFT1155Credits, NFT1155ExpirableCredits) {
-        console.log('Deploying NFT Contracts with:');
-        console.log('\tNVMConfig:', nvmConfigAddress);
-        console.log('\tAssetsRegistry:', assetsRegistryAddress);
-        console.log('\tAccessManager:', accessManagerAddress);
-        console.log('\tOwner:', ownerAddress);
+        console2.log('Deploying NFT Contracts with:');
+        console2.log('\tNVMConfig:', nvmConfigAddress);
+        console2.log('\tAssetsRegistry:', assetsRegistryAddress);
+        console2.log('\tAccessManager:', accessManagerAddress);
+        console2.log('\tOwner:', ownerAddress);
 
         vm.startBroadcast(ownerAddress);
 

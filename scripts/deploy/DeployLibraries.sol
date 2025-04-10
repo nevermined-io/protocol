@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {TokenUtils} from '../../contracts/utils/TokenUtils.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployLibraries is Script, DeployConfig {
     function run(address ownerAddress) public returns (address) {
@@ -27,7 +27,7 @@ contract DeployLibraries is Script, DeployConfig {
 
         vm.stopBroadcast();
 
-        console.log('TokenUtils deployed at:', tokenUtilsAddress);
+        console2.log('TokenUtils deployed at:', tokenUtilsAddress);
 
         return tokenUtilsAddress;
     }

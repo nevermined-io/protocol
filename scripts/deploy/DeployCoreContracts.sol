@@ -9,17 +9,17 @@ import {DeployConfig} from './DeployConfig.sol';
 
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract DeployCoreContracts is Script, DeployConfig {
     function run(address nvmConfigAddress, address accessManagerAddress, address ownerAddress)
         public
         returns (AssetsRegistry, AgreementsStore, PaymentsVault)
     {
-        console.log('Deploying Core Contracts with:');
-        console.log('\tNVMConfig:', nvmConfigAddress);
-        console.log('\tAccessManager:', accessManagerAddress);
-        console.log('\tOwner:', ownerAddress);
+        console2.log('Deploying Core Contracts with:');
+        console2.log('\tNVMConfig:', nvmConfigAddress);
+        console2.log('\tAccessManager:', accessManagerAddress);
+        console2.log('\tOwner:', ownerAddress);
 
         vm.startBroadcast(ownerAddress);
 

@@ -27,20 +27,20 @@ import {ManagePermissions} from './ManagePermissions.sol';
 import {SetNetworkFees} from './SetNetworkFees.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
-import {console} from 'forge-std/console.sol';
+import {console2} from 'forge-std/console2.sol';
 
 contract ConfigureAll is Script, DeployConfig {
     function run() public {
         address governorAddress = msg.sender;
 
-        console.log('Configuring contracts with Governor address:', governorAddress);
+        console2.log('Configuring contracts with Governor address:', governorAddress);
 
         string memory addressesJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
 
         string memory json = vm.readFile(addressesJson);
 
-        console.log('Configuring contracts with JSON addresses from file:', addressesJson);
-        console.log(json);
+        console2.log('Configuring contracts with JSON addresses from file:', addressesJson);
+        console2.log(json);
 
         // Load the deployment scripts
         ManagePermissions managePermissions = new ManagePermissions();
@@ -59,7 +59,7 @@ contract ConfigureAll is Script, DeployConfig {
             vm.parseJsonAddress(json, '$.contracts.FiatPaymentTemplate'),
             vm.parseJsonAddress(json, '$.contracts.AccessManager')
         );
-        console.log('Permissions configured');
+        console2.log('Permissions configured');
 
         setNetworkFees.run(governorAddress, vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
     }
