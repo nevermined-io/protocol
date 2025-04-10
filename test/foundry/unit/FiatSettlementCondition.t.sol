@@ -3,17 +3,17 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { BaseTest } from '../common/BaseTest.sol';
-import {INVMConfig} from "../../../contracts/interfaces/INVMConfig.sol";
-import {IFiatSettlement} from "../../../contracts/interfaces/IFiatSettlement.sol";
-import {IAgreement} from "../../../contracts/interfaces/IAgreement.sol";
-import {NVMConfig} from "../../../contracts/NVMConfig.sol";
-import {AssetsRegistry} from "../../../contracts/AssetsRegistry.sol";
-import {AgreementsStore} from "../../../contracts/agreements/AgreementsStore.sol";
-import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
+import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
+import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
+import {IFiatSettlement} from '../../../contracts/interfaces/IFiatSettlement.sol';
+import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
+import {BaseTest} from '../common/BaseTest.sol';
+
+import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 contract FiatSettlementConditionTest is BaseTest {
-    
     address public receiver;
 
     function setUp() public override {
@@ -23,26 +23,14 @@ contract FiatSettlementConditionTest is BaseTest {
     function test_fulfill_noTemplateRevert() public {
         vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
 
-        fiatSettlementCondition.fulfill(
-            bytes32(0),
-            bytes32(0),
-            1,
-            address(this),
-            new bytes[](0)
-        );
+        fiatSettlementCondition.fulfill(bytes32(0), bytes32(0), 1, address(this), new bytes[](0));
     }
 
     function test_fulfill_noAgreementRevert() public {
         _grantTemplateRole(address(this));
 
         vm.expectPartialRevert(IAgreement.AgreementNotFound.selector);
-        fiatSettlementCondition.fulfill(
-            bytes32(0),
-            bytes32(0),
-            1,
-            address(this),
-            new bytes[](0)
-        );
+        fiatSettlementCondition.fulfill(bytes32(0), bytes32(0), 1, address(this), new bytes[](0));
     }
 
     function test_fulfill_noSettlementRoleRevert() public {
@@ -50,13 +38,7 @@ contract FiatSettlementConditionTest is BaseTest {
 
         bytes32 agreementId = _createAgreement(address(this), 1);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
-        fiatSettlementCondition.fulfill(
-            bytes32(0),
-            agreementId,
-            1,
-            address(this),
-            new bytes[](0)
-        );
+        fiatSettlementCondition.fulfill(bytes32(0), agreementId, 1, address(this), new bytes[](0));
     }
 
     function test_fulfill_invalidPriceTypeRevert() public {
@@ -65,13 +47,7 @@ contract FiatSettlementConditionTest is BaseTest {
 
         bytes32 agreementId = _createAgreement(address(this), 1);
         vm.expectPartialRevert(IFiatSettlement.OnlyPlanWithFiatPrice.selector);
-        fiatSettlementCondition.fulfill(
-            bytes32(0),
-            agreementId,
-            1,
-            address(this),
-            new bytes[](0)
-        );
+        fiatSettlementCondition.fulfill(bytes32(0), agreementId, 1, address(this), new bytes[](0));
     }
 
     function test_fulfill_okay() public {
@@ -85,16 +61,7 @@ contract FiatSettlementConditionTest is BaseTest {
         vm.startPrank(caller);
         bytes32 agreementId = _createAgreement(caller, planId);
 
-        fiatSettlementCondition.fulfill(
-            keccak256("abc"),
-            agreementId,
-            planId,
-            caller,
-            new bytes[](0)
-        );
+        fiatSettlementCondition.fulfill(keccak256('abc'), agreementId, planId, caller, new bytes[](0));
         vm.stopPrank();
     }
-
-
-
 }

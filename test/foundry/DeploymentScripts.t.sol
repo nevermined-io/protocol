@@ -3,10 +3,10 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {Test, console} from "forge-std/Test.sol";
-import {Script} from "forge-std/Script.sol";
-import {Constants} from "../../scripts/Constants.sol";
-import {INVMConfig} from "../../contracts/interfaces/INVMConfig.sol";
+import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
+import {Constants} from '../../scripts/Constants.sol';
+import {Script} from 'forge-std/Script.sol';
+import {Test, console} from 'forge-std/Test.sol';
 
 // Mock NVMConfig for testing
 contract MockNVMConfig {
@@ -93,10 +93,10 @@ contract DeploymentScriptsTest is Test {
         governor = vm.addr(governorPrivateKey);
 
         // Set environment variables for deployment scripts using mnemonic approach
-        string memory testMnemonic = "test test test test test test test test test test test junk";
-        vm.setEnv("MNEMONIC", testMnemonic);
-        vm.setEnv("OWNER_INDEX", "0");
-        vm.setEnv("GOVERNOR_INDEX", "1");
+        string memory testMnemonic = 'test test test test test test test test test test test junk';
+        vm.setEnv('MNEMONIC', testMnemonic);
+        vm.setEnv('OWNER_INDEX', '0');
+        vm.setEnv('GOVERNOR_INDEX', '1');
 
         // Initialize mock deployment script
         mockDeployNVMConfig = new MockDeployNVMConfig();
@@ -107,42 +107,42 @@ contract DeploymentScriptsTest is Test {
 
     function test_MockDeploymentSequence() public {
         // Verify mock NVMConfig deployment
-        assertTrue(mockNvmConfig.isOwner(owner), "Owner role not set correctly");
-        assertTrue(mockNvmConfig.isGovernor(governor), "Governor role not set correctly");
+        assertTrue(mockNvmConfig.isOwner(owner), 'Owner role not set correctly');
+        assertTrue(mockNvmConfig.isGovernor(governor), 'Governor role not set correctly');
 
         // Test contract registration
-        bytes32 testContractName = keccak256("TestContract");
+        bytes32 testContractName = keccak256('TestContract');
         address testContractAddress = address(0x123);
         uint256 testVersion = 1;
 
         // Register a contract
         vm.prank(governor);
         bool success = mockNvmConfig.registerContract(testContractName, testContractAddress, testVersion);
-        assertTrue(success, "Contract registration failed");
+        assertTrue(success, 'Contract registration failed');
 
         // Verify contract registration
-        assertEq(mockNvmConfig.getContractVersion(testContractName), testVersion, "Contract version not set correctly");
+        assertEq(mockNvmConfig.getContractVersion(testContractName), testVersion, 'Contract version not set correctly');
         assertEq(
             mockNvmConfig.getContractAddress(testContractName),
             testContractAddress,
-            "Contract address not set correctly"
+            'Contract address not set correctly'
         );
 
         // Test role granting
         address testCondition = address(0x456);
         vm.prank(governor);
         success = mockNvmConfig.grantCondition(testCondition);
-        assertTrue(success, "Condition role granting failed");
+        assertTrue(success, 'Condition role granting failed');
 
         address testTemplate = address(0x789);
         vm.prank(governor);
         success = mockNvmConfig.grantTemplate(testTemplate);
-        assertTrue(success, "Template role granting failed");
+        assertTrue(success, 'Template role granting failed');
 
-        bytes32 testRole = keccak256("TEST_ROLE");
+        bytes32 testRole = keccak256('TEST_ROLE');
         address testAccount = address(0xabc);
         vm.prank(governor);
         success = mockNvmConfig.grantRole(testRole, testAccount);
-        assertTrue(success, "Role granting failed");
+        assertTrue(success, 'Role granting failed');
     }
 }
