@@ -1,0 +1,244 @@
+import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
+import { ignition } from 'hardhat'
+import { expect } from 'chai'
+import FullDeploymentModule from '../../ignition/modules/FullDeployment'
+import hre from 'hardhat'
+import {
+  generateId,
+  getTxParsedLogs,
+  createPriceConfig,
+  createCreditsConfig
+} from '../common/utils'
+import { zeroAddress } from 'viem'
+
+var chai = require('chai')
+chai.use(require('chai-string'))
+
+describe('IT: FiatPaymentTemplate comprehensive test', function () {
+  let nvmConfig: any
+  let assetsRegistry: any
+  let nftCredits: any
+  let fiatSettlementCondition: any
+  let paymentsVault: any
+  let fiatPaymentTemplate: any
+  let agreementsStore: any
+  let did: any
+  let planId: bigint
+  let owner: any
+  let alice: any
+  let fiatOracle: any
+  let bob: any
+  let publicClient: any
+  let priceConfig: any
+  let creditsConfig: any
+
+  before(async () => {
+    await loadFixture(deployInstance)
+  })
+
+  // Setup fixture for deploying contracts
+  async function deployInstance() {
+    const _deployment = await ignition.deploy(FullDeploymentModule)
+    nvmConfig = _deployment.nvmConfig
+    assetsRegistry = _deployment.assetsRegistry
+    paymentsVault = _deployment.paymentsVault
+    fiatPaymentTemplate = _deployment.fiatPaymentTemplate
+    fiatSettlementCondition = _deployment.fiatSettlementCondition
+    agreementsStore = _deployment.agreementsStore
+    nftCredits = _deployment.nftCredits
+
+    const wallets = await hre.viem.getWalletClients()
+    owner = wallets[0]
+    alice = wallets[3]
+    bob = wallets[4]
+    fiatOracle = wallets[5]
+    publicClient = await hre.viem.getPublicClient()
+
+    const FIAT_SETTLEMENT_ROLE = await fiatSettlementCondition.read.FIAT_SETTLEMENT_ROLE()
+
+    await nvmConfig.write.grantRole([FIAT_SETTLEMENT_ROLE, fiatOracle.account.address], {
+      account: owner.account,
+    })
+
+    return {
+      nvmConfig,
+      assetsRegistry,
+      nftCredits,
+      paymentsVault,
+      fixedPaymentTemplate: fiatPaymentTemplate,
+      lockPaymentCondition: fiatSettlementCondition,
+      agreementsStore,
+      owner,
+      alice,
+      bob,
+      fiatOracle,
+      publicClient,
+    }
+  }
+
+  describe('FIAT Payment Flow', function () {
+
+    it('Alice can register an asset with a plan', async () => {
+      
+      priceConfig = createPriceConfig(zeroAddress, alice.account.address)
+      creditsConfig = createCreditsConfig()
+
+      priceConfig.priceType = 1 // FIXED_FIAT_PRICE
+
+      console.log('Price Config:', priceConfig)
+
+      const didSeed = generateId()
+      did = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
+
+      await assetsRegistry.write.registerAssetAndPlan(
+        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftCredits.address],
+        { account: alice.account },
+      )
+
+      const asset = await assetsRegistry.read.getAsset([did])
+      planId = asset.plans[0]
+
+      // Verify asset and plan are registered
+      expect(asset.lastUpdated > 0n).to.be.true
+
+      const plan = await assetsRegistry.read.getPlan([planId])
+      expect(plan.lastUpdated > 0n).to.be.true
+      expect(plan.nftAddress).to.equalIgnoreCase(nftCredits.address)
+
+      console.log('Plan ID:', planId)
+    })
+
+    it('We can check the credits of Bob BEFORE the fiat payment flow', async () => {
+      const balance = await nftCredits.read.balanceOf([bob.account.address, planId as any])
+
+      console.log('Credits Balance:', balance)
+      expect(balance == 0n).to.be.true
+    })
+
+    it('Fiat Oracle can create an agreement using native token', async () => {
+      // Get the plan to determine payment amount
+      const plan = await assetsRegistry.read.getPlan([planId])
+      console.log('Before order - Plan ID:', planId)
+      console.log(plan)
+
+      const agreementIdSeed = generateId()
+      const txHash = await fiatPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, bob.account.address, []],
+        { account: fiatOracle.account },
+      )
+
+      expect(txHash).to.be.a('string').to.startWith('0x')
+
+      // Verify events from transaction
+      const logs = await getTxParsedLogs(publicClient, txHash, agreementsStore.abi)
+
+      expect(logs.length).to.be.greaterThan(0)
+    })
+
+    it('We can check the credits of Bob BEFORE the fiat payment flow', async () => {
+      const balance = await nftCredits.read.balanceOf([bob.account.address, planId as any])
+
+      console.log('Credits Balance:', balance)
+      expect(balance > 0n).to.be.true
+    })
+
+  })
+
+  describe('Error Conditions', function () {
+
+    it('Should reject if agreement already exists', async () => {
+      // Get the plan to determine payment amount
+
+      const plan = await assetsRegistry.read.getPlan([planId])
+
+      // Create a unique agreement ID seed
+      const agreementIdSeed = generateId()
+
+      // Create agreement first time
+      await fiatPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, bob.account.address, []], {
+        account: fiatOracle.account
+      })
+
+      // Try to create the same agreement again
+      await expect(
+        fiatPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, bob.account.address, []], {
+          account: fiatOracle.account
+        }),
+      ).to.be.rejectedWith(/AgreementAlreadyRegistered/)
+    })
+
+    it('Should reject if asset does not exist', async () => {
+      const nonExistentDid = generateId()
+      const newAgreementIdSeed = generateId()
+
+      await expect(
+        fiatPaymentTemplate.write.createAgreement(
+          [newAgreementIdSeed, nonExistentDid, planId, bob.account.address, []],
+          { account: fiatOracle.account },
+        ),
+      ).to.be.rejectedWith(/AssetNotFound/)
+    })
+
+    it('Should reject if plan does not exist', async () => {
+      const nonExistentPlanId = generateId()
+      const newAgreementIdSeed = generateId()
+
+      await expect(
+        fiatPaymentTemplate.write.createAgreement(
+          [newAgreementIdSeed, did, nonExistentPlanId, bob.account.address, []],
+          { account: fiatOracle.account },
+        ),
+      ).to.be.rejectedWith(/PlanNotFound/)
+    })
+
+    it('Should reject unsupported price types', async () => {
+      // Create a price config with unsupported price type
+      const unsupportedPriceConfig = {
+        priceType: 2, // SMART_CONTRACT_PRICE (unsupported)
+        tokenAddress: zeroAddress,
+        amounts: [100n],
+        receivers: [alice.account.address],
+        contractAddress: zeroAddress,
+      }
+
+      // Add Nevermined fees
+      // const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+      //   unsupportedPriceConfig.amounts,
+      //   unsupportedPriceConfig.receivers,
+      // ])
+      // unsupportedPriceConfig.amounts = [...result[0]]
+      // unsupportedPriceConfig.receivers = [...result[1]]
+
+      // Create credits config
+      const creditsConfig = createCreditsConfig()
+
+      // Register asset with unsupported price type
+      const didSeed = generateId()
+      const newDid = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
+
+      await assetsRegistry.write.registerAssetAndPlan(
+        [
+          didSeed,
+          'https://nevermined.io',
+          unsupportedPriceConfig,
+          creditsConfig,
+          nftCredits.address,
+        ],
+        { account: alice.account },
+      )
+
+      // Get the new plan ID
+      const asset = await assetsRegistry.read.getAsset([newDid])
+      const newPlanId = asset.plans[0]
+
+      // Try to create agreement with unsupported price type
+      const newAgreementIdSeed = generateId()
+      await expect(
+        fiatPaymentTemplate.write.createAgreement([newAgreementIdSeed, newDid, newPlanId, bob.account.address, []], {
+          account: fiatOracle.account
+        }),
+      ).to.be.rejectedWith(/OnlyPlanWithFiatPrice/)
+    })
+  })
+
+})

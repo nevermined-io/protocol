@@ -7,43 +7,17 @@ import { BaseTest } from '../common/BaseTest.sol';
 import {INVMConfig} from "../../../contracts/interfaces/INVMConfig.sol";
 import {IFiatSettlement} from "../../../contracts/interfaces/IFiatSettlement.sol";
 import {IAgreement} from "../../../contracts/interfaces/IAgreement.sol";
-
 import {NVMConfig} from "../../../contracts/NVMConfig.sol";
 import {AssetsRegistry} from "../../../contracts/AssetsRegistry.sol";
 import {AgreementsStore} from "../../../contracts/agreements/AgreementsStore.sol";
 import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 contract FiatSettlementConditionTest is BaseTest {
-    // NVMConfig public nvmConfig;
-    // AssetsRegistry public assetsRegistry;
-    // AgreementsStore public agreementsStore;
-    // FiatSettlementCondition public fiatSettlementCondition;
-
+    
     address public receiver;
 
     function setUp() public override {
         super.setUp();
-        // nvmConfig = new NVMConfig();
-        // owner = address(this);
-        // receiver = address(1);
-        // nvmConfig.initialize(owner, owner);
-        // nvmConfig.setNetworkFees(100, owner);
-
-        // assetsRegistry = new AssetsRegistry();
-        // assetsRegistry.initialize(address(nvmConfig));
-
-        // agreementsStore = new AgreementsStore();
-        // agreementsStore.initialize(address(nvmConfig), address(0));
-
-        // agreementsStore = new AgreementsStore();
-        // agreementsStore.initialize(address(nvmConfig), address(0));
-
-        // fiatSettlementCondition = new FiatSettlementCondition();
-        // fiatSettlementCondition.initialize(
-        //     address(nvmConfig),
-        //     address(assetsRegistry),
-        //     address(agreementsStore)
-        // );
     }
 
     function test_fulfill_noTemplateRevert() public {
