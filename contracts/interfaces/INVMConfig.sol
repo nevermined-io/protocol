@@ -56,6 +56,11 @@ interface INVMConfig {
   /// @param sender The address of the account calling this function
   error OnlyTemplateOrCondition(address sender);
 
+  /// Only an account with the right role can access this function
+  /// @param sender The address of the account calling this function
+  /// @param role The role required to call this function
+  error InvalidRole(address sender, bytes32 role);
+
   function getNetworkFee() external view returns (uint256);
 
   function getFeeReceiver() external view returns (address);

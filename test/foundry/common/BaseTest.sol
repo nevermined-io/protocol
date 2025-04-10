@@ -17,7 +17,11 @@ import { NFT1155ExpirableCredits } from '../../../contracts/token/NFT1155Expirab
 import { LockPaymentCondition } from '../../../contracts/conditions/LockPaymentCondition.sol';
 import { TransferCreditsCondition } from '../../../contracts/conditions/TransferCreditsCondition.sol';
 import { DistributePaymentsCondition } from '../../../contracts/conditions/DistributePaymentsCondition.sol';
+import { FiatSettlementCondition } from '../../../contracts/conditions/FiatSettlementCondition.sol';
 import { FixedPaymentTemplate } from '../../../contracts/agreements/FixedPaymentTemplate.sol';
+import { FiatPaymentTemplate } from '../../../contracts/agreements/FiatPaymentTemplate.sol';
+import {IAsset} from "../../../contracts/interfaces/IAsset.sol";
+import {IAgreement} from "../../../contracts/interfaces/IAgreement.sol";
 
 abstract contract BaseTest is Test, ToArrayUtils {
   // Roles
@@ -46,7 +50,9 @@ abstract contract BaseTest is Test, ToArrayUtils {
   LockPaymentCondition lockPaymentCondition;
   TransferCreditsCondition transferCreditsCondition;
   DistributePaymentsCondition distributePaymentsCondition;
+  FiatSettlementCondition fiatSettlementCondition;
   FixedPaymentTemplate fixedPaymentTemplate;
+  FiatPaymentTemplate fiatPaymentTemplate;
 
   function setUp() public virtual {
     _deployContracts();
@@ -57,9 +63,11 @@ abstract contract BaseTest is Test, ToArrayUtils {
     nvmConfig.grantCondition(address(lockPaymentCondition));
     nvmConfig.grantCondition(address(transferCreditsCondition));
     nvmConfig.grantCondition(address(distributePaymentsCondition));
+    nvmConfig.grantCondition(address(fiatSettlementCondition));
 
     // Grant template permissions
     nvmConfig.grantTemplate(address(fixedPaymentTemplate));
+    nvmConfig.grantTemplate(address(fiatPaymentTemplate));
 
     vm.stopPrank();
 
@@ -251,6 +259,24 @@ abstract contract BaseTest is Test, ToArrayUtils {
       )
     );
 
+    // Deploy FiatSettlementCondition
+    fiatSettlementCondition = FiatSettlementCondition(
+      address(
+        new ERC1967Proxy(
+          address(new FiatSettlementCondition()),
+          abi.encodeCall(
+            FiatSettlementCondition.initialize,
+            (
+              address(nvmConfig),
+              address(0),
+              address(assetsRegistry),
+              address(agreementsStore)
+            )
+          )
+        )
+      )
+    );
+
     // Deploy FixedPaymentTemplate
     fixedPaymentTemplate = FixedPaymentTemplate(
       address(
@@ -259,7 +285,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
           abi.encodeCall(
             FixedPaymentTemplate.initialize,
             (
-              address(fixedPaymentTemplate),
+              address(nvmConfig),
               address(0),
               address(assetsRegistry),
               address(agreementsStore),
@@ -271,5 +297,85 @@ abstract contract BaseTest is Test, ToArrayUtils {
         )
       )
     );
+
+    // Deploy FiatPaymentTemplate
+    fiatPaymentTemplate = FiatPaymentTemplate(
+      address(
+        new ERC1967Proxy(
+          address(new FiatPaymentTemplate()),
+          abi.encodeCall(
+            FiatPaymentTemplate.initialize,
+            (
+              address(nvmConfig),
+              address(0),
+              address(assetsRegistry),
+              address(agreementsStore),
+              address(fiatSettlementCondition),
+              address(transferCreditsCondition)
+            )
+          )
+        )
+      )
+    );
+  }
+
+  function _grantTemplateRole(address _caller) internal virtual {
+    _grantNVMConfigRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), _caller);
+  }
+
+  function _grantNVMConfigRole(bytes32 _role, address _caller) internal virtual {
+    vm.startPrank(owner);
+    nvmConfig.grantRole(_role, _caller);
+    vm.stopPrank();
+  }
+
+  function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {
+
+    bytes32[] memory conditionIds = new bytes32[](1);
+    IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+    
+    conditionIds[0] = keccak256("abc");
+    conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+    _grantTemplateRole(address(this));
+    bytes32 agreementId = keccak256("123");
+    agreementsStore.register(
+        agreementId,
+        _caller,
+        bytes32(0),
+        _planId,
+        conditionIds,
+        conditionStates,
+        new bytes[](0)
+    );
+    return agreementId;
+  }
+
+  function _createPlan() internal returns (uint256) {
+    uint256[] memory _amounts = new uint256[](1);
+    _amounts[0] = 100;
+    address[] memory _receivers = new address[](1);
+    _receivers[0] = address(this);
+
+    (uint256[] memory amounts, address[] memory receivers) =
+        assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+    IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+        priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+        tokenAddress: address(0),
+        amounts: amounts,
+        receivers: receivers,
+        contractAddress: address(0)
+    });
+    IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+        creditsType: IAsset.CreditsType.FIXED,
+        redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+        durationSecs: 0,
+        amount: 100,
+        minAmount: 1,
+        maxAmount: 1
+    });
+
+    assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
+    return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
   }
 }

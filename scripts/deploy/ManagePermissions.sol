@@ -27,7 +27,9 @@ contract ManagePermissions is Script, DeployConfig {
     address lockPaymentCondition,
     address distributePaymentsCondition,
     address transferCreditsCondition,
+    address fiatSettlementCondition,
     address fixedPaymentTemplate,
+    address fiatPaymentTemplate,
     address accessManager
   ) public {
     console.log('Managing permissions for contracts...');
@@ -41,9 +43,11 @@ contract ManagePermissions is Script, DeployConfig {
     NVMConfig(nvmConfig).grantCondition(lockPaymentCondition);
     NVMConfig(nvmConfig).grantCondition(transferCreditsCondition);
     NVMConfig(nvmConfig).grantCondition(distributePaymentsCondition);
+    NVMConfig(nvmConfig).grantCondition(fiatSettlementCondition);
 
     // Grant template permissions
     NVMConfig(nvmConfig).grantTemplate(fixedPaymentTemplate);
+    NVMConfig(nvmConfig).grantTemplate(fiatPaymentTemplate);
 
     // Grant Deposit and Withdrawal permissions to Payments Vault
     // NVMConfig(nvmConfig).grantRole(DEPOSITOR_ROLE, lockPaymentCondition);

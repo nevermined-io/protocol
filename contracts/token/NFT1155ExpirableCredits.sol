@@ -5,6 +5,7 @@ pragma solidity ^0.8.28;
 
 import { ERC1155Upgradeable } from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import { NFT1155Base } from "./NFT1155Base.sol";
+import { INVMConfig } from "../interfaces/INVMConfig.sol";
 
 contract NFT1155ExpirableCredits is NFT1155Base {
   // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155expirablecredits.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -90,7 +91,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
     if (!_getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
-      revert InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+      revert INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
     }
 
     bytes32 _key = _getTokenKey(_from, _planId);

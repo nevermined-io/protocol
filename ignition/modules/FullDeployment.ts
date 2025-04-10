@@ -322,6 +322,40 @@ const DistributePaymentsConditionModule = buildModule('DistributePaymentsConditi
   return { distributePaymentsCondition }
 })
 
+const FiatSettlementConditionModule = buildModule('FiatSettlementConditionModule', (m) => {
+  const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
+  const { nvmConfig } = m.useModule(NVMConfigModule)
+  const { assetsRegistry } = m.useModule(AssetsRegistryModule)
+  const { agreementsStore } = m.useModule(AgreementsStoreModule)
+
+  // Deploy the implementation contract
+  const fiatSettlementConditionImpl = m.contract('FiatSettlementCondition', [], {
+    from: owner
+  })
+
+  // Deploy the proxy with the implementation. Set authority to zeroAddress to renounce upgradeability.
+  const initData = m.encodeFunctionCall(fiatSettlementConditionImpl, 'initialize', [
+    nvmConfig,
+    zeroAddress,
+    assetsRegistry,
+    agreementsStore,
+  ])
+  const fiatSettlementConditionProxy = m.contract(
+    'ERC1967Proxy',
+    [fiatSettlementConditionImpl, initData],
+    {
+      from: owner,
+    },
+  )
+
+  // Create a contract instance that points to the proxy but uses the ABI of the implementation
+  const fiatSettlementCondition = m.contractAt('FiatSettlementCondition', fiatSettlementConditionProxy, {
+    id: 'FiatSettlementConditionProxyInstance',
+  })
+
+  return { fiatSettlementCondition }
+})
+
 const TemplatesDeploymentModule = buildModule('TemplatesDeploymentModule', (m) => {
   const owner = m.getAccount(OWNER_ACCOUNT_INDEX)
 
@@ -329,7 +363,7 @@ const TemplatesDeploymentModule = buildModule('TemplatesDeploymentModule', (m) =
   const fixedPaymentTemplateImpl = m.contract('FixedPaymentTemplate', [], { from: owner })
 
   const fixedPaymentTemplateProxy = m.contract('ERC1967Proxy', [fixedPaymentTemplateImpl, '0x'], {
-    from: owner,
+    from: owner, id: 'ERC1967Proxy_FixedPaymentTemplateProxy'
   })
 
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
@@ -337,7 +371,19 @@ const TemplatesDeploymentModule = buildModule('TemplatesDeploymentModule', (m) =
     id: 'FixedPaymentTemplateProxyInstance',
   })
 
-  return { fixedPaymentTemplate }
+  // FIAT Template
+  const fiatPaymentTemplateImpl = m.contract('FiatPaymentTemplate', [], { from: owner })
+
+  const fiatPaymentTemplateProxy = m.contract('ERC1967Proxy', [fiatPaymentTemplateImpl, '0x'], {
+    from: owner,  id: 'ERC1967Proxy_FiatPaymentTemplateProxy'
+  })
+
+  // Create a contract instance that points to the proxy but uses the ABI of the implementation
+  const fiatPaymentTemplate = m.contractAt('FiatPaymentTemplate', fiatPaymentTemplateProxy, {
+    id: 'FiatPaymentTemplateProxyInstance',
+  })
+
+  return { fixedPaymentTemplate, fiatPaymentTemplate }
 })
 
 const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (m) => {
@@ -354,7 +400,9 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
   const { lockPaymentCondition } = m.useModule(LockPaymentConditionModule)
   const { transferCreditsCondition } = m.useModule(TransferCreditsConditionModule)
   const { distributePaymentsCondition } = m.useModule(DistributePaymentsConditionModule)
-  const { fixedPaymentTemplate } = m.useModule(TemplatesDeploymentModule)
+  const { fiatSettlementCondition } = m.useModule(FiatSettlementConditionModule)
+
+  const { fixedPaymentTemplate, fiatPaymentTemplate } = m.useModule(TemplatesDeploymentModule)
 
   /////////////////// CONDITIONS //////////////////////////////////
   // Grant condition permissions to all conditions
@@ -370,11 +418,15 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
     from: governor,
     id: 'grantCondition_distributePayments',
   })
+  m.call(nvmConfig, 'grantCondition', [fiatSettlementCondition], {
+    from: governor,
+    id: 'grantCondition_fiatSettlement',
+  })
 
   /////////////////// TEMPLATES //////////////////////////////////
   // Fixed Payment Template
   m.call(fixedPaymentTemplate, 'initialize', [
-    fixedPaymentTemplate,
+    nvmConfig,
     zeroAddress,
     assetsRegistry,
     agreementsStore,
@@ -382,7 +434,17 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
     transferCreditsCondition,
     distributePaymentsCondition,
   ])
-  m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
+  m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor,  id: 'grantTemplate_fixedPayment' })
+  // Fixed Payment Template
+  m.call(fiatPaymentTemplate, 'initialize', [
+    nvmConfig,
+    zeroAddress,
+    assetsRegistry,
+    agreementsStore,
+    fiatSettlementCondition,
+    transferCreditsCondition
+  ])
+  m.call(nvmConfig, 'grantTemplate', [fiatPaymentTemplate], { from: governor,  id: 'grantTemplate_fiatPayment' })
 
   /////////////////// PERMISSIONS //////////////////////////////////
   // Grant Deposit and Withdrawal permissions to Payments Vault
@@ -421,7 +483,9 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
     lockPaymentCondition,
     transferCreditsCondition,
     distributePaymentsCondition,
+    fiatSettlementCondition,
     fixedPaymentTemplate,
+    fiatPaymentTemplate
   }
 })
 
@@ -436,7 +500,9 @@ const FullDeploymentModule = buildModule('FullDeploymentModule', (m) => {
     lockPaymentCondition,
     transferCreditsCondition,
     distributePaymentsCondition,
+    fiatSettlementCondition,
     fixedPaymentTemplate,
+    fiatPaymentTemplate
   } = m.useModule(DeploymentOfContractsModule)
   return {
     nvmConfig,
@@ -448,7 +514,9 @@ const FullDeploymentModule = buildModule('FullDeploymentModule', (m) => {
     lockPaymentCondition,
     transferCreditsCondition,
     distributePaymentsCondition,
+    fiatSettlementCondition,
     fixedPaymentTemplate,
+    fiatPaymentTemplate
   }
 })
 

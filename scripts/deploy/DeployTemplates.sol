@@ -5,6 +5,7 @@ import { Script } from 'forge-std/Script.sol';
 import { console } from 'forge-std/console.sol';
 import { DeployConfig } from './DeployConfig.sol';
 import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import { FiatPaymentTemplate } from '../../contracts/agreements/FiatPaymentTemplate.sol';
 import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployTemplates is Script, DeployConfig {
@@ -16,8 +17,9 @@ contract DeployTemplates is Script, DeployConfig {
     address lockPaymentConditionAddress,
     address transferCreditsConditionAddress,
     address distributePaymentsConditionAddress,
+    address fiatSettlementConditionAddress,
     address accessManagerAddress
-  ) public returns (FixedPaymentTemplate) {
+  ) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
     console.log('Deploying Templates with:');
     console.log('\tOwner:', ownerAddress);
     console.log('\tNVMConfig:', nvmConfigAddress);
@@ -26,6 +28,7 @@ contract DeployTemplates is Script, DeployConfig {
     console.log('\tLockPaymentCondition:', lockPaymentConditionAddress);
     console.log('\tTransferCreditsCondition:', transferCreditsConditionAddress);
     console.log('\tDistributePaymentsCondition:', distributePaymentsConditionAddress);
+    console.log('\tFiatSettlementCondition:', fiatSettlementConditionAddress);
     console.log('\tAccessManager:', accessManagerAddress);
 
     vm.startBroadcast(ownerAddress);
@@ -48,8 +51,25 @@ contract DeployTemplates is Script, DeployConfig {
       address(new ERC1967Proxy(address(fixedPaymentTemplateImpl), fixedPaymentTemplateData))
     );
 
+    // Deploy FiatPaymentTemplate
+    FiatPaymentTemplate fiatPaymentTemplateImpl = new FiatPaymentTemplate();
+    bytes memory fiatPaymentTemplateData = abi.encodeCall(
+      FiatPaymentTemplate.initialize,
+      (
+        address(fiatPaymentTemplateImpl),
+        accessManagerAddress,
+        assetsRegistryAddress,
+        agreementsStoreAddress,
+        fiatSettlementConditionAddress,
+        transferCreditsConditionAddress
+      )
+    );
+    FiatPaymentTemplate fiatPaymentTemplate = FiatPaymentTemplate(
+      address(new ERC1967Proxy(address(fiatPaymentTemplateImpl), fiatPaymentTemplateData))
+    );
+
     vm.stopBroadcast();
 
-    return fixedPaymentTemplate;
+    return ( fixedPaymentTemplate, fiatPaymentTemplate );
   }
 }
