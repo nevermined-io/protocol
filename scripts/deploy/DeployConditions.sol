@@ -7,6 +7,7 @@ import { DeployConfig } from './DeployConfig.sol';
 import { LockPaymentCondition } from '../../contracts/conditions/LockPaymentCondition.sol';
 import { TransferCreditsCondition } from '../../contracts/conditions/TransferCreditsCondition.sol';
 import { DistributePaymentsCondition } from '../../contracts/conditions/DistributePaymentsCondition.sol';
+import { FiatSettlementCondition } from '../../contracts/conditions/FiatSettlementCondition.sol';
 import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployConditions is Script, DeployConfig {
@@ -18,7 +19,7 @@ contract DeployConditions is Script, DeployConfig {
     address paymentsVaultAddress,
     address tokenUtilsAddress,
     address accessManagerAddress
-  ) public returns (LockPaymentCondition, TransferCreditsCondition, DistributePaymentsCondition, FiatSettementCondition) {
+  ) public returns (LockPaymentCondition, TransferCreditsCondition, DistributePaymentsCondition, FiatSettlementCondition) {
     console.log('Deploying Conditions with:');
     console.log('\tOwner:', ownerAddress);
     console.log('\tNVMConfig:', nvmConfigAddress);

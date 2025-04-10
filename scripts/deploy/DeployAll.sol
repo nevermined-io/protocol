@@ -22,7 +22,9 @@ import { NFT1155ExpirableCredits } from '../../contracts/token/NFT1155ExpirableC
 import { LockPaymentCondition } from '../../contracts/conditions/LockPaymentCondition.sol';
 import { TransferCreditsCondition } from '../../contracts/conditions/TransferCreditsCondition.sol';
 import { DistributePaymentsCondition } from '../../contracts/conditions/DistributePaymentsCondition.sol';
+import { FiatSettlementCondition } from '../../contracts/conditions/FiatSettlementCondition.sol';
 import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import { FiatPaymentTemplate } from '../../contracts/agreements/FiatPaymentTemplate.sol';
 import { OwnerGrantRoles } from './OwnerGrantRoles.sol';
 import { AccessManager } from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
@@ -34,7 +36,7 @@ contract DeployAll is Script, DeployConfig {
     string memory packageJson = vm.envOr('PACKAGE_JSON', string('./package.json'));
     string memory version = vm.parseJsonString(vm.readFile(packageJson), '$.version');
 
-    string memory outputJson = vm.envOr(
+    string memory outputJsonPath = vm.envOr(
       'DEPLOYMENT_ADDRESSES_JSON',
       string(
         abi.encodePacked(
@@ -146,67 +148,33 @@ contract DeployAll is Script, DeployConfig {
     );
     console.log('Roles granted successfully by Owner');
 
-    string memory deploymentJson = string(
-      abi.encodePacked(
-        '{\n',
-        '  "version": "',
-        version,
-        '",\n',
-        '  "owner": "',
-        vm.toString(ownerAddress),
-        '",\n',
-        '  "governor": "',
-        vm.toString(governorAddress),
-        '",\n',
-        '  "chainId": "',
-        vm.toString(block.chainid),
-        '",\n',
-        '  "deployedAt": "',
-        vm.toString(block.timestamp),
-        '",\n',
-        '  "contracts": {\n',
-        '    "AccessManager": "',
-        vm.toString(address(accessManager)),
-        '",\n',
-        '    "NVMConfig": "',
-        vm.toString(address(nvmConfig)),
-        '",\n',
-        '    "TokenUtils": "',
-        vm.toString(tokenUtilsAddress),
-        '",\n',
-        '    "AssetsRegistry": "',
-        vm.toString(address(assetsRegistry)),
-        '",\n',
-        '    "AgreementsStore": "',
-        vm.toString(address(agreementsStore)),
-        '",\n',
-        '    "PaymentsVault": "',
-        vm.toString(address(paymentsVault)),
-        '",\n',
-        '    "NFT1155Credits": "',
-        vm.toString(address(nftCredits)),
-        '",\n',
-        '    "NFT1155ExpirableCredits": "',
-        vm.toString(address(nftExpirableCredits)),
-        '",\n',
-        '    "LockPaymentCondition": "',
-        vm.toString(address(lockPaymentCondition)),
-        '",\n',
-        '    "TransferCreditsCondition": "',
-        vm.toString(address(transferCreditsCondition)),
-        '",\n',
-        '    "DistributePaymentsCondition": "',
-        vm.toString(address(distributePaymentsCondition)),
-        '",\n',
-        '    "FixedPaymentTemplate": "',
-        vm.toString(address(fixedPaymentTemplate)),
-        '"\n',
-        '  }\n',
-        '}\n'
-      )
-    );
-
-    vm.writeJson(deploymentJson, outputJson);
-    console.log('Deployment addresses written to %s', outputJson);
+    string memory jsonContent = string(abi.encodePacked(
+      '{\n',
+      '  "version": "', version, '",\n',
+      '  "owner": "', vm.toString(ownerAddress), '",\n',
+      '  "governor": "', vm.toString(governorAddress), '",\n',
+      '  "chainId": "', vm.toString(block.chainid) ,'",\n',
+      '  "deployedAt": "', vm.toString(block.timestamp) ,'",\n',
+      '  "contracts": {\n',
+      '    "NVMConfig": "', vm.toString(address(nvmConfig)), '",\n',
+      '    "AccessManager": "', vm.toString(address(accessManager)), '",\n',
+      '    "TokenUtils": "', vm.toString(tokenUtilsAddress), '",\n',
+      '    "AssetsRegistry": "', vm.toString(address(assetsRegistry)), '",\n',
+      '    "AgreementsStore": "', vm.toString(address(agreementsStore)), '",\n',
+      '    "PaymentsVault": "', vm.toString(address(paymentsVault)), '",\n',
+      '    "NFT1155Credits": "', vm.toString(address(nftCredits)), '",\n',
+      '    "NFT1155ExpirableCredits": "', vm.toString(address(nftExpirableCredits)), '",\n',
+      '    "LockPaymentCondition": "', vm.toString(address(lockPaymentCondition)), '",\n',
+      '    "TransferCreditsCondition": "', vm.toString(address(transferCreditsCondition)), '",\n',
+      '    "DistributePaymentsCondition": "', vm.toString(address(distributePaymentsCondition)), '",\n',
+      '    "FiatSettlementCondition": "', vm.toString(address(fiatSettlementCondition)), '",\n',
+      '    "FixedPaymentTemplate": "', vm.toString(address(fixedPaymentTemplate)), '",\n',
+      '    "FiatPaymentTemplate": "', vm.toString(address(fiatPaymentTemplate)), '"\n',
+      '  }\n',
+      '}\n'
+    ));
+    
+    vm.writeFile(outputJsonPath, jsonContent);
+    console.log('Deployment addresses written to %s', outputJsonPath);
   }
 }

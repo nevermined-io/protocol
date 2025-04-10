@@ -5,6 +5,7 @@ import { Script } from 'forge-std/Script.sol';
 import { console } from 'forge-std/console.sol';
 import { DeployConfig } from './DeployConfig.sol';
 import { FixedPaymentTemplate } from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import { FiatPaymentTemplate } from '../../contracts/agreements/FiatPaymentTemplate.sol';
 import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 
 contract DeployTemplates is Script, DeployConfig {
@@ -18,7 +19,7 @@ contract DeployTemplates is Script, DeployConfig {
     address distributePaymentsConditionAddress,
     address fiatSettlementConditionAddress,
     address accessManagerAddress
-  ) public returns (FixedPaymentTemplate, fiatPaymentTemplate) {
+  ) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
     console.log('Deploying Templates with:');
     console.log('\tOwner:', ownerAddress);
     console.log('\tNVMConfig:', nvmConfigAddress);

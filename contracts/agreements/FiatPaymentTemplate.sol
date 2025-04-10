@@ -42,7 +42,7 @@ contract FiatPaymentTemplate is BaseTemplate {
     _getBaseTemplateStorage().agreementStore = AgreementsStore(_agreementStoreAddress);
     $.fiatSettlementCondition = FiatSettlementCondition(_fiatSettlementConditionAddress);
     $.transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function createAgreement(

@@ -4,12 +4,13 @@
 pragma solidity ^0.8.28;
 
 import { ReentrancyGuardUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import { IFiatSettlement } from "../interfaces/IFiatSettlement.sol";
 import { INVMConfig } from "../interfaces/INVMConfig.sol";
 import { IAgreement } from "../interfaces/IAgreement.sol";
 import { IAsset } from "../interfaces/IAsset.sol";
 import { TemplateCondition } from "./TemplateCondition.sol";
 
-contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateCondition {
+contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateCondition, IFiatSettlement {
   bytes32 public constant NVM_CONTRACT_NAME = keccak256("FiatSettlementCondition");
 
   /**
@@ -22,15 +23,6 @@ contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateConditio
   bytes32 private constant FIAT_SETTLEMENT_CONDITION_STORAGE_LOCATION =
     0x095caca12ac306f9c5f97a85684602873cc5f88a30652025e72016cece54ad00;
 
-  /// The settlement params specified are invalid
-  /// @param params Settlement params provided
-  error InvalidSettlementParams(bytes[] params);
-
-  /// This condition only can be fulfilled for plans where the price type is FIXED_FIAT_PRICE
-  /// @param planId The identifier of the plan
-  /// @param priceType The type of price of the plan
-  error OnlyPlanWithFiatPrice(uint256 planId, IAsset.PriceType priceType);
-
   /// @custom:storage-location erc7201:nevermined.fiatsettlementcondition.storage
   struct FiatSettlementConditionStorage {
     INVMConfig nvmConfig;
@@ -40,6 +32,7 @@ contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateConditio
 
   function initialize(
     address _nvmConfigAddress,
+    address _authority,
     address _assetsRegistryAddress,
     address _agreementStoreAddress
   ) public initializer {
@@ -49,7 +42,7 @@ contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateConditio
     $.nvmConfig = INVMConfig(_nvmConfigAddress);
     $.assetsRegistry = IAsset(_assetsRegistryAddress);
     $.agreementStore = IAgreement(_agreementStoreAddress);
-    __Ownable_init(msg.sender);
+    __AccessManagedUUPSUpgradeable_init(_authority);
   }
 
   function fulfill(

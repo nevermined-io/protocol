@@ -329,7 +329,7 @@ const FiatSettlementConditionModule = buildModule('FiatSettlementConditionModule
   const { agreementsStore } = m.useModule(AgreementsStoreModule)
 
   // Deploy the implementation contract
-  const fiatSettlementConditionImpl = m.contract('LockPaymentCondition', [], {
+  const fiatSettlementConditionImpl = m.contract('FiatSettlementCondition', [], {
     from: owner
   })
 
@@ -363,7 +363,7 @@ const TemplatesDeploymentModule = buildModule('TemplatesDeploymentModule', (m) =
   const fixedPaymentTemplateImpl = m.contract('FixedPaymentTemplate', [], { from: owner })
 
   const fixedPaymentTemplateProxy = m.contract('ERC1967Proxy', [fixedPaymentTemplateImpl, '0x'], {
-    from: owner,
+    from: owner, id: 'ERC1967Proxy_FixedPaymentTemplateProxy'
   })
 
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
@@ -375,7 +375,7 @@ const TemplatesDeploymentModule = buildModule('TemplatesDeploymentModule', (m) =
   const fiatPaymentTemplateImpl = m.contract('FiatPaymentTemplate', [], { from: owner })
 
   const fiatPaymentTemplateProxy = m.contract('ERC1967Proxy', [fiatPaymentTemplateImpl, '0x'], {
-    from: owner,
+    from: owner,  id: 'ERC1967Proxy_FiatPaymentTemplateProxy'
   })
 
   // Create a contract instance that points to the proxy but uses the ABI of the implementation
@@ -434,7 +434,7 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
     transferCreditsCondition,
     distributePaymentsCondition,
   ])
-  m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor })
+  m.call(nvmConfig, 'grantTemplate', [fixedPaymentTemplate], { from: governor,  id: 'grantTemplate_fixedPayment' })
   // Fixed Payment Template
   m.call(fiatPaymentTemplate, 'initialize', [
     nvmConfig,
@@ -444,7 +444,7 @@ const DeploymentOfContractsModule = buildModule('DeploymentOfContractsModule', (
     fiatSettlementCondition,
     transferCreditsCondition
   ])
-  m.call(nvmConfig, 'grantTemplate', [fiatPaymentTemplate], { from: governor })
+  m.call(nvmConfig, 'grantTemplate', [fiatPaymentTemplate], { from: governor,  id: 'grantTemplate_fiatPayment' })
 
   /////////////////// PERMISSIONS //////////////////////////////////
   // Grant Deposit and Withdrawal permissions to Payments Vault
