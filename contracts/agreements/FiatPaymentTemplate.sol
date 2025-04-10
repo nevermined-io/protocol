@@ -49,8 +49,9 @@ contract FiatPaymentTemplate is BaseTemplate {
     bytes32 _seed,
     bytes32 _did,
     uint256 _planId,
+    address _creditsReceiver,
     bytes[] memory _params
-  ) external payable {
+  ) external {
     FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
     BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
 
@@ -65,7 +66,7 @@ contract FiatPaymentTemplate is BaseTemplate {
 
     // Calculate agreementId
     bytes32 agreementId = keccak256(
-      abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _params)
+      abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _creditsReceiver, _params)
     );
 
     // Check if the agreement is already registered
@@ -92,13 +93,13 @@ contract FiatPaymentTemplate is BaseTemplate {
       _did,
       _planId,
       conditionIds,
-      new IAgreement.ConditionState[](3),
+      new IAgreement.ConditionState[](2),
       _params
     );
 
     // Register fiat settlement
     _fiatSettlement(conditionIds[0], agreementId, _planId, msg.sender, _params);
-    _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], msg.sender);
+    _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], _creditsReceiver);
   }
 
   function _fiatSettlement(

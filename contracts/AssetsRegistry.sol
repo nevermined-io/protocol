@@ -114,7 +114,9 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     if ($.plans[planId].lastUpdated != 0) {
       revert PlanAlreadyRegistered(planId);
     }
-    if (!this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
+
+    // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
+    if (_priceConfig.priceType == IAsset.PriceType.FIXED_PRICE && !this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)) {
       revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
     }
 

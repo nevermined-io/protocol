@@ -88,32 +88,4 @@ contract NFT1155CreditsTest is BaseTest {
     assertEq(nft1155CreditsV2.getVersion(), newVersion);
   }
 
-  // function _createPlan() internal returns (uint256) {
-  //   uint256[] memory _amounts = new uint256[](1);
-  //   _amounts[0] = 100;
-  //   address[] memory _receivers = new address[](1);
-  //   _receivers[0] = owner;
-
-  //   (uint256[] memory amounts, address[] memory receivers) = assetsRegistry
-  //     .addFeesToPaymentsDistribution(_amounts, _receivers);
-  //   IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
-  //     priceType: IAsset.PriceType.FIXED_PRICE,
-  //     tokenAddress: address(0),
-  //     amounts: amounts,
-  //     receivers: receivers,
-  //     contractAddress: address(0)
-  //   });
-  //   IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
-  //     creditsType: IAsset.CreditsType.FIXED,
-  //     redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
-  //     durationSecs: 0,
-  //     amount: 100,
-  //     minAmount: 1,
-  //     maxAmount: 1
-  //   });
-
-  //   assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits));
-  //   return
-  //     assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
-  // }
 }
