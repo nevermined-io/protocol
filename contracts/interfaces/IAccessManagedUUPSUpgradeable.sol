@@ -7,10 +7,10 @@ pragma solidity ^0.8.28;
  * @notice Interface for the AccessManagedUUPSUpgradeable contract
  */
 interface IAccessManagedUUPSUpgradeable {
-  /**
-   * @notice Emitted when an upgrade is authorized
-   * @param caller The address that initiated the upgrade (msg.sender)
-   * @param newImplementation The address of the new implementation
-   */
-  event UpgradeAuthorized(address indexed caller, address indexed newImplementation);
+    /**
+     * @notice Emitted when an upgrade is authorized
+     * @param caller The address that initiated the upgrade (msg.sender)
+     * @param newImplementation The address of the new implementation
+     */
+    event UpgradeAuthorized(address indexed caller, address indexed newImplementation);
 }

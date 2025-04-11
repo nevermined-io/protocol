@@ -4,14 +4,14 @@
 pragma solidity ^0.8.28;
 
 abstract contract ToArrayUtils {
-  function toArray(bytes4 a) internal pure returns (bytes4[] memory array) {
-    array = new bytes4[](1);
-    array[0] = a;
-  }
+    function toArray(bytes4 a) internal pure returns (bytes4[] memory array) {
+        array = new bytes4[](1);
+        array[0] = a;
+    }
 
-  function toArray(bytes4 a, bytes4 b) internal pure returns (bytes4[] memory array) {
-    array = new bytes4[](2);
-    array[0] = a;
-    array[1] = b;
-  }
+    function toArray(bytes4 a, bytes4 b) internal pure returns (bytes4[] memory array) {
+        array = new bytes4[](2);
+        array[0] = a;
+        array[1] = b;
+    }
 }

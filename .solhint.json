@@ -6,8 +6,9 @@
     "no-empty-blocks": "off",
     "compiler-version": "off",
     "reason-string": "off",
-    "quotes": ["error", "double"],
+    "quotes": ["error", "single"],
     "private-vars-leading-underscore": ["off"],
-    "func-visibility": ["error", { "ignoreConstructors": true }]
+    "func-visibility": ["error", { "ignoreConstructors": true }],
+    "no-console": "off"
   }
 }

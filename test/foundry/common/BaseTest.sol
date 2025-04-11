@@ -3,379 +3,360 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import { Test } from 'forge-std/Test.sol';
-import { AccessManager } from '@openzeppelin/contracts/access/manager/AccessManager.sol';
-import { ERC1967Proxy } from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import { ToArrayUtils } from './ToArrayUtils.sol';
-import { NVMConfig } from '../../../contracts/NVMConfig.sol';
-import { AssetsRegistry } from '../../../contracts/AssetsRegistry.sol';
-import { AgreementsStore } from '../../../contracts/agreements/AgreementsStore.sol';
-import { PaymentsVault } from '../../../contracts/PaymentsVault.sol';
-import { NFT1155Credits } from '../../../contracts/token/NFT1155Credits.sol';
-import { NFT1155ExpirableCredits } from '../../../contracts/token/NFT1155ExpirableCredits.sol';
-import { LockPaymentCondition } from '../../../contracts/conditions/LockPaymentCondition.sol';
-import { TransferCreditsCondition } from '../../../contracts/conditions/TransferCreditsCondition.sol';
-import { DistributePaymentsCondition } from '../../../contracts/conditions/DistributePaymentsCondition.sol';
-import { FiatSettlementCondition } from '../../../contracts/conditions/FiatSettlementCondition.sol';
-import { FixedPaymentTemplate } from '../../../contracts/agreements/FixedPaymentTemplate.sol';
-import { FiatPaymentTemplate } from '../../../contracts/agreements/FiatPaymentTemplate.sol';
-import {IAsset} from "../../../contracts/interfaces/IAsset.sol";
-import {IAgreement} from "../../../contracts/interfaces/IAgreement.sol";
+import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
+import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+
+import {PaymentsVault} from '../../../contracts/PaymentsVault.sol';
+import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
+
+import {FiatPaymentTemplate} from '../../../contracts/agreements/FiatPaymentTemplate.sol';
+import {FixedPaymentTemplate} from '../../../contracts/agreements/FixedPaymentTemplate.sol';
+import {DistributePaymentsCondition} from '../../../contracts/conditions/DistributePaymentsCondition.sol';
+import {FiatSettlementCondition} from '../../../contracts/conditions/FiatSettlementCondition.sol';
+import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCondition.sol';
+import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
+
+import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
+import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+import {NFT1155Credits} from '../../../contracts/token/NFT1155Credits.sol';
+import {NFT1155ExpirableCredits} from '../../../contracts/token/NFT1155ExpirableCredits.sol';
+import {ToArrayUtils} from './ToArrayUtils.sol';
+import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
+import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import {Test} from 'forge-std/Test.sol';
 
 abstract contract BaseTest is Test, ToArrayUtils {
-  // Roles
-  uint64 constant UPGRADE_ROLE = uint64(uint256(keccak256(abi.encode('UPGRADE_ROLE'))));
-  bytes32 constant DEPOSITOR_ROLE = keccak256(abi.encode('DEPOSITOR_ROLE'));
-  bytes32 constant WITHDRAW_ROLE = keccak256(abi.encode('WITHDRAW_ROLE'));
-  bytes32 constant CREDITS_MINTER_ROLE = keccak256(abi.encode('CREDITS_MINTER_ROLE'));
+    // Roles
+    uint64 constant UPGRADE_ROLE = uint64(uint256(keccak256(abi.encode('UPGRADE_ROLE'))));
+    bytes32 constant DEPOSITOR_ROLE = keccak256(abi.encode('DEPOSITOR_ROLE'));
+    bytes32 constant WITHDRAW_ROLE = keccak256(abi.encode('WITHDRAW_ROLE'));
+    bytes32 constant CREDITS_MINTER_ROLE = keccak256(abi.encode('CREDITS_MINTER_ROLE'));
 
-  // Configuration
-  uint32 constant UPGRADE_DELAY = 7 days;
+    // Configuration
+    uint32 constant UPGRADE_DELAY = 7 days;
 
-  // Addresses
-  address owner = makeAddr('owner');
-  address upgrader = makeAddr('upgrader');
-  address governor = makeAddr('governor');
-  address nvmFeeReceiver = makeAddr('nvmFeeReceiver');
+    // Addresses
+    address owner = makeAddr('owner');
+    address upgrader = makeAddr('upgrader');
+    address governor = makeAddr('governor');
+    address nvmFeeReceiver = makeAddr('nvmFeeReceiver');
 
-  // Contracts
-  AccessManager accessManager;
-  NVMConfig nvmConfig;
-  AssetsRegistry assetsRegistry;
-  AgreementsStore agreementsStore;
-  PaymentsVault paymentsVault;
-  NFT1155Credits nftCredits;
-  NFT1155ExpirableCredits nftExpirableCredits;
-  LockPaymentCondition lockPaymentCondition;
-  TransferCreditsCondition transferCreditsCondition;
-  DistributePaymentsCondition distributePaymentsCondition;
-  FiatSettlementCondition fiatSettlementCondition;
-  FixedPaymentTemplate fixedPaymentTemplate;
-  FiatPaymentTemplate fiatPaymentTemplate;
+    // Contracts
+    AccessManager accessManager;
+    NVMConfig nvmConfig;
+    AssetsRegistry assetsRegistry;
+    AgreementsStore agreementsStore;
+    PaymentsVault paymentsVault;
+    NFT1155Credits nftCredits;
+    NFT1155ExpirableCredits nftExpirableCredits;
+    LockPaymentCondition lockPaymentCondition;
+    TransferCreditsCondition transferCreditsCondition;
+    DistributePaymentsCondition distributePaymentsCondition;
+    FiatSettlementCondition fiatSettlementCondition;
+    FixedPaymentTemplate fixedPaymentTemplate;
+    FiatPaymentTemplate fiatPaymentTemplate;
 
-  function setUp() public virtual {
-    _deployContracts();
+    function setUp() public virtual {
+        _deployContracts();
 
-    vm.startPrank(governor);
+        vm.startPrank(governor);
 
-    // Grant condition permissions
-    nvmConfig.grantCondition(address(lockPaymentCondition));
-    nvmConfig.grantCondition(address(transferCreditsCondition));
-    nvmConfig.grantCondition(address(distributePaymentsCondition));
-    nvmConfig.grantCondition(address(fiatSettlementCondition));
+        // Grant condition permissions
+        nvmConfig.grantCondition(address(lockPaymentCondition));
+        nvmConfig.grantCondition(address(transferCreditsCondition));
+        nvmConfig.grantCondition(address(distributePaymentsCondition));
+        nvmConfig.grantCondition(address(fiatSettlementCondition));
 
-    // Grant template permissions
-    nvmConfig.grantTemplate(address(fixedPaymentTemplate));
-    nvmConfig.grantTemplate(address(fiatPaymentTemplate));
+        // Grant template permissions
+        nvmConfig.grantTemplate(address(fixedPaymentTemplate));
+        nvmConfig.grantTemplate(address(fiatPaymentTemplate));
 
-    vm.stopPrank();
+        vm.stopPrank();
 
-    vm.startPrank(owner);
+        vm.startPrank(owner);
 
-    // Grant Deposit and Withdrawal permissions to Payments Vault
-    nvmConfig.grantRole(DEPOSITOR_ROLE, address(lockPaymentCondition));
-    nvmConfig.grantRole(WITHDRAW_ROLE, address(distributePaymentsCondition));
+        // Grant Deposit and Withdrawal permissions to Payments Vault
+        nvmConfig.grantRole(DEPOSITOR_ROLE, address(lockPaymentCondition));
+        nvmConfig.grantRole(WITHDRAW_ROLE, address(distributePaymentsCondition));
 
-    // Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
-    nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
+        // Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
+        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
 
-    // Grant Mint permissions to transferNFTCondition on NFT1155ExpirableCredits contracts
-    nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
+        // Grant Mint permissions to transferNFTCondition on NFT1155ExpirableCredits contracts
+        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
 
-    // Grant Upgrade permissions to upgrader
-    accessManager.grantRole(UPGRADE_ROLE, address(upgrader), UPGRADE_DELAY);
+        // Grant Upgrade permissions to upgrader
+        accessManager.grantRole(UPGRADE_ROLE, address(upgrader), UPGRADE_DELAY);
 
-    // Grant Upgrade permissions to NVMConfig
-    accessManager.setTargetFunctionRole(
-      address(nvmConfig),
-      toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-      UPGRADE_ROLE
-    );
+        // Grant Upgrade permissions to NVMConfig
+        accessManager.setTargetFunctionRole(
+            address(nvmConfig), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
+        );
 
-    // Grant Upgrade permissions to AgreementsStore
-    accessManager.setTargetFunctionRole(
-      address(agreementsStore),
-      toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-      UPGRADE_ROLE
-    );
+        // Grant Upgrade permissions to AgreementsStore
+        accessManager.setTargetFunctionRole(
+            address(agreementsStore), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
+        );
 
-    // Grant Upgrade permissions to AssetsRegistry
-    accessManager.setTargetFunctionRole(
-      address(assetsRegistry),
-      toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-      UPGRADE_ROLE
-    );
+        // Grant Upgrade permissions to AssetsRegistry
+        accessManager.setTargetFunctionRole(
+            address(assetsRegistry), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
+        );
 
-    // Grant Upgrade permissions to NFT1155Credits
-    accessManager.setTargetFunctionRole(
-      address(nftCredits),
-      toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-      UPGRADE_ROLE
-    );
+        // Grant Upgrade permissions to NFT1155Credits
+        accessManager.setTargetFunctionRole(
+            address(nftCredits), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
+        );
 
-    // Grant Upgrade permissions to PaymentsVault
-    accessManager.setTargetFunctionRole(
-      address(paymentsVault),
-      toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-      UPGRADE_ROLE
-    );
+        // Grant Upgrade permissions to PaymentsVault
+        accessManager.setTargetFunctionRole(
+            address(paymentsVault), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
+        );
 
-    vm.stopPrank();
-  }
+        vm.stopPrank();
+    }
 
-  function _deployContracts() private {
-    // Deploy AccessManager
-    accessManager = new AccessManager(owner);
+    function _deployContracts() private {
+        // Deploy AccessManager
+        accessManager = new AccessManager(owner);
 
-    // Deploy NVMConfig
-    nvmConfig = NVMConfig(
-      address(
-        new ERC1967Proxy(
-          address(new NVMConfig()),
-          abi.encodeCall(NVMConfig.initialize, (owner, address(accessManager), governor))
-        )
-      )
-    );
-
-    // Deploy AssetsRegistry
-    assetsRegistry = AssetsRegistry(
-      address(
-        new ERC1967Proxy(
-          address(new AssetsRegistry()),
-          abi.encodeCall(AssetsRegistry.initialize, (address(nvmConfig), address(accessManager)))
-        )
-      )
-    );
-
-    // Deploy AgreementsStore
-    agreementsStore = AgreementsStore(
-      address(
-        new ERC1967Proxy(
-          address(new AgreementsStore()),
-          abi.encodeCall(AgreementsStore.initialize, (address(nvmConfig), address(accessManager)))
-        )
-      )
-    );
-
-    // Deploy PaymentsVault
-    paymentsVault = PaymentsVault(
-      payable(
-        address(
-          new ERC1967Proxy(
-            address(new PaymentsVault()),
-            abi.encodeCall(PaymentsVault.initialize, (address(nvmConfig), address(accessManager)))
-          )
-        )
-      )
-    );
-
-    // Deploy NFT1155Credits
-    nftCredits = NFT1155Credits(
-      address(
-        new ERC1967Proxy(
-          address(new NFT1155Credits()),
-          abi.encodeCall(
-            NFT1155Credits.initialize,
-            (
-              address(nvmConfig),
-              address(accessManager),
-              address(assetsRegistry),
-              'Nevermined Credits',
-              'NVMC'
+        // Deploy NVMConfig
+        nvmConfig = NVMConfig(
+            address(
+                new ERC1967Proxy(
+                    address(new NVMConfig()),
+                    abi.encodeCall(NVMConfig.initialize, (owner, address(accessManager), governor))
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy NFT1155ExpirableCredits
-    nftExpirableCredits = NFT1155ExpirableCredits(
-      address(
-        new ERC1967Proxy(
-          address(new NFT1155ExpirableCredits()),
-          abi.encodeCall(
-            NFT1155ExpirableCredits.initialize,
-            (
-              address(nvmConfig),
-              address(accessManager),
-              address(assetsRegistry),
-              'Nevermined Expirable Credits',
-              'NVMEC'
+        // Deploy AssetsRegistry
+        assetsRegistry = AssetsRegistry(
+            address(
+                new ERC1967Proxy(
+                    address(new AssetsRegistry()),
+                    abi.encodeCall(AssetsRegistry.initialize, (address(nvmConfig), address(accessManager)))
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy LockPaymentCondition
-    lockPaymentCondition = LockPaymentCondition(
-      address(
-        new ERC1967Proxy(
-          address(new LockPaymentCondition()),
-          abi.encodeCall(
-            LockPaymentCondition.initialize,
-            (
-              address(nvmConfig),
-              address(0),
-              address(assetsRegistry),
-              address(agreementsStore),
-              address(paymentsVault)
+        // Deploy AgreementsStore
+        agreementsStore = AgreementsStore(
+            address(
+                new ERC1967Proxy(
+                    address(new AgreementsStore()),
+                    abi.encodeCall(AgreementsStore.initialize, (address(nvmConfig), address(accessManager)))
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy TransferCreditsCondition
-    transferCreditsCondition = TransferCreditsCondition(
-      address(
-        new ERC1967Proxy(
-          address(new TransferCreditsCondition()),
-          abi.encodeCall(
-            TransferCreditsCondition.initialize,
-            (address(nvmConfig), address(0), address(assetsRegistry), address(agreementsStore))
-          )
-        )
-      )
-    );
-
-    // Deploy DistributePaymentsCondition
-    distributePaymentsCondition = DistributePaymentsCondition(
-      address(
-        new ERC1967Proxy(
-          address(new DistributePaymentsCondition()),
-          abi.encodeCall(
-            DistributePaymentsCondition.initialize,
-            (
-              address(nvmConfig),
-              address(0),
-              address(assetsRegistry),
-              address(agreementsStore),
-              address(paymentsVault)
+        // Deploy PaymentsVault
+        paymentsVault = PaymentsVault(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(new PaymentsVault()),
+                        abi.encodeCall(PaymentsVault.initialize, (address(nvmConfig), address(accessManager)))
+                    )
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy FiatSettlementCondition
-    fiatSettlementCondition = FiatSettlementCondition(
-      address(
-        new ERC1967Proxy(
-          address(new FiatSettlementCondition()),
-          abi.encodeCall(
-            FiatSettlementCondition.initialize,
-            (
-              address(nvmConfig),
-              address(0),
-              address(assetsRegistry),
-              address(agreementsStore)
+        // Deploy NFT1155Credits
+        nftCredits = NFT1155Credits(
+            address(
+                new ERC1967Proxy(
+                    address(new NFT1155Credits()),
+                    abi.encodeCall(
+                        NFT1155Credits.initialize,
+                        (
+                            address(nvmConfig),
+                            address(accessManager),
+                            address(assetsRegistry),
+                            'Nevermined Credits',
+                            'NVMC'
+                        )
+                    )
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy FixedPaymentTemplate
-    fixedPaymentTemplate = FixedPaymentTemplate(
-      address(
-        new ERC1967Proxy(
-          address(new FixedPaymentTemplate()),
-          abi.encodeCall(
-            FixedPaymentTemplate.initialize,
-            (
-              address(nvmConfig),
-              address(0),
-              address(assetsRegistry),
-              address(agreementsStore),
-              address(lockPaymentCondition),
-              address(transferCreditsCondition),
-              address(distributePaymentsCondition)
+        // Deploy NFT1155ExpirableCredits
+        nftExpirableCredits = NFT1155ExpirableCredits(
+            address(
+                new ERC1967Proxy(
+                    address(new NFT1155ExpirableCredits()),
+                    abi.encodeCall(
+                        NFT1155ExpirableCredits.initialize,
+                        (
+                            address(nvmConfig),
+                            address(accessManager),
+                            address(assetsRegistry),
+                            'Nevermined Expirable Credits',
+                            'NVMEC'
+                        )
+                    )
+                )
             )
-          )
-        )
-      )
-    );
+        );
 
-    // Deploy FiatPaymentTemplate
-    fiatPaymentTemplate = FiatPaymentTemplate(
-      address(
-        new ERC1967Proxy(
-          address(new FiatPaymentTemplate()),
-          abi.encodeCall(
-            FiatPaymentTemplate.initialize,
-            (
-              address(nvmConfig),
-              address(0),
-              address(assetsRegistry),
-              address(agreementsStore),
-              address(fiatSettlementCondition),
-              address(transferCreditsCondition)
+        // Deploy LockPaymentCondition
+        lockPaymentCondition = LockPaymentCondition(
+            address(
+                new ERC1967Proxy(
+                    address(new LockPaymentCondition()),
+                    abi.encodeCall(
+                        LockPaymentCondition.initialize,
+                        (
+                            address(nvmConfig),
+                            address(0),
+                            address(assetsRegistry),
+                            address(agreementsStore),
+                            address(paymentsVault)
+                        )
+                    )
+                )
             )
-          )
-        )
-      )
-    );
-  }
+        );
 
-  function _grantTemplateRole(address _caller) internal virtual {
-    _grantNVMConfigRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), _caller);
-  }
+        // Deploy TransferCreditsCondition
+        transferCreditsCondition = TransferCreditsCondition(
+            address(
+                new ERC1967Proxy(
+                    address(new TransferCreditsCondition()),
+                    abi.encodeCall(
+                        TransferCreditsCondition.initialize,
+                        (address(nvmConfig), address(0), address(assetsRegistry), address(agreementsStore))
+                    )
+                )
+            )
+        );
 
-  function _grantNVMConfigRole(bytes32 _role, address _caller) internal virtual {
-    vm.startPrank(owner);
-    nvmConfig.grantRole(_role, _caller);
-    vm.stopPrank();
-  }
+        // Deploy DistributePaymentsCondition
+        distributePaymentsCondition = DistributePaymentsCondition(
+            address(
+                new ERC1967Proxy(
+                    address(new DistributePaymentsCondition()),
+                    abi.encodeCall(
+                        DistributePaymentsCondition.initialize,
+                        (
+                            address(nvmConfig),
+                            address(0),
+                            address(assetsRegistry),
+                            address(agreementsStore),
+                            address(paymentsVault)
+                        )
+                    )
+                )
+            )
+        );
 
-  function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {
+        // Deploy FiatSettlementCondition
+        fiatSettlementCondition = FiatSettlementCondition(
+            address(
+                new ERC1967Proxy(
+                    address(new FiatSettlementCondition()),
+                    abi.encodeCall(
+                        FiatSettlementCondition.initialize,
+                        (address(nvmConfig), address(0), address(assetsRegistry), address(agreementsStore))
+                    )
+                )
+            )
+        );
 
-    bytes32[] memory conditionIds = new bytes32[](1);
-    IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
-    
-    conditionIds[0] = keccak256("abc");
-    conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+        // Deploy FixedPaymentTemplate
+        fixedPaymentTemplate = FixedPaymentTemplate(
+            address(
+                new ERC1967Proxy(
+                    address(new FixedPaymentTemplate()),
+                    abi.encodeCall(
+                        FixedPaymentTemplate.initialize,
+                        (
+                            address(nvmConfig),
+                            address(0),
+                            address(assetsRegistry),
+                            address(agreementsStore),
+                            address(lockPaymentCondition),
+                            address(transferCreditsCondition),
+                            address(distributePaymentsCondition)
+                        )
+                    )
+                )
+            )
+        );
 
-    _grantTemplateRole(address(this));
-    bytes32 agreementId = keccak256("123");
-    agreementsStore.register(
-        agreementId,
-        _caller,
-        bytes32(0),
-        _planId,
-        conditionIds,
-        conditionStates,
-        new bytes[](0)
-    );
-    return agreementId;
-  }
+        // Deploy FiatPaymentTemplate
+        fiatPaymentTemplate = FiatPaymentTemplate(
+            address(
+                new ERC1967Proxy(
+                    address(new FiatPaymentTemplate()),
+                    abi.encodeCall(
+                        FiatPaymentTemplate.initialize,
+                        (
+                            address(nvmConfig),
+                            address(0),
+                            address(assetsRegistry),
+                            address(agreementsStore),
+                            address(fiatSettlementCondition),
+                            address(transferCreditsCondition)
+                        )
+                    )
+                )
+            )
+        );
+    }
 
-  function _createPlan() internal returns (uint256) {
-    uint256[] memory _amounts = new uint256[](1);
-    _amounts[0] = 100;
-    address[] memory _receivers = new address[](1);
-    _receivers[0] = address(this);
+    function _grantTemplateRole(address _caller) internal virtual {
+        _grantNVMConfigRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), _caller);
+    }
 
-    (uint256[] memory amounts, address[] memory receivers) =
-        assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
-    IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
-        priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
-        tokenAddress: address(0),
-        amounts: amounts,
-        receivers: receivers,
-        contractAddress: address(0)
-    });
-    IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
-        creditsType: IAsset.CreditsType.FIXED,
-        redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
-        durationSecs: 0,
-        amount: 100,
-        minAmount: 1,
-        maxAmount: 1
-    });
+    function _grantNVMConfigRole(bytes32 _role, address _caller) internal virtual {
+        vm.startPrank(owner);
+        nvmConfig.grantRole(_role, _caller);
+        vm.stopPrank();
+    }
 
-    assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
-    return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
-  }
+    function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {
+        bytes32[] memory conditionIds = new bytes32[](1);
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+
+        conditionIds[0] = keccak256('abc');
+        conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+        _grantTemplateRole(address(this));
+        bytes32 agreementId = keccak256('123');
+        agreementsStore.register(
+            agreementId, _caller, bytes32(0), _planId, conditionIds, conditionStates, new bytes[](0)
+        );
+        return agreementId;
+    }
+
+    function _createPlan() internal returns (uint256) {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = address(this);
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1
+        });
+
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+    }
 }
