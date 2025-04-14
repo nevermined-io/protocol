@@ -1,12 +1,14 @@
 name: Build and Tests
-
-on: push
+on: [push]
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -20,9 +22,11 @@ jobs:
         run: |
           rm -rf node_modules
           yarn install
+
       - name: Lint
         run: |
           yarn lint
+
       - name: Compile
         run: |
           yarn clean
@@ -30,7 +34,8 @@ jobs:
 
       - name: Run Anvil
         run: |
-          anvil &         
+          anvil & 
+
       - name: Deploy Contracts
         env:
           RPC_URL: "http://localhost:8545"
