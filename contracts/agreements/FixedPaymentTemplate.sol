@@ -39,7 +39,7 @@ contract FixedPaymentTemplate is BaseTemplate {
         LockPaymentCondition _lockPaymentConditionAddress,
         TransferCreditsCondition _transferCondtionAddress,
         DistributePaymentsCondition _distributePaymentsCondition
-    ) public initializer {
+    ) external initializer {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
 
         $.nvmConfig = _nvmConfigAddress;

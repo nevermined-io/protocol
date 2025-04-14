@@ -72,7 +72,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
      * @param _authority The address that will be the authority of the contract
      * @param _governor The first governor address able to setup configuration parameters
      */
-    function initialize(address _owner, IAccessManager _authority, address _governor) public initializer {
+    function initialize(address _owner, IAccessManager _authority, address _governor) external initializer {
         console2.log('Initializing NVMConfig');
 
         AccessControlUpgradeable.__AccessControl_init();

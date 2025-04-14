@@ -41,7 +41,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
 
     // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
-        public
+        internal
         onlyInitializing
     {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();

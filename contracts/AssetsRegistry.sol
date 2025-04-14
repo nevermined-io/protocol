@@ -23,7 +23,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         mapping(uint256 => Plan) plans;
     }
 
-    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) public initializer {
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         _getAssetsRegistryStorage().nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
@@ -64,7 +64,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     }
 
     function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)
-        public
+        external
     {
         _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
     }
@@ -74,7 +74,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         CreditsConfig memory _creditsConfig,
         address _nftAddress,
         uint256 _nonce
-    ) public {
+    ) external {
         _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, _nonce);
     }
 
@@ -127,7 +127,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         emit PlanRegistered(planId, _owner);
     }
 
-    function getPlan(uint256 _planId) public view returns (Plan memory) {
+    function getPlan(uint256 _planId) external view returns (Plan memory) {
         return _getAssetsRegistryStorage().plans[_planId];
     }
 

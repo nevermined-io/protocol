@@ -35,7 +35,7 @@ contract FiatPaymentTemplate is BaseTemplate {
         AgreementsStore _agreementStoreAddress,
         FiatSettlementCondition _fiatSettlementConditionAddress,
         TransferCreditsCondition _transferCondtionAddress
-    ) public initializer {
+    ) external initializer {
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
 
         $.nvmConfig = _nvmConfigAddress;

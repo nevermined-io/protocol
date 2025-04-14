@@ -22,7 +22,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => IAgreement.Agreement) agreements;
     }
 
-    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) public initializer {
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         _getAgreementsStoreStorage().nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
@@ -35,7 +35,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         bytes32[] memory _conditionIds,
         ConditionState[] memory _conditionStates,
         bytes[] memory _params
-    ) public {
+    ) external {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
 
         if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
@@ -147,7 +147,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @param _creator address of the creator of the Agreement
      * @return the new agreementId created
      */
-    function hashAgreementId(bytes32 _seed, address _creator) public pure returns (bytes32) {
+    function hashAgreementId(bytes32 _seed, address _creator) external pure returns (bytes32) {
         return keccak256(abi.encode(_seed, _creator));
     }
 

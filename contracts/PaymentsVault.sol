@@ -32,7 +32,7 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSU
         INVMConfig nvmConfig;
     }
 
-    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) public initializer {
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         PaymentsVaultStorage storage $ = _getPaymentsVaultStorage();
         $.nvmConfig = _nvmConfigAddress;

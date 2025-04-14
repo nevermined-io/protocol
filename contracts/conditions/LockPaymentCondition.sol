@@ -43,7 +43,7 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress,
         IVault _vaultAddress
-    ) public initializer {
+    ) external initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
 

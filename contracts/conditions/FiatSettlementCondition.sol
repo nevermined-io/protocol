@@ -36,7 +36,7 @@ contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateConditio
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress
-    ) public initializer {
+    ) external initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         FiatSettlementConditionStorage storage $ = _getFiatSettlementConditionStorage();
 

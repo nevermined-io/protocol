@@ -32,7 +32,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress
-    ) public initializer {
+    ) external initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 
