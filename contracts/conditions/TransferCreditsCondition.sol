@@ -10,10 +10,11 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {ReentrancyGuardTransientUpgradeable} from
+    '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
-contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
+contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition {
     // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION =
         0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
@@ -33,7 +34,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress
     ) external initializer {
-        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 
         $.nvmConfig = INVMConfig(_nvmConfigAddress);

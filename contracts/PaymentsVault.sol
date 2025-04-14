@@ -7,12 +7,13 @@ import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IVault} from './interfaces/IVault.sol';
 
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {ReentrancyGuardTransientUpgradeable} from
+    '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
 
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSUpgradeable {
+contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to deposit assets into the Vault
      */
@@ -33,7 +34,7 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSU
     }
 
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
-        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         PaymentsVaultStorage storage $ = _getPaymentsVaultStorage();
         $.nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
