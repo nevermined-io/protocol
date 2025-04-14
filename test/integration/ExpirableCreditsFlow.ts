@@ -208,13 +208,6 @@ describe('IT: Expirable Credits e2e flow', function () {
     // Advance blockchain time past the expiration period
     // await hre.network.provider.send('evm_increaseTime', [601]) // 10 minutes + 1 second
     // await hre.network.provider.send('evm_mine')
-
-    // Note: This test may need adjustment since the actual expiration check
-    // mechanism would typically be implemented in a "use credits" function
-    // which doesn't appear to be fully implemented yet
-
-    // Here we would ideally call a function that checks if credits are still valid
-    // For now, we'll just document that this is where we would check expiration
     console.log('Time has been advanced past expiration period (10 minutes)')
     console.log('Credits should now be expired')
 

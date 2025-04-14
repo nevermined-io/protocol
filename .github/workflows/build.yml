@@ -49,7 +49,6 @@ jobs:
           NVM_FEE_RECEIVER: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
           DEPLOYMENT_ADDRESSES_JSON: "deployment-latest.json"
           ETHERSCAN_API_KEY: "xx"
-
         run: |
           forge script scripts/deploy/DeployAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS
           forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$GOVERNOR_MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS

@@ -464,6 +464,8 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     })
 
     it('We can check the credits of Bob for ERC20 payment', async () => {
+      await foundryTools.getTestClient().mine({ blocks: 1 })
+
       const balance = await nftCredits.read.balanceOf([bob.account.address, planId])
 
       console.log('Credits Balance for ERC20 payment:', balance)
