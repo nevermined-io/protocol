@@ -11,6 +11,7 @@ import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
 import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -27,10 +28,10 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
     }
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
-        address _agreementStoreAddress
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
+        IAgreement _agreementStoreAddress
     ) public initializer {
         ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
@@ -38,7 +39,7 @@ contract TransferCreditsCondition is ReentrancyGuardUpgradeable, TemplateConditi
         $.nvmConfig = INVMConfig(_nvmConfigAddress);
         $.assetsRegistry = IAsset(_assetsRegistryAddress);
         $.agreementStore = IAgreement(_agreementStoreAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function fulfill(

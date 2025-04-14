@@ -8,6 +8,8 @@ import {INFT1155} from '../interfaces/INFT1155.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 
 abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPSUpgradeable {
@@ -38,16 +40,16 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
     }
 
     // solhint-disable-next-line func-name-mixedcase
-    function __NFT1155Base_init(address _nvmConfigAddress, address _authority, address _assetsRegistryAddress)
+    function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
         public
         onlyInitializing
     {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        $.assetsRegistry = IAsset(_assetsRegistryAddress);
+        $.nvmConfig = _nvmConfigAddress;
+        $.assetsRegistry = _assetsRegistryAddress;
     }
 
     /**

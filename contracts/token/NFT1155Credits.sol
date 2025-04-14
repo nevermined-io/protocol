@@ -3,14 +3,17 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+import {IAsset} from '../interfaces/IAsset.sol';
+import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Base} from './NFT1155Base.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract NFT1155Credits is NFT1155Base {
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
         string memory, // name
         string memory // symbol
     ) external initializer {
@@ -39,10 +42,11 @@ contract NFT1155Credits is NFT1155Base {
     }
 
     // solhint-disable-next-line func-name-mixedcase
-    function __NFT1155Credits_init(address _nvmConfigAddress, address _authority, address _assetsRegistryAddress)
-        internal
-        onlyInitializing
-    {
+    function __NFT1155Credits_init(
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress
+    ) internal onlyInitializing {
         __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
     }
 }

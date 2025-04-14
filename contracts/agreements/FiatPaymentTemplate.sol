@@ -10,6 +10,7 @@ import {IAsset} from '../interfaces/IAsset.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AgreementsStore} from './AgreementsStore.sol';
 import {BaseTemplate} from './BaseTemplate.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract FiatPaymentTemplate is BaseTemplate {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatPaymentTemplate');
@@ -28,21 +29,21 @@ contract FiatPaymentTemplate is BaseTemplate {
     }
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
-        address _agreementStoreAddress,
-        address _fiatSettlementConditionAddress,
-        address _transferCondtionAddress
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
+        AgreementsStore _agreementStoreAddress,
+        FiatSettlementCondition _fiatSettlementConditionAddress,
+        TransferCreditsCondition _transferCondtionAddress
     ) public initializer {
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        $.assetsRegistry = IAsset(_assetsRegistryAddress);
-        _getBaseTemplateStorage().agreementStore = AgreementsStore(_agreementStoreAddress);
-        $.fiatSettlementCondition = FiatSettlementCondition(_fiatSettlementConditionAddress);
-        $.transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        $.nvmConfig = _nvmConfigAddress;
+        $.assetsRegistry = _assetsRegistryAddress;
+        _getBaseTemplateStorage().agreementStore = _agreementStoreAddress;
+        $.fiatSettlementCondition = _fiatSettlementConditionAddress;
+        $.transferCondition = _transferCondtionAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function createAgreement(

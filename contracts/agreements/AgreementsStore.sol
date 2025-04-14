@@ -6,6 +6,7 @@ pragma solidity ^0.8.28;
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
@@ -21,9 +22,9 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => IAgreement.Agreement) agreements;
     }
 
-    function initialize(address _nvmConfigAddress, address _authority) public initializer {
-        _getAgreementsStoreStorage().nvmConfig = INVMConfig(_nvmConfigAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) public initializer {
+        _getAgreementsStoreStorage().nvmConfig = _nvmConfigAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function register(
