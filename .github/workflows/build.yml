@@ -28,9 +28,9 @@ jobs:
           yarn clean
           yarn compile
 
-          - name: Run Anvil
-          run: |
-            anvil &         
+      - name: Run Anvil
+        run: |
+          anvil &         
       - name: Deploy Contracts
         env:
           RPC_URL: "http://localhost:8545"
