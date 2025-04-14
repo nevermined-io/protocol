@@ -7,7 +7,7 @@ import {
   generateId,
   getTxParsedLogs,
   createPriceConfig,
-  createCreditsConfig
+  createCreditsConfig,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 
@@ -77,9 +77,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
   }
 
   describe('FIAT Payment Flow', function () {
-
     it('Alice can register an asset with a plan', async () => {
-      
       priceConfig = createPriceConfig(zeroAddress, alice.account.address)
       creditsConfig = createCreditsConfig()
 
@@ -141,11 +139,9 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       console.log('Credits Balance:', balance)
       expect(balance > 0n).to.be.true
     })
-
   })
 
   describe('Error Conditions', function () {
-
     it('Should reject if agreement already exists', async () => {
       // Get the plan to determine payment amount
 
@@ -155,15 +151,21 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       const agreementIdSeed = generateId()
 
       // Create agreement first time
-      await fiatPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, bob.account.address, []], {
-        account: fiatOracle.account
-      })
+      await fiatPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, bob.account.address, []],
+        {
+          account: fiatOracle.account,
+        },
+      )
 
       // Try to create the same agreement again
       await expect(
-        fiatPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, bob.account.address, []], {
-          account: fiatOracle.account
-        }),
+        fiatPaymentTemplate.write.createAgreement(
+          [agreementIdSeed, did, planId, bob.account.address, []],
+          {
+            account: fiatOracle.account,
+          },
+        ),
       ).to.be.rejectedWith(/AgreementAlreadyRegistered/)
     })
 
@@ -234,11 +236,13 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       // Try to create agreement with unsupported price type
       const newAgreementIdSeed = generateId()
       await expect(
-        fiatPaymentTemplate.write.createAgreement([newAgreementIdSeed, newDid, newPlanId, bob.account.address, []], {
-          account: fiatOracle.account
-        }),
+        fiatPaymentTemplate.write.createAgreement(
+          [newAgreementIdSeed, newDid, newPlanId, bob.account.address, []],
+          {
+            account: fiatOracle.account,
+          },
+        ),
       ).to.be.rejectedWith(/OnlyPlanWithFiatPrice/)
     })
   })
-
 })

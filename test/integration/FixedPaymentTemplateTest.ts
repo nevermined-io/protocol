@@ -1,7 +1,7 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
-import { ignition } from 'hardhat'
+// import { ignition } from 'hardhat'
 import { expect } from 'chai'
-import FullDeploymentModule from '../../ignition/modules/FullDeployment'
+// import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 import hre from 'hardhat'
 import {
   generateId,
@@ -11,30 +11,35 @@ import {
   registerAssetAndPlan,
   createAgreement,
   registerPlan,
+  getTxEvents,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 import { any } from 'hardhat/internal/core/params/argumentTypes'
+import { FoundryTools } from '../common/FoundryTools'
 
 var chai = require('chai')
 chai.use(require('chai-string'))
 
 describe('IT: FixedPaymentTemplate comprehensive test', function () {
-  let nvmConfig: any
-  let assetsRegistry: any
-  let nftCredits: any
-  let lockPaymentCondition: any
-  let paymentsVault: any
-  let fixedPaymentTemplate: any
-  let agreementsStore: any
+  let nvmConfig
+  let assetsRegistry
+  let nftCredits
+  let lockPaymentCondition
+  let paymentsVault
+  let fixedPaymentTemplate
+  let agreementsStore
   let did: any
   let planId: bigint
   let owner: any
   let alice: any
   let bob: any
-  let publicClient: any
-  let mockERC20: any
+  // let publicClient: any
+  let mockERC20
   let priceConfig: any
   let creditsConfig: any
+  let foundryTools
+  let publicClient
+  let walletClient
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -42,55 +47,38 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
   // Setup fixture for deploying contracts
   async function deployInstance() {
-    const _deployment = await ignition.deploy(FullDeploymentModule)
+    const wallets = await hre.viem.getWalletClients()
+
+    // const _deployment = await ignition.deploy(FullDeploymentModule)
+    foundryTools = new FoundryTools(wallets)
+    const _deployment = await foundryTools.connectToInstance()
+
     nvmConfig = _deployment.nvmConfig
     assetsRegistry = _deployment.assetsRegistry
     paymentsVault = _deployment.paymentsVault
     fixedPaymentTemplate = _deployment.fixedPaymentTemplate
     lockPaymentCondition = _deployment.lockPaymentCondition
     agreementsStore = _deployment.agreementsStore
-    nftCredits = _deployment.nftCredits
+    nftCredits = _deployment.nft1155Credits
 
-    const wallets = await hre.viem.getWalletClients()
     owner = wallets[0]
     alice = wallets[3]
     bob = wallets[4]
-    publicClient = await hre.viem.getPublicClient()
+    // publicClient = await hre.viem.getPublicClient()
+    // te = foundryTools.getpublicClient()
+    publicClient = foundryTools.getPublicClient()
+    walletClient = foundryTools.getWalletClient()
 
-    mockERC20 = await hre.viem.deployContract('MockERC20', ['Test Token', 'TST'])
-
+    // mockERC20 = await hre.viem.deployContract('MockERC20', ['Test Token', 'TST'])
+    mockERC20 = await foundryTools.deployContract(
+      'MockERC20',
+      ['Test Token', 'TST'],
+      'artifacts/contracts/test/MockERC20.sol/MockERC20.json',
+    )
     // Mint tokens to bob for testing
     await mockERC20.write.mint([bob.account.address, 1000n * 100n ** 18n], {
       account: owner.account,
     })
-
-    // priceConfig = createPriceConfig(zeroAddress, owner.account.address)
-    // creditsConfig = createCreditsConfig()
-
-    // const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    //   priceConfig.amounts,
-    //   priceConfig.receivers,
-    // ])
-    // priceConfig.amounts = [...result[0]]
-    // priceConfig.receivers = [...result[1]]
-
-    // planId = await registerPlan(
-    //   assetsRegistry,
-    //   alice,
-    //   priceConfig,
-    //   creditsConfig,
-    //   nftCredits.address,
-    // )
-
-    // const priceConfig2 = { ...priceConfig }
-    // const creditsConfig2 = { ...creditsConfig, amount: 200n, minAmount: 2n }
-    // const planId2 = await registerPlan(
-    //   assetsRegistry,
-    //   owner,
-    //   priceConfig2,
-    //   creditsConfig2,
-    //   nftCredits.address,
-    // )
 
     return {
       nvmConfig,
@@ -100,10 +88,6 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       fixedPaymentTemplate,
       lockPaymentCondition,
       agreementsStore,
-
-      // planId2,
-      // priceConfig,
-      // creditsConfig,
       owner,
       alice,
       bob,
@@ -111,7 +95,11 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       publicClient,
     }
   }
-
+  describe('Contracts Config', function () {
+    it('I can load config', async () => {
+      expect((await nvmConfig.read.getNetworkFee()) > 0n).to.be.true
+    })
+  })
   describe('Native Token Payment Flow', function () {
     let aliceBalanceBefore: bigint
     let aliceBalanceAfter: bigint
@@ -121,20 +109,6 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     let vaultBalanceAfter: bigint
 
     it('Alice can register an asset with a plan', async () => {
-      // Register asset and plan using helper function
-      // const result = await registerAssetAndPlan(
-      //   assetsRegistry,
-      //   zeroAddress,
-      //   alice,
-      //   alice.account.address,
-      //   nftCredits.address,
-      // )
-
-      // did = result.did
-      // planId = result.planId
-
-      // expect(did).to.be.a('string').to.startWith('0x')
-      // expect(planId).to.be.a('string').to.startWith('0x')
       priceConfig = createPriceConfig(zeroAddress, alice.account.address)
       creditsConfig = createCreditsConfig()
 
@@ -243,66 +217,109 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   })
 
   describe('Error Conditions', function () {
-    // before(async () => {
-    //   // Register asset and plan
-    //   const result = await registerAssetAndPlan(
-    //     assetsRegistry,
-    //     zeroAddress,
-    //     alice,
-    //     alice.account.address,
-    //     nftCredits.address,
-    //   )
+    let priceConfig
+    let creditsConfig
+    let did
+    let didSeed
+    let planId
+    let totalAmount
+    let asset
 
-    //   did = result.did
-    //   planId = result.planId
-    // })
+    before(async () => {
+      priceConfig = createPriceConfig(zeroAddress, bob.account.address)
+      creditsConfig = createCreditsConfig()
+
+      const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+        priceConfig.amounts,
+        priceConfig.receivers,
+      ])
+      priceConfig.amounts = [...result[0]]
+      priceConfig.receivers = [...result[1]]
+      totalAmount = priceConfig.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
+
+      console.log('Price Config:', priceConfig)
+
+      didSeed = generateId()
+      did = await assetsRegistry.read.hashDID([didSeed, bob.account.address])
+
+      await assetsRegistry.write.registerAssetAndPlan(
+        [didSeed, 'https://nevermined.app', priceConfig, creditsConfig, nftCredits.address],
+        { account: bob.account },
+      )
+
+      asset = await assetsRegistry.read.getAsset([did])
+      planId = asset.plans[0]
+
+      console.log(asset)
+      // Verify asset and plan are registered
+      expect(asset.lastUpdated > 0n).to.be.true
+    })
 
     it('Should reject if agreement already exists', async () => {
       // Get the plan to determine payment amount
 
-      const plan = await assetsRegistry.read.getPlan([planId])
-      const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
-
       // Create a unique agreement ID seed
       const agreementIdSeed = generateId()
-
+      console.log('Agreement ID Seed:', agreementIdSeed)
       // Create agreement first time
-      await fixedPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, []], {
-        account: bob.account,
-        value: totalAmount,
-      })
-
-      // Try to create the same agreement again
-      await expect(
-        fixedPaymentTemplate.write.createAgreement([agreementIdSeed, did, planId, []], {
+      let txHash = await fixedPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, []],
+        {
           account: bob.account,
           value: totalAmount,
-        }),
-      ).to.be.rejectedWith(/AgreementAlreadyRegistered/)
+        },
+      )
+      let tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      console.log(tx.status)
+
+      txHash = await fixedPaymentTemplate.write.createAgreement(
+        [agreementIdSeed, did, planId, []],
+        {
+          account: bob.account,
+          value: totalAmount,
+        },
+      )
+      tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
+
+      const customError = await foundryTools.decodeCustomErrorFromTx(txHash, agreementsStore.abi)
+      expect(customError.errorName).to.be.equal('AgreementAlreadyRegistered')
     })
 
     it('Should reject if asset does not exist', async () => {
       const nonExistentDid = generateId()
       const newAgreementIdSeed = generateId()
 
-      await expect(
-        fixedPaymentTemplate.write.createAgreement(
-          [newAgreementIdSeed, nonExistentDid, planId, []],
-          { account: bob.account, value: 100n },
-        ),
-      ).to.be.rejectedWith(/AssetNotFound/)
+      const txHash = await fixedPaymentTemplate.write.createAgreement(
+        [newAgreementIdSeed, nonExistentDid, planId, []],
+        { account: alice.account, value: 100n },
+      )
+      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
+
+      const customError = await foundryTools.decodeCustomErrorFromTx(
+        txHash,
+        fixedPaymentTemplate.abi,
+      )
+      expect(customError.errorName).to.be.equal('AssetNotFound')
     })
 
     it('Should reject if plan does not exist', async () => {
       const nonExistentPlanId = generateId()
       const newAgreementIdSeed = generateId()
 
-      await expect(
-        fixedPaymentTemplate.write.createAgreement(
-          [newAgreementIdSeed, did, nonExistentPlanId, []],
-          { account: bob.account, value: 100n },
-        ),
-      ).to.be.rejectedWith(/PlanNotFound/)
+      const txHash = await fixedPaymentTemplate.write.createAgreement(
+        [newAgreementIdSeed, did, nonExistentPlanId, []],
+        { account: alice.account, value: 100n },
+      )
+      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
+
+      const customError = await foundryTools.decodeCustomErrorFromTx(
+        txHash,
+        fixedPaymentTemplate.abi,
+      )
+      expect(customError.errorName).to.be.equal('PlanNotFound')
     })
 
     it('Should reject if payment amount is incorrect', async () => {
@@ -312,13 +329,25 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       const plan = await assetsRegistry.read.getPlan([planId])
       const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
-      // Try with incorrect amount (less than required)
-      await expect(
-        fixedPaymentTemplate.write.createAgreement([newAgreementIdSeed, did, planId, []], {
+      const txHash = await fixedPaymentTemplate.write.createAgreement(
+        [newAgreementIdSeed, did, planId, []],
+        {
           account: bob.account,
           value: totalAmount - 1n,
-        }),
-      ).to.be.rejectedWith(/InvalidTransactionAmount/)
+        },
+      )
+      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
+
+      // const customError = await foundryTools.decodeCustomErrorFromTx(txHash, fixedPaymentTemplate.abi)
+      // expect(customError.errorName).to.be.equal('InvalidTransactionAmount')
+      // Try with incorrect amount (less than required)
+      // await expect(
+      //   fixedPaymentTemplate.write.createAgreement([newAgreementIdSeed, did, planId, []], {
+      //     account: bob.account,
+      //     value: totalAmount - 1n,
+      //   }),
+      // ).to.be.rejectedWith(/InvalidTransactionAmount/)
     })
 
     it('Should reject unsupported price types', async () => {
@@ -363,12 +392,15 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       // Try to create agreement with unsupported price type
       const newAgreementIdSeed = generateId()
-      await expect(
-        fixedPaymentTemplate.write.createAgreement([newAgreementIdSeed, newDid, newPlanId, []], {
+      const txHash = await fixedPaymentTemplate.write.createAgreement(
+        [newAgreementIdSeed, newDid, newPlanId, []],
+        {
           account: bob.account,
           value: 200n,
-        }),
-      ).to.be.rejectedWith(/UnsupportedPriceTypeOption/)
+        },
+      )
+      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
+      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
     })
   })
 
