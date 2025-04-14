@@ -4,7 +4,9 @@
 pragma solidity ^0.8.28;
 
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
+
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+import {DeployAll, DeployedContracts} from '../../../scripts/deploy/DeployAll.sol';
 
 import {PaymentsVault} from '../../../contracts/PaymentsVault.sol';
 import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
@@ -117,194 +119,25 @@ abstract contract BaseTest is Test, ToArrayUtils {
         vm.stopPrank();
     }
 
-    function _deployContracts() private {
-        // Deploy AccessManager
-        accessManager = new AccessManager(owner);
+    function _deployContracts() internal virtual {
+        // Set the addresses
+        vm.setEnv('GOVERNOR_ADDRESS', vm.toString(governor));
+        vm.setEnv('OWNER_ADDRESS', vm.toString(owner));
 
-        // Deploy NVMConfig
-        nvmConfig = NVMConfig(
-            address(
-                new ERC1967Proxy(
-                    address(new NVMConfig()),
-                    abi.encodeCall(NVMConfig.initialize, (owner, address(accessManager), governor))
-                )
-            )
-        );
+        // Deploy the contracts
+        DeployedContracts memory deployed = new DeployAll().run();
 
-        // Deploy AssetsRegistry
-        assetsRegistry = AssetsRegistry(
-            address(
-                new ERC1967Proxy(
-                    address(new AssetsRegistry()),
-                    abi.encodeCall(AssetsRegistry.initialize, (address(nvmConfig), address(accessManager)))
-                )
-            )
-        );
-
-        // Deploy AgreementsStore
-        agreementsStore = AgreementsStore(
-            address(
-                new ERC1967Proxy(
-                    address(new AgreementsStore()),
-                    abi.encodeCall(AgreementsStore.initialize, (address(nvmConfig), address(accessManager)))
-                )
-            )
-        );
-
-        // Deploy PaymentsVault
-        paymentsVault = PaymentsVault(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(new PaymentsVault()),
-                        abi.encodeCall(PaymentsVault.initialize, (address(nvmConfig), address(accessManager)))
-                    )
-                )
-            )
-        );
-
-        // Deploy NFT1155Credits
-        nftCredits = NFT1155Credits(
-            address(
-                new ERC1967Proxy(
-                    address(new NFT1155Credits()),
-                    abi.encodeCall(
-                        NFT1155Credits.initialize,
-                        (
-                            address(nvmConfig),
-                            address(accessManager),
-                            address(assetsRegistry),
-                            'Nevermined Credits',
-                            'NVMC'
-                        )
-                    )
-                )
-            )
-        );
-
-        // Deploy NFT1155ExpirableCredits
-        nftExpirableCredits = NFT1155ExpirableCredits(
-            address(
-                new ERC1967Proxy(
-                    address(new NFT1155ExpirableCredits()),
-                    abi.encodeCall(
-                        NFT1155ExpirableCredits.initialize,
-                        (
-                            address(nvmConfig),
-                            address(accessManager),
-                            address(assetsRegistry),
-                            'Nevermined Expirable Credits',
-                            'NVMEC'
-                        )
-                    )
-                )
-            )
-        );
-
-        // Deploy LockPaymentCondition
-        lockPaymentCondition = LockPaymentCondition(
-            address(
-                new ERC1967Proxy(
-                    address(new LockPaymentCondition()),
-                    abi.encodeCall(
-                        LockPaymentCondition.initialize,
-                        (
-                            address(nvmConfig),
-                            address(0),
-                            address(assetsRegistry),
-                            address(agreementsStore),
-                            address(paymentsVault)
-                        )
-                    )
-                )
-            )
-        );
-
-        // Deploy TransferCreditsCondition
-        transferCreditsCondition = TransferCreditsCondition(
-            address(
-                new ERC1967Proxy(
-                    address(new TransferCreditsCondition()),
-                    abi.encodeCall(
-                        TransferCreditsCondition.initialize,
-                        (address(nvmConfig), address(0), address(assetsRegistry), address(agreementsStore))
-                    )
-                )
-            )
-        );
-
-        // Deploy DistributePaymentsCondition
-        distributePaymentsCondition = DistributePaymentsCondition(
-            address(
-                new ERC1967Proxy(
-                    address(new DistributePaymentsCondition()),
-                    abi.encodeCall(
-                        DistributePaymentsCondition.initialize,
-                        (
-                            address(nvmConfig),
-                            address(0),
-                            address(assetsRegistry),
-                            address(agreementsStore),
-                            address(paymentsVault)
-                        )
-                    )
-                )
-            )
-        );
-
-        // Deploy FiatSettlementCondition
-        fiatSettlementCondition = FiatSettlementCondition(
-            address(
-                new ERC1967Proxy(
-                    address(new FiatSettlementCondition()),
-                    abi.encodeCall(
-                        FiatSettlementCondition.initialize,
-                        (address(nvmConfig), address(0), address(assetsRegistry), address(agreementsStore))
-                    )
-                )
-            )
-        );
-
-        // Deploy FixedPaymentTemplate
-        fixedPaymentTemplate = FixedPaymentTemplate(
-            address(
-                new ERC1967Proxy(
-                    address(new FixedPaymentTemplate()),
-                    abi.encodeCall(
-                        FixedPaymentTemplate.initialize,
-                        (
-                            address(nvmConfig),
-                            address(0),
-                            address(assetsRegistry),
-                            address(agreementsStore),
-                            address(lockPaymentCondition),
-                            address(transferCreditsCondition),
-                            address(distributePaymentsCondition)
-                        )
-                    )
-                )
-            )
-        );
-
-        // Deploy FiatPaymentTemplate
-        fiatPaymentTemplate = FiatPaymentTemplate(
-            address(
-                new ERC1967Proxy(
-                    address(new FiatPaymentTemplate()),
-                    abi.encodeCall(
-                        FiatPaymentTemplate.initialize,
-                        (
-                            address(nvmConfig),
-                            address(0),
-                            address(assetsRegistry),
-                            address(agreementsStore),
-                            address(fiatSettlementCondition),
-                            address(transferCreditsCondition)
-                        )
-                    )
-                )
-            )
-        );
+        accessManager = deployed.accessManager;
+        nvmConfig = deployed.nvmConfig;
+        assetsRegistry = deployed.assetsRegistry;
+        agreementsStore = deployed.agreementsStore;
+        paymentsVault = deployed.paymentsVault;
+        nftCredits = deployed.nftCredits;
+        nftExpirableCredits = deployed.nftExpirableCredits;
+        lockPaymentCondition = deployed.lockPaymentCondition;
+        transferCreditsCondition = deployed.transferCreditsCondition;
+        distributePaymentsCondition = deployed.distributePaymentsCondition;
+        fiatSettlementCondition = deployed.fiatSettlementCondition;
     }
 
     function _grantTemplateRole(address _caller) internal virtual {

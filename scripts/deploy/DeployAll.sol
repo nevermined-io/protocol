@@ -34,6 +34,23 @@ import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManage
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
+struct DeployedContracts {
+    AccessManager accessManager;
+    NVMConfig nvmConfig;
+    address tokenUtils;
+    AssetsRegistry assetsRegistry;
+    AgreementsStore agreementsStore;
+    PaymentsVault paymentsVault;
+    NFT1155Credits nftCredits;
+    NFT1155ExpirableCredits nftExpirableCredits;
+    LockPaymentCondition lockPaymentCondition;
+    TransferCreditsCondition transferCreditsCondition;
+    DistributePaymentsCondition distributePaymentsCondition;
+    FiatSettlementCondition fiatSettlementCondition;
+    FixedPaymentTemplate fixedPaymentTemplate;
+    FiatPaymentTemplate fiatPaymentTemplate;
+}
+
 contract DeployAll is Script, DeployConfig {
     mapping(string contractName => UpgradeableContractDeploySalt implementationSalt) public deploymentSalt;
 
@@ -118,8 +135,8 @@ contract DeployAll is Script, DeployConfig {
         });
     }
 
-    function run() public {
-        address ownerAddress = msg.sender;
+    function run() public returns (DeployedContracts memory deployed) {
+        address ownerAddress = vm.envOr('OWNER_ADDRESS', msg.sender);
         address governorAddress = vm.envOr('GOVERNOR_ADDRESS', msg.sender);
 
         string memory packageJson = vm.envOr('PACKAGE_JSON', string('./package.json'));
@@ -134,7 +151,6 @@ contract DeployAll is Script, DeployConfig {
         console2.log('Deploying all contracts with addresses:');
         console2.log('\tOwner:', ownerAddress);
         console2.log('\tGovernor:', governorAddress);
-
         console2.log('Version: ', version);
 
         // Load the deployment scripts
@@ -149,101 +165,104 @@ contract DeployAll is Script, DeployConfig {
 
         // Execute the deployments in order
         // 1. Deploy AccessManager
-        AccessManager accessManager = deployAccessManager.run(
+        deployed.accessManager = deployAccessManager.run(
             ownerAddress, deploymentSalt[type(AccessManager).name].implementationSalt, revertIfAlreadyDeployed
         );
 
         // 2. Deploy NVMConfig
-        NVMConfig nvmConfig = deployNVMConfig.run(
-            ownerAddress, governorAddress, accessManager, deploymentSalt[type(NVMConfig).name], revertIfAlreadyDeployed
+        deployed.nvmConfig = deployNVMConfig.run(
+            ownerAddress,
+            governorAddress,
+            deployed.accessManager,
+            deploymentSalt[type(NVMConfig).name],
+            revertIfAlreadyDeployed
         );
-        console2.log('NVMConfig deployed at:', address(nvmConfig));
+        console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
 
         // 3. Deploy Libraries
-        address tokenUtilsAddress =
+        deployed.tokenUtils =
             deployLibraries.run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
-        console2.log('TokenUtils deployed at:', tokenUtilsAddress);
+        console2.log('TokenUtils deployed at:', deployed.tokenUtils);
 
         // 4. Deploy Core Contracts
-        (AssetsRegistry assetsRegistry, AgreementsStore agreementsStore, PaymentsVault paymentsVault) =
-        deployCoreContracts.run(
-            nvmConfig,
-            accessManager,
+        (deployed.assetsRegistry, deployed.agreementsStore, deployed.paymentsVault) = deployCoreContracts.run(
+            deployed.nvmConfig,
+            deployed.accessManager,
             ownerAddress,
             deploymentSalt[type(AssetsRegistry).name],
             deploymentSalt[type(AgreementsStore).name],
             deploymentSalt[type(PaymentsVault).name],
             revertIfAlreadyDeployed
         );
-        console2.log('AssetsRegistry deployed at:', address(assetsRegistry));
-        console2.log('AgreementsStore deployed at:', address(agreementsStore));
-        console2.log('PaymentsVault deployed at:', address(paymentsVault));
+        console2.log('AssetsRegistry deployed at:', address(deployed.assetsRegistry));
+        console2.log('AgreementsStore deployed at:', address(deployed.agreementsStore));
+        console2.log('PaymentsVault deployed at:', address(deployed.paymentsVault));
 
         // 5. Deploy NFT Contracts
-        (NFT1155Credits nftCredits, NFT1155ExpirableCredits nftExpirableCredits) = deployNFTContracts.run(
-            nvmConfig,
-            accessManager,
+        (deployed.nftCredits, deployed.nftExpirableCredits) = deployNFTContracts.run(
+            deployed.nvmConfig,
+            deployed.accessManager,
             ownerAddress,
-            assetsRegistry,
+            deployed.assetsRegistry,
             deploymentSalt[type(NFT1155Credits).name],
             deploymentSalt[type(NFT1155ExpirableCredits).name],
             revertIfAlreadyDeployed
         );
-        console2.log('NFT1155Credits deployed at:', address(nftCredits));
-        console2.log('NFT1155ExpirableCredits deployed at:', address(nftExpirableCredits));
+        console2.log('NFT1155Credits deployed at:', address(deployed.nftCredits));
+        console2.log('NFT1155ExpirableCredits deployed at:', address(deployed.nftExpirableCredits));
 
         // 6. Deploy Conditions
         (
-            LockPaymentCondition lockPaymentCondition,
-            TransferCreditsCondition transferCreditsCondition,
-            DistributePaymentsCondition distributePaymentsCondition,
-            FiatSettlementCondition fiatSettlementCondition
+            deployed.lockPaymentCondition,
+            deployed.transferCreditsCondition,
+            deployed.distributePaymentsCondition,
+            deployed.fiatSettlementCondition
         ) = deployConditions.run(
             ownerAddress,
-            nvmConfig,
-            assetsRegistry,
-            agreementsStore,
-            paymentsVault,
-            accessManager,
+            deployed.nvmConfig,
+            deployed.assetsRegistry,
+            deployed.agreementsStore,
+            deployed.paymentsVault,
+            deployed.accessManager,
             deploymentSalt[type(LockPaymentCondition).name],
             deploymentSalt[type(TransferCreditsCondition).name],
             deploymentSalt[type(DistributePaymentsCondition).name],
             deploymentSalt[type(FiatSettlementCondition).name],
             revertIfAlreadyDeployed
         );
-        console2.log('LockPaymentCondition deployed at:', address(lockPaymentCondition));
-        console2.log('TransferCreditsCondition deployed at:', address(transferCreditsCondition));
-        console2.log('DistributePaymentsCondition deployed at:', address(distributePaymentsCondition));
-        console2.log('FiatSettlementCondition deployed at:', address(fiatSettlementCondition));
+        console2.log('LockPaymentCondition deployed at:', address(deployed.lockPaymentCondition));
+        console2.log('TransferCreditsCondition deployed at:', address(deployed.transferCreditsCondition));
+        console2.log('DistributePaymentsCondition deployed at:', address(deployed.distributePaymentsCondition));
+        console2.log('FiatSettlementCondition deployed at:', address(deployed.fiatSettlementCondition));
 
         // 7. Deploy Templates
-        (FixedPaymentTemplate fixedPaymentTemplate, FiatPaymentTemplate fiatPaymentTemplate) = deployTemplates.run(
+        (deployed.fixedPaymentTemplate, deployed.fiatPaymentTemplate) = deployTemplates.run(
             ownerAddress,
-            nvmConfig,
-            assetsRegistry,
-            agreementsStore,
-            lockPaymentCondition,
-            transferCreditsCondition,
-            distributePaymentsCondition,
-            fiatSettlementCondition,
-            accessManager,
+            deployed.nvmConfig,
+            deployed.assetsRegistry,
+            deployed.agreementsStore,
+            deployed.lockPaymentCondition,
+            deployed.transferCreditsCondition,
+            deployed.distributePaymentsCondition,
+            deployed.fiatSettlementCondition,
+            deployed.accessManager,
             deploymentSalt[type(FixedPaymentTemplate).name],
             deploymentSalt[type(FiatPaymentTemplate).name],
             revertIfAlreadyDeployed
         );
-        console2.log('FixedPaymentTemplate deployed at:', address(fixedPaymentTemplate));
-        console2.log('FiatPaymentTemplate deployed at:', address(fiatPaymentTemplate));
+        console2.log('FixedPaymentTemplate deployed at:', address(deployed.fixedPaymentTemplate));
+        console2.log('FiatPaymentTemplate deployed at:', address(deployed.fiatPaymentTemplate));
 
         // 8. Grant roles by Owner
         ownerGrantRoles.run(
-            nvmConfig,
+            deployed.nvmConfig,
             ownerAddress,
-            paymentsVault,
-            nftCredits,
-            lockPaymentCondition,
-            transferCreditsCondition,
-            distributePaymentsCondition,
-            accessManager
+            deployed.paymentsVault,
+            deployed.nftCredits,
+            deployed.lockPaymentCondition,
+            deployed.transferCreditsCondition,
+            deployed.distributePaymentsCondition,
+            deployed.accessManager
         );
         console2.log('Roles granted successfully by Owner');
 
@@ -260,28 +279,38 @@ contract DeployAll is Script, DeployConfig {
         string memory contractJsonContent = '';
 
         // Add each contract address
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AccessManager).name, address(accessManager));
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(NVMConfig).name, address(nvmConfig));
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(TokenUtils).name, tokenUtilsAddress);
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AssetsRegistry).name, address(assetsRegistry));
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AgreementsStore).name, address(agreementsStore));
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(PaymentsVault).name, address(paymentsVault));
-        contractJsonContent = vm.serializeAddress(contractJsonKey, type(NFT1155Credits).name, address(nftCredits));
         contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(NFT1155ExpirableCredits).name, address(nftExpirableCredits));
+            vm.serializeAddress(contractJsonKey, type(AccessManager).name, address(deployed.accessManager));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(NVMConfig).name, address(deployed.nvmConfig));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(TokenUtils).name, deployed.tokenUtils);
         contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(LockPaymentCondition).name, address(lockPaymentCondition));
+            vm.serializeAddress(contractJsonKey, type(AssetsRegistry).name, address(deployed.assetsRegistry));
         contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(TransferCreditsCondition).name, address(transferCreditsCondition));
+            vm.serializeAddress(contractJsonKey, type(AgreementsStore).name, address(deployed.agreementsStore));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(PaymentsVault).name, address(deployed.paymentsVault));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(NFT1155Credits).name, address(deployed.nftCredits));
         contractJsonContent = vm.serializeAddress(
-            contractJsonKey, type(DistributePaymentsCondition).name, address(distributePaymentsCondition)
+            contractJsonKey, type(NFT1155ExpirableCredits).name, address(deployed.nftExpirableCredits)
+        );
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(LockPaymentCondition).name, address(deployed.lockPaymentCondition)
+        );
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(TransferCreditsCondition).name, address(deployed.transferCreditsCondition)
+        );
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(DistributePaymentsCondition).name, address(deployed.distributePaymentsCondition)
+        );
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(FiatSettlementCondition).name, address(deployed.fiatSettlementCondition)
+        );
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(FixedPaymentTemplate).name, address(deployed.fixedPaymentTemplate)
         );
         contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(FiatSettlementCondition).name, address(fiatSettlementCondition));
-        contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(FixedPaymentTemplate).name, address(fixedPaymentTemplate));
-        contractJsonContent =
-            vm.serializeAddress(contractJsonKey, type(FiatPaymentTemplate).name, address(fiatPaymentTemplate));
+            vm.serializeAddress(contractJsonKey, type(FiatPaymentTemplate).name, address(deployed.fiatPaymentTemplate));
 
         // Combine all JSON parts
         jsonContent = vm.serializeString(rootJsonKey, contractJsonKey, contractJsonContent);
