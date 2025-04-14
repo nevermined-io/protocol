@@ -166,6 +166,8 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
+    await foundryTools.getTestClient().mine({ blocks: 1 })
+
     const balance = await nftExpirableCredits.read.balanceOf([
       bob.account.address,
       planId,

@@ -93,35 +93,45 @@ export async function registerPlan(
  */
 export async function registerAssetAndPlan(
   assetsRegistry: any,
-  tokenAddress: `0x${string}`,
+  priceConfig: any,
+  creditsConfig: any,
   creator: any,
-  creatorAddress: `0x${string}`,
   nftAddress?: `0x${string}`,
 ): Promise<{ did: `0x${string}`; planId: bigint }> {
   const didSeed = generateId()
-  const did = await assetsRegistry.read.hashDID([didSeed, creatorAddress])
+  const did = await assetsRegistry.read.hashDID([didSeed, creator.account.address])
 
-  const priceConfig = createPriceConfig(tokenAddress, creatorAddress)
-
-  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    priceConfig.amounts,
-    priceConfig.receivers,
-  ])
-  priceConfig.amounts = [...result[0]]
-  priceConfig.receivers = [...result[1]]
-
-  const creditsConfig = createCreditsConfig()
+  const nonce = getRandomBigInt()
+  const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([priceConfig.amounts, priceConfig.receivers])
+  if (!areFeesIncluded) {
+    const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+      priceConfig.amounts,
+      priceConfig.receivers,
+    ])
+    priceConfig.amounts = [...result[0]]
+    priceConfig.receivers = [...result[1]]  
+  }
+  
+  // const creditsConfig = createCreditsConfig()
 
   // Use provided NFT address or default to zero address
   const nftAddressToUse = nftAddress || '0x0000000000000000000000000000000000000000'
 
-  await assetsRegistry.write.registerAssetAndPlan(
-    [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftAddressToUse],
+  const planId = await assetsRegistry.read.hashPlanId([
+    priceConfig,
+    creditsConfig,
+    nftAddressToUse,
+    creator.account.address,
+    nonce
+  ])
+  await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftAddressToUse, nonce], {
+    account: creator.account,
+  })
+
+  await assetsRegistry.write.register(
+    [didSeed, 'https://nevermined.io', [planId]],
     { account: creator.account },
   )
-
-  const asset = await assetsRegistry.read.getAsset([did])
-  const planId = asset.plans[0]
 
   return { did, planId }
 }
@@ -159,4 +169,17 @@ export async function createAgreement(
   )
 
   return { agreementId, conditionId }
+}
+
+export function getRandomBigInt(bits = 128): bigint {
+  const bytes = Math.ceil(bits / 8)
+  const array = new Uint8Array(bytes)
+  crypto.getRandomValues(array)
+
+  let result = 0n
+  for (const byte of array) {
+    result = (result << 8n) | BigInt(byte)
+  }
+
+  return result
 }
