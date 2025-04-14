@@ -45,7 +45,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
     // const _deployment = await ignition.deploy(FullDeploymentModule)
     foundryTools = new FoundryTools(wallets)
-    const _deployment = await foundryTools.connectToInstance()
+    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON || 'deployment-latest.json')
 
     nvmConfig = _deployment.nvmConfig
     assetsRegistry = _deployment.assetsRegistry
