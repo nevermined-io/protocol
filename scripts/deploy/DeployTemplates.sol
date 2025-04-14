@@ -127,9 +127,7 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
         );
         (address fixedPaymentTemplateProxy,) = deployWithSanityChecks(
             fixedPaymentTemplateSalt.proxySalt,
-            getERC1967ProxyCreationCode(
-                abi.encodePacked(address(fixedPaymentTemplateImpl), fixedPaymentTemplateInitData)
-            ),
+            getERC1967ProxyCreationCode(address(fixedPaymentTemplateImpl), fixedPaymentTemplateInitData),
             revertIfAlreadyDeployed
         );
         fixedPaymentTemplate = FixedPaymentTemplate(fixedPaymentTemplateProxy);
@@ -177,7 +175,7 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
         );
         (address fiatPaymentTemplateProxy,) = deployWithSanityChecks(
             fiatPaymentTemplateSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(fiatPaymentTemplateImpl), fiatPaymentTemplateInitData)),
+            getERC1967ProxyCreationCode(address(fiatPaymentTemplateImpl), fiatPaymentTemplateInitData),
             revertIfAlreadyDeployed
         );
         fiatPaymentTemplate = FiatPaymentTemplate(fiatPaymentTemplateProxy);

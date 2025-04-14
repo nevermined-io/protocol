@@ -146,9 +146,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         );
         (address lockPaymentConditionProxy,) = deployWithSanityChecks(
             lockPaymentConditionSalt.proxySalt,
-            getERC1967ProxyCreationCode(
-                abi.encodePacked(address(lockPaymentConditionImpl), lockPaymentConditionInitData)
-            ),
+            getERC1967ProxyCreationCode(address(lockPaymentConditionImpl), lockPaymentConditionInitData),
             revertIfAlreadyDeployed
         );
         lockPaymentCondition = LockPaymentCondition(lockPaymentConditionProxy);
@@ -189,9 +187,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         );
         (address transferCreditsConditionProxy,) = deployWithSanityChecks(
             transferCreditsConditionSalt.proxySalt,
-            getERC1967ProxyCreationCode(
-                abi.encodePacked(address(transferCreditsConditionImpl), transferCreditsConditionInitData)
-            ),
+            getERC1967ProxyCreationCode(address(transferCreditsConditionImpl), transferCreditsConditionInitData),
             revertIfAlreadyDeployed
         );
         transferCreditsCondition = TransferCreditsCondition(transferCreditsConditionProxy);
@@ -241,9 +237,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         );
         (address distributePaymentsConditionProxy,) = deployWithSanityChecks(
             distributePaymentsConditionSalt.proxySalt,
-            getERC1967ProxyCreationCode(
-                abi.encodePacked(address(distributePaymentsConditionImpl), distributePaymentsConditionInitData)
-            ),
+            getERC1967ProxyCreationCode(address(distributePaymentsConditionImpl), distributePaymentsConditionInitData),
             revertIfAlreadyDeployed
         );
         distributePaymentsCondition = DistributePaymentsCondition(distributePaymentsConditionProxy);
@@ -284,9 +278,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         );
         (address fiatSettlementConditionProxy,) = deployWithSanityChecks(
             fiatSettlementConditionSalt.proxySalt,
-            getERC1967ProxyCreationCode(
-                abi.encodePacked(address(fiatSettlementConditionImpl), fiatSettlementConditionInitData)
-            ),
+            getERC1967ProxyCreationCode(address(fiatSettlementConditionImpl), fiatSettlementConditionInitData),
             revertIfAlreadyDeployed
         );
         fiatSettlementCondition = FiatSettlementCondition(fiatSettlementConditionProxy);

@@ -47,8 +47,12 @@ contract Create2DeployUtils {
         return address(uint160(uint256(hash)));
     }
 
-    function getERC1967ProxyCreationCode(bytes memory _initData) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(ERC1967Proxy).creationCode, _initData);
+    function getERC1967ProxyCreationCode(address _implementation, bytes memory _initData)
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encodePacked(type(ERC1967Proxy).creationCode, abi.encode(_implementation, _initData));
     }
 
     function _deploy(bytes32 _salt, bytes memory _creationCode) private returns (address deployedAddress) {

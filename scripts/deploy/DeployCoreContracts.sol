@@ -85,7 +85,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             abi.encodeCall(AssetsRegistry.initialize, (nvmConfigAddress, accessManagerAddress));
         (address assetsRegistryProxy,) = deployWithSanityChecks(
             assetsRegistrySalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(assetsRegistryImpl), assetsRegistryInitData)),
+            getERC1967ProxyCreationCode(address(assetsRegistryImpl), assetsRegistryInitData),
             revertIfAlreadyDeployed
         );
         assetsRegistry = AssetsRegistry(assetsRegistryProxy);
@@ -120,7 +120,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             abi.encodeCall(AgreementsStore.initialize, (nvmConfigAddress, accessManagerAddress));
         (address agreementsStoreProxy,) = deployWithSanityChecks(
             agreementsStoreSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(agreementsStoreImpl), agreementsStoreInitData)),
+            getERC1967ProxyCreationCode(address(agreementsStoreImpl), agreementsStoreInitData),
             revertIfAlreadyDeployed
         );
         agreementsStore = AgreementsStore(agreementsStoreProxy);
@@ -155,7 +155,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             abi.encodeCall(PaymentsVault.initialize, (nvmConfigAddress, accessManagerAddress));
         (address paymentsVaultProxy,) = deployWithSanityChecks(
             paymentsVaultSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(paymentsVaultImpl), paymentsVaultInitData)),
+            getERC1967ProxyCreationCode(address(paymentsVaultImpl), paymentsVaultInitData),
             revertIfAlreadyDeployed
         );
         paymentsVault = PaymentsVault(payable(paymentsVaultProxy));

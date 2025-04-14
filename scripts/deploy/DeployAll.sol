@@ -248,39 +248,45 @@ contract DeployAll is Script, DeployConfig {
         console2.log('Roles granted successfully by Owner');
 
         // Build JSON with the deployment information
-        string memory jsonContent = vm.serializeString('', 'version', version);
-        jsonContent = vm.serializeAddress(jsonContent, 'owner', ownerAddress);
-        jsonContent = vm.serializeAddress(jsonContent, 'governor', governorAddress);
-        jsonContent = vm.serializeUint(jsonContent, 'chainId', block.chainid);
-        jsonContent = vm.serializeUint(jsonContent, 'deployedAt', block.timestamp);
+        string memory rootJsonKey = 'root';
+        string memory jsonContent = vm.serializeString(rootJsonKey, 'version', version);
+        jsonContent = vm.serializeAddress(rootJsonKey, 'owner', ownerAddress);
+        jsonContent = vm.serializeAddress(rootJsonKey, 'governor', governorAddress);
+        jsonContent = vm.serializeUint(rootJsonKey, 'chainId', block.chainid);
+        jsonContent = vm.serializeUint(rootJsonKey, 'deployedAt', block.timestamp);
 
-        // Serialize contracts object
-        string memory contractsJson = vm.serializeAddress('', type(AccessManager).name, address(accessManager));
-        contractsJson = vm.serializeAddress(contractsJson, type(NVMConfig).name, address(nvmConfig));
-        contractsJson = vm.serializeAddress(contractsJson, type(TokenUtils).name, tokenUtilsAddress);
-        contractsJson = vm.serializeAddress(contractsJson, type(AssetsRegistry).name, address(assetsRegistry));
-        contractsJson = vm.serializeAddress(contractsJson, type(AgreementsStore).name, address(agreementsStore));
-        contractsJson = vm.serializeAddress(contractsJson, type(PaymentsVault).name, address(paymentsVault));
-        contractsJson = vm.serializeAddress(contractsJson, type(NFT1155Credits).name, address(nftCredits));
-        contractsJson =
-            vm.serializeAddress(contractsJson, type(NFT1155ExpirableCredits).name, address(nftExpirableCredits));
-        contractsJson =
-            vm.serializeAddress(contractsJson, type(LockPaymentCondition).name, address(lockPaymentCondition));
-        contractsJson =
-            vm.serializeAddress(contractsJson, type(TransferCreditsCondition).name, address(transferCreditsCondition));
-        contractsJson = vm.serializeAddress(
-            contractsJson, type(DistributePaymentsCondition).name, address(distributePaymentsCondition)
+        // Start contracts object
+        string memory contractJsonKey = 'contracts';
+        string memory contractJsonContent = '';
+
+        // Add each contract address
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AccessManager).name, address(accessManager));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(NVMConfig).name, address(nvmConfig));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(TokenUtils).name, tokenUtilsAddress);
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AssetsRegistry).name, address(assetsRegistry));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(AgreementsStore).name, address(agreementsStore));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(PaymentsVault).name, address(paymentsVault));
+        contractJsonContent = vm.serializeAddress(contractJsonKey, type(NFT1155Credits).name, address(nftCredits));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(NFT1155ExpirableCredits).name, address(nftExpirableCredits));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(LockPaymentCondition).name, address(lockPaymentCondition));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(TransferCreditsCondition).name, address(transferCreditsCondition));
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(DistributePaymentsCondition).name, address(distributePaymentsCondition)
         );
-        contractsJson =
-            vm.serializeAddress(contractsJson, type(FiatSettlementCondition).name, address(fiatSettlementCondition));
-        contractsJson =
-            vm.serializeAddress(contractsJson, type(FixedPaymentTemplate).name, address(fixedPaymentTemplate));
-        contractsJson = vm.serializeAddress(contractsJson, type(FiatPaymentTemplate).name, address(fiatPaymentTemplate));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(FiatSettlementCondition).name, address(fiatSettlementCondition));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(FixedPaymentTemplate).name, address(fixedPaymentTemplate));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(FiatPaymentTemplate).name, address(fiatPaymentTemplate));
 
         // Combine all JSON parts
-        jsonContent = vm.serializeString(jsonContent, 'contracts', contractsJson);
+        jsonContent = vm.serializeString(rootJsonKey, contractJsonKey, contractJsonContent);
 
-        vm.writeJson(outputJsonPath, jsonContent);
+        vm.writeJson(jsonContent, outputJsonPath);
         console2.log('Deployment addresses written to %s', outputJsonPath);
     }
 }

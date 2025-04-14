@@ -49,7 +49,7 @@ contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
             abi.encodeCall(NVMConfig.initialize, (ownerAddress, accessManagerAddress, governorAddress));
         (address nvmConfigProxy,) = deployWithSanityChecks(
             deploymentSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(nvmConfigImpl), nvmConfigInitData)),
+            getERC1967ProxyCreationCode(address(nvmConfigImpl), nvmConfigInitData),
             revertIfAlreadyDeployed
         );
         NVMConfig nvmConfig = NVMConfig(nvmConfigProxy);

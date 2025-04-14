@@ -84,7 +84,7 @@ contract DeployNFTContracts is Script, DeployConfig, Create2DeployUtils {
         );
         (address nftCreditsProxy,) = deployWithSanityChecks(
             nftCreditsSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(nftCreditsImpl), nftCreditsInitData)),
+            getERC1967ProxyCreationCode(address(nftCreditsImpl), nftCreditsInitData),
             revertIfAlreadyDeployed
         );
         nftCredits = NFT1155Credits(nftCreditsProxy);
@@ -124,7 +124,7 @@ contract DeployNFTContracts is Script, DeployConfig, Create2DeployUtils {
         );
         (address nftExpirableCreditsProxy,) = deployWithSanityChecks(
             nftExpirableCreditsSalt.proxySalt,
-            getERC1967ProxyCreationCode(abi.encodePacked(address(nftExpirableCreditsImpl), nftExpirableCreditsInitData)),
+            getERC1967ProxyCreationCode(address(nftExpirableCreditsImpl), nftExpirableCreditsInitData),
             revertIfAlreadyDeployed
         );
         nftExpirableCredits = NFT1155ExpirableCredits(nftExpirableCreditsProxy);
