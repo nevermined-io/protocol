@@ -7,6 +7,7 @@ import {INVMConfig} from './interfaces/INVMConfig.sol';
 
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {AccessControlUpgradeable} from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 /**
  * @title Nevermined Config contract
@@ -69,12 +70,12 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
      * @param _authority The address that will be the authority of the contract
      * @param _governor The first governor address able to setup configuration parameters
      */
-    function initialize(address _owner, address _authority, address _governor) public initializer {
+    function initialize(address _owner, IAccessManager _authority, address _governor) external initializer {
         AccessControlUpgradeable.__AccessControl_init();
         AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
         AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
         AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////

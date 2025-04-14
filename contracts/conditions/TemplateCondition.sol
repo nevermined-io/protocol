@@ -6,7 +6,7 @@ pragma solidity ^0.8.28;
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 
 abstract contract TemplateCondition is AccessManagedUUPSUpgradeable {
-    function hashConditionId(bytes32 _agreementId, bytes32 _conditionName) public pure returns (bytes32) {
+    function hashConditionId(bytes32 _agreementId, bytes32 _conditionName) external pure returns (bytes32) {
         return keccak256(abi.encode(_agreementId, _conditionName));
     }
 }

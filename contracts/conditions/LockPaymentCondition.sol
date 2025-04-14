@@ -10,9 +10,11 @@ import {IVault} from '../interfaces/IVault.sol';
 
 import {TokenUtils} from '../utils/TokenUtils.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {ReentrancyGuardTransientUpgradeable} from
+    '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
-contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
+contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('LockPaymentCondition');
 
     // keccak256(abi.encode(uint256(keccak256("nevermined.lockpaymentcondition.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -37,20 +39,20 @@ contract LockPaymentCondition is ReentrancyGuardUpgradeable, TemplateCondition {
     error IncorrectPaymentDistribution(uint256[] amounts, address[] receivers);
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
-        address _agreementStoreAddress,
-        address _vaultAddress
-    ) public initializer {
-        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
+        IAgreement _agreementStoreAddress,
+        IVault _vaultAddress
+    ) external initializer {
+        ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
 
         $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        $.assetsRegistry = IAsset(_assetsRegistryAddress);
-        $.agreementStore = IAgreement(_agreementStoreAddress);
-        $.vault = IVault(_vaultAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        $.assetsRegistry = _assetsRegistryAddress;
+        $.agreementStore = _agreementStoreAddress;
+        $.vault = _vaultAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function fulfill(bytes32 _conditionId, bytes32 _agreementId, uint256 _planId, address _senderAddress)

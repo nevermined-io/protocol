@@ -6,6 +6,7 @@ pragma solidity ^0.8.28;
 import {IAsset} from './interfaces/IAsset.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("nevermined.assetsregistry.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -22,9 +23,9 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         mapping(uint256 => Plan) plans;
     }
 
-    function initialize(address _nvmConfigAddress, address _authority) public initializer {
-        _getAssetsRegistryStorage().nvmConfig = INVMConfig(_nvmConfigAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
+        _getAssetsRegistryStorage().nvmConfig = _nvmConfigAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function getAsset(bytes32 _did) external view returns (DIDAsset memory) {
@@ -63,7 +64,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     }
 
     function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)
-        public
+        external
     {
         _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
     }
@@ -73,7 +74,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         CreditsConfig memory _creditsConfig,
         address _nftAddress,
         uint256 _nonce
-    ) public {
+    ) external {
         _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, _nonce);
     }
 
@@ -126,7 +127,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         emit PlanRegistered(planId, _owner);
     }
 
-    function getPlan(uint256 _planId) public view returns (Plan memory) {
+    function getPlan(uint256 _planId) external view returns (Plan memory) {
         return _getAssetsRegistryStorage().plans[_planId];
     }
 

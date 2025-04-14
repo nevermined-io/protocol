@@ -3,32 +3,51 @@ pragma solidity ^0.8.28;
 
 import {TokenUtils} from '../../contracts/utils/TokenUtils.sol';
 import {DeployConfig} from './DeployConfig.sol';
+import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
+import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployLibraries is Script, DeployConfig {
-    function run(address ownerAddress) public returns (address) {
-        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+contract DeployLibraries is Script, DeployConfig, Create2DeployUtils {
+    error TokenUtilsDeployment_Failed();
+    error InvalidSalt();
+
+    function run(
+        address ownerAddress,
+        UpgradeableContractDeploySalt memory tokenUtilsSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (address) {
+        console2.log('Deploying Libraries with:');
+        console2.log('\tOwner:', ownerAddress);
+
+        // Check for zero salt
+        require(tokenUtilsSalt.implementationSalt != bytes32(0), InvalidSalt());
+
         vm.startBroadcast(ownerAddress);
 
-        // Get the current sender address to use as owner
-        owner = msg.sender;
-
-        // Deploy TokenUtils library - libraries are deployed differently
-        // We can't instantiate libraries with 'new', so we'll use a low-level approach
-        bytes memory bytecode = type(TokenUtils).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked('TokenUtils', block.timestamp));
-        address tokenUtilsAddress;
-
-        assembly {
-            tokenUtilsAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
-            if iszero(extcodesize(tokenUtilsAddress)) { revert(0, 0) }
-        }
+        // Deploy TokenUtils library
+        address tokenUtilsAddress = deployTokenUtils(tokenUtilsSalt, revertIfAlreadyDeployed);
 
         vm.stopBroadcast();
 
-        console2.log('TokenUtils deployed at:', tokenUtilsAddress);
-
         return tokenUtilsAddress;
+    }
+
+    function deployTokenUtils(UpgradeableContractDeploySalt memory tokenUtilsSalt, bool revertIfAlreadyDeployed)
+        public
+        returns (address tokenUtilsAddress)
+    {
+        // Check for zero salt
+        require(tokenUtilsSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        // Deploy TokenUtils library
+        console2.log('Deploying TokenUtils Library');
+        (tokenUtilsAddress,) = deployWithSanityChecks(
+            tokenUtilsSalt.implementationSalt, type(TokenUtils).creationCode, revertIfAlreadyDeployed
+        );
+        console2.log('TokenUtils Library deployed at:', tokenUtilsAddress);
+
+        // Verify deployment
+        require(tokenUtilsAddress.code.length != 0, TokenUtilsDeployment_Failed());
     }
 }
