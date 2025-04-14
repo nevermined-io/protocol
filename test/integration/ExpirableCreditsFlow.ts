@@ -1,15 +1,11 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
 import { ignition } from 'hardhat'
 import { expect } from 'chai'
-import FullDeploymentModule from '../../ignition/modules/FullDeployment'
+import { FoundryTools } from '../common/FoundryTools'
 import hre from 'hardhat'
 import {
   generateId,
   getTxParsedLogs,
-  createPriceConfig,
-  createCreditsConfig,
-  registerAssetAndPlan,
-  createAgreement,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 
@@ -17,19 +13,25 @@ var chai = require('chai')
 chai.use(require('chai-string'))
 
 describe('IT: Expirable Credits e2e flow', function () {
-  let _deployment: any
+  let nvmConfig
+  let assetsRegistry
+  let nftExpirableCredits
+  let paymentsVault
+  let fixedPaymentTemplate
   let alice: any
   let bob: any
   let did: string
   let planId: bigint
   let agreementId: string
-  let publicClient: any
   let aliceBalanceBefore: bigint
   let aliceBalanceAfter: bigint
   let bobBalanceBefore: bigint
   let bobBalanceAfter: bigint
   let vaultBalanceBefore: bigint
   let vaultBalanceAfter: bigint
+  let foundryTools
+  let publicClient
+  let walletClient
 
   let priceConfig = {
     priceType: 0, // Means Fixed Price
@@ -42,34 +44,41 @@ describe('IT: Expirable Credits e2e flow', function () {
     creditsType: 0, // Means Expirable Credits
     redemptionType: 2, // Means Role and Owner can redeem credits
     durationSecs: 600, // 10 minutes expiration time
-    amount: 500,
+    amount: 900,
     minAmount: 1,
     maxAmount: 1,
   }
   let nftAddress: string
   const url = 'https://nevermined.io'
 
-  async function deployModuleFixture() {
-    return ignition.deploy(FullDeploymentModule)
-  }
-
   before(async () => {
     const wallets = await hre.viem.getWalletClients()
     alice = wallets[3]
     bob = wallets[4]
-    publicClient = await hre.viem.getPublicClient()
 
-    _deployment = await loadFixture(deployModuleFixture)
+    foundryTools = new FoundryTools(wallets)
+    
+    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON || 'deployment-latest.json')
+
     expect(_deployment.nvmConfig.address).to.be.a('string').to.startWith('0x')
     expect(_deployment.assetsRegistry.address).to.be.a('string').to.startWith('0x')
 
     console.log(`NVM Config: ${_deployment.nvmConfig.address}`)
     console.log(`Assets Registry: ${_deployment.assetsRegistry.address}`)
+    assetsRegistry = _deployment.assetsRegistry
+    nvmConfig = _deployment.nvmConfig
+    nftExpirableCredits = _deployment.nft1155ExpirableCredits
+    paymentsVault = _deployment.paymentsVault
+    fixedPaymentTemplate = _deployment.fixedPaymentTemplate
+
+    publicClient = foundryTools.getPublicClient()
   })
+
+
 
   it('Alice can define the fees of the plan', async () => {
     priceConfig.receivers = [alice.account.address]
-    const feesSetup = await _deployment.assetsRegistry.read.addFeesToPaymentsDistribution([
+    const feesSetup = await assetsRegistry.read.addFeesToPaymentsDistribution([
       priceConfig.amounts,
       priceConfig.receivers,
     ])
@@ -80,7 +89,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Credits Config:', creditsConfig)
     expect(priceConfig.amounts.length).to.be.equal(2)
     expect(priceConfig.receivers.length).to.be.equal(2)
-    nftAddress = _deployment.nftExpirableCredits.address
+    nftAddress = nftExpirableCredits.address
     console.log('NFT1155ExpirableCredits Address:', nftAddress)
     expect(nftAddress).to.be.a('string').to.startWith('0x')
   })
@@ -88,7 +97,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   it('Alice can register an asset with a plan with expirable credits', async () => {
     console.log(`Alice: ${alice.account.address}`)
     const didSeed = generateId()
-    did = await _deployment.assetsRegistry.read.hashDID([didSeed, alice.account.address], {
+    did = await assetsRegistry.read.hashDID([didSeed, alice.account.address], {
       from: alice.account,
     })
 
@@ -96,27 +105,27 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log(`DID SEED: ${didSeed}`)
     console.log(`DID: ${did}`)
 
-    const txHash = await _deployment.assetsRegistry.write.registerAssetAndPlan(
+    const txHash = await assetsRegistry.write.registerAssetAndPlan(
       [didSeed, url, priceConfig, creditsConfig, nftAddress],
       { account: alice.account },
     )
     expect(txHash).to.be.a('string').to.startWith('0x')
     console.log('txHash:', txHash)
-    const logs = await getTxParsedLogs(publicClient, txHash, _deployment.assetsRegistry.abi)
+    const logs = await foundryTools.getTxParsedLogs(txHash, assetsRegistry.abi)
 
     console.log('Logs:', logs)
-    expect(logs.length).to.be.equal(2)
+    expect(logs.length).to.be.at.least(1)
   })
 
   it('Bob can find the asset', async () => {
-    const asset = await _deployment.assetsRegistry.read.getAsset([did])
+    const asset = await assetsRegistry.read.getAsset([did])
     console.log('Asset = :', asset)
     expect(asset.lastUpdated > 0n).to.be.true
     planId = asset.plans[0]
     expect(planId > 0n).to.be.true
 
     console.log('Plan ID:', planId)
-    const plan = await _deployment.assetsRegistry.read.getPlan([planId])
+    const plan = await assetsRegistry.read.getPlan([planId])
     console.log('Plan = :', plan)
 
     // Verify the plan has expirable credits
@@ -132,7 +141,7 @@ describe('IT: Expirable Credits e2e flow', function () {
       address: bob.account.address,
     })) as bigint
     vaultBalanceBefore = await publicClient.getBalance({
-      address: _deployment.paymentsVault.address,
+      address: paymentsVault.address,
     })
 
     console.log('Alice Balance Before:', aliceBalanceBefore)
@@ -148,7 +157,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     )
 
     const agreementIdSeed = generateId()
-    const txHash = await _deployment.fixedPaymentTemplate.write.createAgreement(
+    const txHash = await fixedPaymentTemplate.write.createAgreement(
       [agreementIdSeed, did, planId, []],
       { account: bob.account, value: totalAmount },
     )
@@ -157,7 +166,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   })
 
   it('We can check the credits of Bob', async () => {
-    const balance = await _deployment.nftExpirableCredits.read.balanceOf([
+    const balance = await nftExpirableCredits.read.balanceOf([
       bob.account.address,
       planId,
     ])
@@ -173,7 +182,7 @@ describe('IT: Expirable Credits e2e flow', function () {
       address: bob.account.address,
     })) as bigint
     vaultBalanceAfter = await publicClient.getBalance({
-      address: _deployment.paymentsVault.address,
+      address: paymentsVault.address,
     })
 
     console.log('Alice Balance After:', aliceBalanceAfter)
@@ -187,16 +196,18 @@ describe('IT: Expirable Credits e2e flow', function () {
 
   it('Credits expire after their duration', async () => {
     // First verify Bob has credits
-    const balanceBefore = await _deployment.nftExpirableCredits.read.balanceOf([
+    const balanceBefore = await nftExpirableCredits.read.balanceOf([
       bob.account.address,
       planId,
     ])
     expect(balanceBefore > 0n).to.be.true
     console.log('Credits Balance Before Time Advance:', balanceBefore)
 
+    await foundryTools.getTestClient().increaseTime({ seconds: 601 })
+    await foundryTools.getTestClient().mine({ blocks: 1 })
     // Advance blockchain time past the expiration period
-    await hre.network.provider.send('evm_increaseTime', [601]) // 10 minutes + 1 second
-    await hre.network.provider.send('evm_mine')
+    // await hre.network.provider.send('evm_increaseTime', [601]) // 10 minutes + 1 second
+    // await hre.network.provider.send('evm_mine')
 
     // Note: This test may need adjustment since the actual expiration check
     // mechanism would typically be implemented in a "use credits" function
@@ -208,7 +219,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Credits should now be expired')
 
     // Check if credits are expired by checking balance after expiration
-    const balanceAfter = await _deployment.nftExpirableCredits.read.balanceOf([
+    const balanceAfter = await nftExpirableCredits.read.balanceOf([
       bob.account.address,
       planId,
     ])

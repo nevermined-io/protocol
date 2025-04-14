@@ -11,6 +11,7 @@ import {
   decodeErrorResult,
   getContract,
   http,
+  parseEventLogs,
   publicActions,
   walletActions,
   WalletClient,
@@ -110,7 +111,7 @@ export class FoundryTools {
     )
     const fiatPaymentTemplate = await this.getContractInstance(
       'FiatPaymentTemplate',
-      deploymentJson.contracts.FixedPaymentTemplate,
+      deploymentJson.contracts.FiatPaymentTemplate,
       'artifacts/contracts/agreements',
     )
     return {
@@ -137,7 +138,7 @@ export class FoundryTools {
     const contract = getContract({
       address,
       abi: FoundryTools.getContractABI(name, artifactsFolder),
-      client: this.walletClient,
+      client: { public: this.publicClient, wallet: this.walletClient },
     })
     return contract
   }
@@ -178,7 +179,7 @@ export class FoundryTools {
     return getContract({
       abi: artifact.abi,
       address: contractAddress as `0x${string}`,
-      client: this.walletClient,
+      client: { public: this.publicClient, wallet: this.walletClient },
     })
   }
 
@@ -198,6 +199,18 @@ export class FoundryTools {
   }
   getWalletClient() {
     return this.walletClient
+  }
+
+  async getTxEvents(txHash: string) {
+    const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash })
+    if (receipt.status !== 'success') return []
+    return receipt.logs
+  }
+
+  async getTxParsedLogs(txHash: string, abi: any) {
+    const logs = await this.getTxEvents(txHash)
+    if (logs.length > 0) return parseEventLogs({ abi, logs }) as any[]
+    return []
   }
 
   async setBlockchainTime(time: number): Promise<void> {}
