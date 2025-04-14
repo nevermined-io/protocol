@@ -1,20 +1,14 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
-// import { ignition } from 'hardhat'
 import { expect } from 'chai'
-// import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 import hre from 'hardhat'
 import {
   generateId,
   getTxParsedLogs,
   createPriceConfig,
   createCreditsConfig,
-  registerAssetAndPlan,
-  createAgreement,
-  registerPlan,
-  getTxEvents,
+  registerAssetAndPlan
 } from '../common/utils'
 import { zeroAddress } from 'viem'
-import { any } from 'hardhat/internal/core/params/argumentTypes'
 import { FoundryTools } from '../common/FoundryTools'
 
 var chai = require('chai')
