@@ -12,6 +12,7 @@ import {IAsset} from '../interfaces/IAsset.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AgreementsStore} from './AgreementsStore.sol';
 import {BaseTemplate} from './BaseTemplate.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract FixedPaymentTemplate is BaseTemplate {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
@@ -31,23 +32,23 @@ contract FixedPaymentTemplate is BaseTemplate {
     }
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
-        address _agreementStoreAddress,
-        address _lockPaymentConditionAddress,
-        address _transferCondtionAddress,
-        address _distributePaymentsCondition
-    ) public initializer {
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
+        AgreementsStore _agreementStoreAddress,
+        LockPaymentCondition _lockPaymentConditionAddress,
+        TransferCreditsCondition _transferCondtionAddress,
+        DistributePaymentsCondition _distributePaymentsCondition
+    ) external initializer {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        $.assetsRegistry = IAsset(_assetsRegistryAddress);
-        _getBaseTemplateStorage().agreementStore = AgreementsStore(_agreementStoreAddress);
-        $.lockPaymentCondition = LockPaymentCondition(_lockPaymentConditionAddress);
-        $.transferCondition = TransferCreditsCondition(_transferCondtionAddress);
-        $.distributePaymentsCondition = DistributePaymentsCondition(_distributePaymentsCondition);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        $.nvmConfig = _nvmConfigAddress;
+        $.assetsRegistry = _assetsRegistryAddress;
+        _getBaseTemplateStorage().agreementStore = _agreementStoreAddress;
+        $.lockPaymentCondition = _lockPaymentConditionAddress;
+        $.transferCondition = _transferCondtionAddress;
+        $.distributePaymentsCondition = _distributePaymentsCondition;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function createAgreement(bytes32 _seed, bytes32 _did, uint256 _planId, bytes[] memory _params) external payable {

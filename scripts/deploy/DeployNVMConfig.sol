@@ -3,14 +3,32 @@ pragma solidity ^0.8.28;
 
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
 import {DeployConfig} from './DeployConfig.sol';
-
-import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
+import {UpgradeableContractDeploySalt} from './common/Types.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployNVMConfig is Script, DeployConfig {
-    function run(address ownerAddress, address governorAddress, address accessManager) public returns (NVMConfig) {
-        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
+    error NVMConfigDeployment_InvalidAuthority(address authority);
+    error NVMConfigDeployment_InvalidGovernor(address governor);
+    error InvalidSalt();
+
+    function run(
+        address ownerAddress,
+        address governorAddress,
+        IAccessManager accessManagerAddress,
+        UpgradeableContractDeploySalt memory deploymentSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (NVMConfig) {
+        // Check for zero salt
+        require(deploymentSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        console2.log('Deploying NVMConfig with:');
+        console2.log('\tOwner:', ownerAddress);
+        console2.log('\tGovernor:', governorAddress);
+        console2.log('\tAccessManager:', address(accessManagerAddress));
+
         vm.startBroadcast(ownerAddress);
 
         // Update fee receiver if not set
@@ -18,21 +36,34 @@ contract DeployNVMConfig is Script, DeployConfig {
             feeReceiver = ownerAddress;
         }
 
-        // Deploy NVMConfig implementation
-        NVMConfig nvmConfigImpl = new NVMConfig();
+        // Deploy NVMConfig Implementation
+        console2.log('Deploying NVMConfig Implementation');
+        (address nvmConfigImpl,) = deployWithSanityChecks(
+            deploymentSalt.implementationSalt, type(NVMConfig).creationCode, revertIfAlreadyDeployed
+        );
+        console2.log('NVMConfig Implementation deployed at:', address(nvmConfigImpl));
 
-        // Deploy proxy with implementation
-        bytes memory initData = abi.encodeCall(NVMConfig.initialize, (ownerAddress, accessManager, governorAddress));
-        ERC1967Proxy proxy = new ERC1967Proxy(address(nvmConfigImpl), initData);
+        // Deploy NVMConfig Proxy
+        console2.log('Deploying NVMConfig Proxy');
+        bytes memory nvmConfigInitData =
+            abi.encodeCall(NVMConfig.initialize, (ownerAddress, accessManagerAddress, governorAddress));
+        (address nvmConfigProxy,) = deployWithSanityChecks(
+            deploymentSalt.proxySalt,
+            getERC1967ProxyCreationCode(address(nvmConfigImpl), nvmConfigInitData),
+            revertIfAlreadyDeployed
+        );
+        NVMConfig nvmConfig = NVMConfig(nvmConfigProxy);
+        console2.log('NVMConfig Proxy deployed at:', address(nvmConfig));
 
-        // Create NVMConfig instance pointing to proxy
-        NVMConfig nvmConfig = NVMConfig(address(proxy));
+        // Verify deployment
+        require(
+            nvmConfig.authority() == address(accessManagerAddress),
+            NVMConfigDeployment_InvalidAuthority(address(nvmConfig.authority()))
+        );
 
-        console2.log('NVMConfig implementation deployed at:', address(nvmConfigImpl));
-        console2.log('NVMConfig proxy deployed at:', address(proxy));
         console2.log('NVMConfig initialized with Owner:', ownerAddress);
         console2.log('NVMConfig initialized with Governor:', governorAddress);
-        console2.log('NVMConfig initialized with AccessManager:', accessManager);
+        console2.log('NVMConfig initialized with AccessManager:', address(accessManagerAddress));
 
         vm.stopBroadcast();
 

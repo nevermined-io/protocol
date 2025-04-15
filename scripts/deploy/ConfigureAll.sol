@@ -1,31 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {AssetsRegistry} from '../../contracts/AssetsRegistry.sol';
-import {NVMConfig} from '../../contracts/NVMConfig.sol';
-
-import {PaymentsVault} from '../../contracts/PaymentsVault.sol';
-import {AgreementsStore} from '../../contracts/agreements/AgreementsStore.sol';
-
-import {FixedPaymentTemplate} from '../../contracts/agreements/FixedPaymentTemplate.sol';
-import {DistributePaymentsCondition} from '../../contracts/conditions/DistributePaymentsCondition.sol';
-import {LockPaymentCondition} from '../../contracts/conditions/LockPaymentCondition.sol';
-import {TransferCreditsCondition} from '../../contracts/conditions/TransferCreditsCondition.sol';
-import {NFT1155Credits} from '../../contracts/token/NFT1155Credits.sol';
-import {TokenUtils} from '../../contracts/utils/TokenUtils.sol';
-import {Constants} from '../Constants.sol';
-import {DeployConditions} from './DeployConditions.sol';
 import {DeployConfig} from './DeployConfig.sol';
-import {DeployCoreContracts} from './DeployCoreContracts.sol';
-import {DeployLibraries} from './DeployLibraries.sol';
-import {DeployNFTContracts} from './DeployNFTContracts.sol';
-import {DeployNVMConfig} from './DeployNVMConfig.sol';
-
-import {DeployTemplates} from './DeployTemplates.sol';
 import {ManagePermissions} from './ManagePermissions.sol';
 
 import {SetNetworkFees} from './SetNetworkFees.sol';
-import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 

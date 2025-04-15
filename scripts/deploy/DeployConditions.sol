@@ -5,39 +5,136 @@ import {DistributePaymentsCondition} from '../../contracts/conditions/Distribute
 import {FiatSettlementCondition} from '../../contracts/conditions/FiatSettlementCondition.sol';
 import {LockPaymentCondition} from '../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../contracts/conditions/TransferCreditsCondition.sol';
-import {DeployConfig} from './DeployConfig.sol';
 
-import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import {IAgreement} from '../../contracts/interfaces/IAgreement.sol';
+import {IAsset} from '../../contracts/interfaces/IAsset.sol';
+import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
+import {IVault} from '../../contracts/interfaces/IVault.sol';
+import {DeployConfig} from './DeployConfig.sol';
+import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
+import {UpgradeableContractDeploySalt} from './common/Types.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployConditions is Script, DeployConfig {
+contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
+    error LockPaymentConditionDeployment_InvalidAuthority(address authority);
+    error TransferCreditsConditionDeployment_InvalidAuthority(address authority);
+    error DistributePaymentsConditionDeployment_InvalidAuthority(address authority);
+    error FiatSettlementConditionDeployment_InvalidAuthority(address authority);
+    error InvalidSalt();
+
     function run(
         address ownerAddress,
-        address nvmConfigAddress,
-        address assetsRegistryAddress,
-        address agreementsStoreAddress,
-        address paymentsVaultAddress,
-        address tokenUtilsAddress,
-        address accessManagerAddress
+        INVMConfig nvmConfigAddress,
+        IAsset assetsRegistryAddress,
+        IAgreement agreementsStoreAddress,
+        IVault paymentsVaultAddress,
+        IAccessManager accessManagerAddress,
+        UpgradeableContractDeploySalt memory lockPaymentConditionSalt,
+        UpgradeableContractDeploySalt memory transferCreditsConditionSalt,
+        UpgradeableContractDeploySalt memory distributePaymentsConditionSalt,
+        UpgradeableContractDeploySalt memory fiatSettlementConditionSalt,
+        bool revertIfAlreadyDeployed
     )
         public
-        returns (LockPaymentCondition, TransferCreditsCondition, DistributePaymentsCondition, FiatSettlementCondition)
+        returns (
+            LockPaymentCondition lockPaymentCondition,
+            TransferCreditsCondition transferCreditsCondition,
+            DistributePaymentsCondition distributePaymentsCondition,
+            FiatSettlementCondition fiatSettlementCondition
+        )
     {
+        // Check for zero salts
+        require(
+            lockPaymentConditionSalt.implementationSalt != bytes32(0)
+                && transferCreditsConditionSalt.implementationSalt != bytes32(0)
+                && distributePaymentsConditionSalt.implementationSalt != bytes32(0)
+                && fiatSettlementConditionSalt.implementationSalt != bytes32(0),
+            InvalidSalt()
+        );
+
         console2.log('Deploying Conditions with:');
         console2.log('\tOwner:', ownerAddress);
-        console2.log('\tNVMConfig:', nvmConfigAddress);
-        console2.log('\tAssetsRegistry:', assetsRegistryAddress);
-        console2.log('\tAgreementsStore:', agreementsStoreAddress);
-        console2.log('\tPaymentsVault:', paymentsVaultAddress);
-        console2.log('\tTokenUtils:', tokenUtilsAddress);
-        console2.log('\tAccessManager:', accessManagerAddress);
+        console2.log('\tNVMConfig:', address(nvmConfigAddress));
+        console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
+        console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
+        console2.log('\tPaymentsVault:', address(paymentsVaultAddress));
+        console2.log('\tAccessManager:', address(accessManagerAddress));
 
         vm.startBroadcast(ownerAddress);
 
         // Deploy LockPaymentCondition
-        LockPaymentCondition lockPaymentConditionImpl = new LockPaymentCondition();
-        bytes memory lockPaymentConditionData = abi.encodeCall(
+        lockPaymentCondition = deployLockPaymentCondition(
+            nvmConfigAddress,
+            accessManagerAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress,
+            paymentsVaultAddress,
+            lockPaymentConditionSalt,
+            revertIfAlreadyDeployed
+        );
+
+        // Deploy TransferCreditsCondition
+        transferCreditsCondition = deployTransferCreditsCondition(
+            nvmConfigAddress,
+            accessManagerAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress,
+            transferCreditsConditionSalt,
+            revertIfAlreadyDeployed
+        );
+
+        // Deploy DistributePaymentsCondition
+        distributePaymentsCondition = deployDistributePaymentsCondition(
+            nvmConfigAddress,
+            accessManagerAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress,
+            paymentsVaultAddress,
+            distributePaymentsConditionSalt,
+            revertIfAlreadyDeployed
+        );
+
+        // Deploy FiatSettlementCondition
+        fiatSettlementCondition = deployFiatSettlementCondition(
+            nvmConfigAddress,
+            accessManagerAddress,
+            assetsRegistryAddress,
+            agreementsStoreAddress,
+            fiatSettlementConditionSalt,
+            revertIfAlreadyDeployed
+        );
+
+        vm.stopBroadcast();
+
+        return (lockPaymentCondition, transferCreditsCondition, distributePaymentsCondition, fiatSettlementCondition);
+    }
+
+    function deployLockPaymentCondition(
+        INVMConfig nvmConfigAddress,
+        IAccessManager accessManagerAddress,
+        IAsset assetsRegistryAddress,
+        IAgreement agreementsStoreAddress,
+        IVault paymentsVaultAddress,
+        UpgradeableContractDeploySalt memory lockPaymentConditionSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (LockPaymentCondition lockPaymentCondition) {
+        // Check for zero salt
+        require(lockPaymentConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        // Deploy LockPaymentCondition Implementation
+        console2.log('Deploying LockPaymentCondition Implementation');
+        (address lockPaymentConditionImpl,) = deployWithSanityChecks(
+            lockPaymentConditionSalt.implementationSalt,
+            type(LockPaymentCondition).creationCode,
+            revertIfAlreadyDeployed
+        );
+        console2.log('LockPaymentCondition Implementation deployed at:', address(lockPaymentConditionImpl));
+
+        // Deploy LockPaymentCondition Proxy
+        console2.log('Deploying LockPaymentCondition Proxy');
+        bytes memory lockPaymentConditionInitData = abi.encodeCall(
             LockPaymentCondition.initialize,
             (
                 nvmConfigAddress,
@@ -47,22 +144,88 @@ contract DeployConditions is Script, DeployConfig {
                 paymentsVaultAddress
             )
         );
-        LockPaymentCondition lockPaymentCondition =
-            LockPaymentCondition(address(new ERC1967Proxy(address(lockPaymentConditionImpl), lockPaymentConditionData)));
+        (address lockPaymentConditionProxy,) = deployWithSanityChecks(
+            lockPaymentConditionSalt.proxySalt,
+            getERC1967ProxyCreationCode(address(lockPaymentConditionImpl), lockPaymentConditionInitData),
+            revertIfAlreadyDeployed
+        );
+        lockPaymentCondition = LockPaymentCondition(lockPaymentConditionProxy);
+        console2.log('LockPaymentCondition Proxy deployed at:', address(lockPaymentCondition));
 
-        // Deploy TransferCreditsCondition
-        TransferCreditsCondition transferCreditsConditionImpl = new TransferCreditsCondition();
-        bytes memory transferCreditsConditionData = abi.encodeCall(
+        // Verify deployment
+        require(
+            lockPaymentCondition.authority() == address(accessManagerAddress),
+            LockPaymentConditionDeployment_InvalidAuthority(address(lockPaymentCondition.authority()))
+        );
+    }
+
+    function deployTransferCreditsCondition(
+        INVMConfig nvmConfigAddress,
+        IAccessManager accessManagerAddress,
+        IAsset assetsRegistryAddress,
+        IAgreement agreementsStoreAddress,
+        UpgradeableContractDeploySalt memory transferCreditsConditionSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (TransferCreditsCondition transferCreditsCondition) {
+        // Check for zero salt
+        require(transferCreditsConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        // Deploy TransferCreditsCondition Implementation
+        console2.log('Deploying TransferCreditsCondition Implementation');
+        (address transferCreditsConditionImpl,) = deployWithSanityChecks(
+            transferCreditsConditionSalt.implementationSalt,
+            type(TransferCreditsCondition).creationCode,
+            revertIfAlreadyDeployed
+        );
+        console2.log('TransferCreditsCondition Implementation deployed at:', address(transferCreditsConditionImpl));
+
+        // Deploy TransferCreditsCondition Proxy
+        console2.log('Deploying TransferCreditsCondition Proxy');
+        bytes memory transferCreditsConditionInitData = abi.encodeCall(
             TransferCreditsCondition.initialize,
             (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
         );
-        TransferCreditsCondition transferCreditsCondition = TransferCreditsCondition(
-            address(new ERC1967Proxy(address(transferCreditsConditionImpl), transferCreditsConditionData))
+        (address transferCreditsConditionProxy,) = deployWithSanityChecks(
+            transferCreditsConditionSalt.proxySalt,
+            getERC1967ProxyCreationCode(address(transferCreditsConditionImpl), transferCreditsConditionInitData),
+            revertIfAlreadyDeployed
+        );
+        transferCreditsCondition = TransferCreditsCondition(transferCreditsConditionProxy);
+        console2.log('TransferCreditsCondition Proxy deployed at:', address(transferCreditsCondition));
+
+        // Verify deployment
+        require(
+            transferCreditsCondition.authority() == address(accessManagerAddress),
+            TransferCreditsConditionDeployment_InvalidAuthority(address(transferCreditsCondition.authority()))
+        );
+    }
+
+    function deployDistributePaymentsCondition(
+        INVMConfig nvmConfigAddress,
+        IAccessManager accessManagerAddress,
+        IAsset assetsRegistryAddress,
+        IAgreement agreementsStoreAddress,
+        IVault paymentsVaultAddress,
+        UpgradeableContractDeploySalt memory distributePaymentsConditionSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (DistributePaymentsCondition distributePaymentsCondition) {
+        // Check for zero salt
+        require(distributePaymentsConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        // Deploy DistributePaymentsCondition Implementation
+        console2.log('Deploying DistributePaymentsCondition Implementation');
+        (address distributePaymentsConditionImpl,) = deployWithSanityChecks(
+            distributePaymentsConditionSalt.implementationSalt,
+            type(DistributePaymentsCondition).creationCode,
+            revertIfAlreadyDeployed
+        );
+        console2.log(
+            'DistributePaymentsCondition Implementation deployed at:', address(distributePaymentsConditionImpl)
         );
 
-        // Deploy DistributePaymentsCondition
-        DistributePaymentsCondition distributePaymentsConditionImpl = new DistributePaymentsCondition();
-        bytes memory distributePaymentsConditionData = abi.encodeCall(
+        // Deploy DistributePaymentsCondition Proxy
+        console2.log('Deploying DistributePaymentsCondition Proxy');
+        bytes memory distributePaymentsConditionInitData = abi.encodeCall(
             DistributePaymentsCondition.initialize,
             (
                 nvmConfigAddress,
@@ -72,22 +235,59 @@ contract DeployConditions is Script, DeployConfig {
                 paymentsVaultAddress
             )
         );
-        DistributePaymentsCondition distributePaymentsCondition = DistributePaymentsCondition(
-            address(new ERC1967Proxy(address(distributePaymentsConditionImpl), distributePaymentsConditionData))
+        (address distributePaymentsConditionProxy,) = deployWithSanityChecks(
+            distributePaymentsConditionSalt.proxySalt,
+            getERC1967ProxyCreationCode(address(distributePaymentsConditionImpl), distributePaymentsConditionInitData),
+            revertIfAlreadyDeployed
         );
+        distributePaymentsCondition = DistributePaymentsCondition(distributePaymentsConditionProxy);
+        console2.log('DistributePaymentsCondition Proxy deployed at:', address(distributePaymentsCondition));
 
-        // Deploy FiatSettlementCondition
-        FiatSettlementCondition fiatSettlementConditionImpl = new FiatSettlementCondition();
-        bytes memory fiatSettlementConditionData = abi.encodeCall(
+        // Verify deployment
+        require(
+            distributePaymentsCondition.authority() == address(accessManagerAddress),
+            DistributePaymentsConditionDeployment_InvalidAuthority(address(distributePaymentsCondition.authority()))
+        );
+    }
+
+    function deployFiatSettlementCondition(
+        INVMConfig nvmConfigAddress,
+        IAccessManager accessManagerAddress,
+        IAsset assetsRegistryAddress,
+        IAgreement agreementsStoreAddress,
+        UpgradeableContractDeploySalt memory fiatSettlementConditionSalt,
+        bool revertIfAlreadyDeployed
+    ) public returns (FiatSettlementCondition fiatSettlementCondition) {
+        // Check for zero salt
+        require(fiatSettlementConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
+
+        // Deploy FiatSettlementCondition Implementation
+        console2.log('Deploying FiatSettlementCondition Implementation');
+        (address fiatSettlementConditionImpl,) = deployWithSanityChecks(
+            fiatSettlementConditionSalt.implementationSalt,
+            type(FiatSettlementCondition).creationCode,
+            revertIfAlreadyDeployed
+        );
+        console2.log('FiatSettlementCondition Implementation deployed at:', address(fiatSettlementConditionImpl));
+
+        // Deploy FiatSettlementCondition Proxy
+        console2.log('Deploying FiatSettlementCondition Proxy');
+        bytes memory fiatSettlementConditionInitData = abi.encodeCall(
             FiatSettlementCondition.initialize,
             (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
         );
-        FiatSettlementCondition fiatSettlementCondition = FiatSettlementCondition(
-            address(new ERC1967Proxy(address(fiatSettlementConditionImpl), fiatSettlementConditionData))
+        (address fiatSettlementConditionProxy,) = deployWithSanityChecks(
+            fiatSettlementConditionSalt.proxySalt,
+            getERC1967ProxyCreationCode(address(fiatSettlementConditionImpl), fiatSettlementConditionInitData),
+            revertIfAlreadyDeployed
         );
+        fiatSettlementCondition = FiatSettlementCondition(fiatSettlementConditionProxy);
+        console2.log('FiatSettlementCondition Proxy deployed at:', address(fiatSettlementCondition));
 
-        vm.stopBroadcast();
-
-        return (lockPaymentCondition, transferCreditsCondition, distributePaymentsCondition, fiatSettlementCondition);
+        // Verify deployment
+        require(
+            fiatSettlementCondition.authority() == address(accessManagerAddress),
+            FiatSettlementConditionDeployment_InvalidAuthority(address(fiatSettlementCondition.authority()))
+        );
     }
 }
