@@ -57,7 +57,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), owner);
     }
     
-    // Using _createPlanWithConfig from BaseTest instead of a custom function
+    // Helper method to create an expirable credits plan
 
     function test_balanceOf_randomPlan() public view {
         uint256 balance = nftExpirableCredits.balanceOf(owner, 1);
@@ -89,7 +89,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
         // Mint with 10 seconds expiration
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 1, 10, '');
+        nftExpirableCredits.mint(receiver, planId, 1, 10, '');
         
         // Check initial balance
         uint256 initialBalance = nftExpirableCredits.balanceOf(receiver, planId);
@@ -108,7 +108,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
         // Mint with no expiration (0 seconds)
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 1, 0, '');
+        nftExpirableCredits.mint(receiver, planId, 1, 0, '');
         
         // Check initial balance
         uint256 initialBalance = nftExpirableCredits.balanceOf(receiver, planId);
@@ -127,10 +127,10 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
         // Mint expirable credits (50 tokens with 20 seconds expiration)
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 50, 20, '');
+        nftExpirableCredits.mint(receiver, planId, 50, 20, '');
         
         // Mint permanent credits (100 tokens with no expiration)
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 100, 0, '');
+        nftExpirableCredits.mint(receiver, planId, 100, 0, '');
         
         // Check initial balance (should be sum of both)
         uint256 initialBalance = nftExpirableCredits.balanceOf(receiver, planId);
@@ -149,9 +149,9 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
         // Mint with different expiration times
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 50, 10, '');  // 10 seconds
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 75, 30, '');  // 30 seconds
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 100, 60, ''); // 60 seconds
+        nftExpirableCredits.mint(receiver, planId, 50, 10, '');  // 10 seconds
+        nftExpirableCredits.mint(receiver, planId, 75, 30, '');  // 30 seconds
+        nftExpirableCredits.mint(receiver, planId, 100, 60, ''); // 60 seconds
         
         // Check initial balance
         uint256 initialBalance = nftExpirableCredits.balanceOf(receiver, planId);
