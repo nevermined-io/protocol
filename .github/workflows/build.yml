@@ -2,6 +2,9 @@ name: Build and Tests
 
 on: push
 
+permissions:
+  contents: write
+
 jobs:
   tests:
     runs-on: ubuntu-latest
