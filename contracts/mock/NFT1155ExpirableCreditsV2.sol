@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
+import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
 
 contract NFT1155ExpirableCreditsV2 is NFT1155ExpirableCredits {
     string private _version;
