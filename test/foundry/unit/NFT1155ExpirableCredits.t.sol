@@ -179,7 +179,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         nvmConfig.grantRole(nftExpirableCredits.CREDITS_BURNER_ROLE(), address(this));
         vm.stopPrank();
 
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 5, 0, '');
+        nftExpirableCredits.mint(receiver, planId, 5, 0, '');
         nftExpirableCredits.burn(receiver, planId, 1);
         uint256 balance = nftExpirableCredits.balanceOf(receiver, planId);
         assertEq(balance, 4);
@@ -189,7 +189,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         vm.prank(owner);
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
-        nftExpirableCredits.mintWithExpirationTime(receiver, planId, 5, 0, '');
+        nftExpirableCredits.mint(receiver, planId, 5, 0, '');
         
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
