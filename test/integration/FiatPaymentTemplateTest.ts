@@ -6,6 +6,7 @@ import {
   generateId,
   createPriceConfig,
   createCreditsConfig,
+  registerAssetAndPlan,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 
@@ -86,19 +87,22 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       creditsConfig = createCreditsConfig()
 
       priceConfig.priceType = 1 // FIXED_FIAT_PRICE
+      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice, nftCredits.address)
+      did = result.did
+      planId = result.planId
+      // console.log('Price Config:', priceConfig)
 
-      console.log('Price Config:', priceConfig)
+      // const didSeed = generateId()
+      // did = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
 
-      const didSeed = generateId()
-      did = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
-
-      await assetsRegistry.write.registerAssetAndPlan(
-        [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftCredits.address],
-        { account: alice.account },
-      )
+      // await assetsRegistry.write.registerAssetAndPlan(
+      //   [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftCredits.address],
+      //   { account: alice.account },
+      // )
 
       const asset = await assetsRegistry.read.getAsset([did])
-      planId = asset.plans[0]
+      
+      console.log('Asset:', asset)
 
       // Verify asset and plan are registered
       expect(asset.lastUpdated > 0n).to.be.true
