@@ -249,8 +249,9 @@ contract LockPaymentConditionTest is BaseTest {
 
   function test_revert_notTemplate() public {
     // Try to fulfill condition from non-template account
-    vm.expectRevert(abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user));
-
+    bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
+    
+    vm.expectRevert(revertData);
     vm.prank(user);
     lockPaymentCondition.fulfill{ value: 100 }(
       conditionId,
@@ -264,8 +265,9 @@ contract LockPaymentConditionTest is BaseTest {
     // Try to fulfill condition with non-existent agreement
     bytes32 fakeAgreementId = bytes32(uint256(9999));
 
-    vm.expectRevert(abi.encodeWithSelector(IAgreement.AgreementNotFound.selector, fakeAgreementId));
-
+    bytes memory revertData = abi.encodeWithSelector(IAgreement.AgreementNotFound.selector, fakeAgreementId);
+    
+    vm.expectRevert(revertData);
     vm.prank(template);
     lockPaymentCondition.fulfill{ value: 100 }(
       conditionId,
