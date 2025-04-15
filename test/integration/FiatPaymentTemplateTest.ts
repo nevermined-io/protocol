@@ -42,7 +42,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
     const wallets = await hre.viem.getWalletClients()
 
     foundryTools = new FoundryTools(wallets)
-    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON || 'deployment-latest.json')
+    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON)
     
     nvmConfig = _deployment.nvmConfig
     assetsRegistry = _deployment.assetsRegistry

@@ -58,7 +58,7 @@ describe('IT: Expirable Credits e2e flow', function () {
 
     foundryTools = new FoundryTools(wallets)
     
-    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON || 'deployment-latest.json')
+    const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON)
 
     expect(_deployment.nvmConfig.address).to.be.a('string').to.startWith('0x')
     expect(_deployment.assetsRegistry.address).to.be.a('string').to.startWith('0x')
