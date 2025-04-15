@@ -23,15 +23,25 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         super.setUp();
         
         // Create an expirable credits plan for testing
+        planId = _createExpirablePlan();
+    }
+    
+    function _createExpirablePlan() internal returns (uint256) {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = owner;
+        
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+            
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](1),
-            receivers: new address[](1),
+            amounts: amounts,
+            receivers: receivers,
             contractAddress: address(0)
         });
-        priceConfig.amounts[0] = 100;
-        priceConfig.receivers[0] = owner;
         
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.EXPIRABLE,
@@ -43,7 +53,8 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         });
         
         vm.prank(owner);
-        planId = _createPlanWithConfig(priceConfig, creditsConfig, address(nftExpirableCredits));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftExpirableCredits));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), owner);
     }
     
     // Using _createPlanWithConfig from BaseTest instead of a custom function
