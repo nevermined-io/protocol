@@ -7,6 +7,7 @@ import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
+import {INFT1155} from '../../../contracts/interfaces/INFT1155.sol';
 
 import {NFT1155CreditsV2} from '../../../contracts/mock/NFT1155CreditsV2.sol';
 import {NFT1155Credits} from '../../../contracts/token/NFT1155Credits.sol';
@@ -52,11 +53,14 @@ contract NFT1155CreditsTest is BaseTest {
     }
 
     function test_mintBatch_correct() public {
+        // Grant CREDITS_MINTER_ROLE to this contract
+        bytes32 minterRole = nftCredits.CREDITS_MINTER_ROLE();
         vm.prank(owner);
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
+        nvmConfig.grantRole(minterRole, address(this));
 
-        uint256 planId1 = _createPlan();
-        uint256 planId2 = _createPlan();
+        // Create unique plans with different configurations
+        uint256 planId1 = _createPlanWithAmount(100);
+        uint256 planId2 = _createPlanWithAmount(200);
         
         uint256[] memory ids = new uint256[](2);
         uint256[] memory amounts = new uint256[](2);
@@ -75,9 +79,40 @@ contract NFT1155CreditsTest is BaseTest {
         assertEq(balance2, 200);
     }
     
+    // Helper function to create plans with different amounts
+    function _createPlanWithAmount(uint256 amount) internal returns (uint256) {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = amount;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = address(this);
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: amount,
+            minAmount: 1,
+            maxAmount: 1
+        });
+
+        vm.prank(owner);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+    }
+    
     function test_mintBatch_unauthorized() public {
-        uint256 planId1 = _createPlan();
-        uint256 planId2 = _createPlan();
+        // Create unique plans with different configurations
+        uint256 planId1 = _createPlanWithAmount(300);
+        uint256 planId2 = _createPlanWithAmount(400);
         
         uint256[] memory ids = new uint256[](2);
         uint256[] memory amounts = new uint256[](2);
@@ -119,18 +154,24 @@ contract NFT1155CreditsTest is BaseTest {
         nftCredits.mint(receiver, planId, 5, '');
         
         vm.prank(unauthorized);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRedemptionPermission.selector);
         nftCredits.burn(receiver, planId, 1);
     }
     
     function test_burnBatch_correct() public {
+        // Grant CREDITS_MINTER_ROLE to this contract
+        bytes32 minterRole = nftCredits.CREDITS_MINTER_ROLE();
         vm.startPrank(owner);
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
-        nvmConfig.grantRole(nftCredits.CREDITS_BURNER_ROLE(), address(this));
+        nvmConfig.grantRole(minterRole, address(this));
+        
+        // Grant CREDITS_BURNER_ROLE to this contract
+        bytes32 burnerRole = nftCredits.CREDITS_BURNER_ROLE();
+        nvmConfig.grantRole(burnerRole, address(this));
         vm.stopPrank();
 
-        uint256 planId1 = _createPlan();
-        uint256 planId2 = _createPlan();
+        // Create unique plans with different configurations
+        uint256 planId1 = _createPlanWithAmount(500);
+        uint256 planId2 = _createPlanWithAmount(600);
         
         uint256[] memory ids = new uint256[](2);
         uint256[] memory mintAmounts = new uint256[](2);
@@ -154,11 +195,14 @@ contract NFT1155CreditsTest is BaseTest {
     }
     
     function test_burnBatch_unauthorized() public {
+        // Grant CREDITS_MINTER_ROLE to this contract
+        bytes32 minterRole = nftCredits.CREDITS_MINTER_ROLE();
         vm.prank(owner);
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
+        nvmConfig.grantRole(minterRole, address(this));
 
-        uint256 planId1 = _createPlan();
-        uint256 planId2 = _createPlan();
+        // Create unique plans with different configurations
+        uint256 planId1 = _createPlanWithAmount(700);
+        uint256 planId2 = _createPlanWithAmount(800);
         
         uint256[] memory ids = new uint256[](2);
         uint256[] memory mintAmounts = new uint256[](2);
@@ -173,6 +217,7 @@ contract NFT1155CreditsTest is BaseTest {
         
         nftCredits.mintBatch(receiver, ids, mintAmounts, '');
         
+        bytes32 burnerRole = nftCredits.CREDITS_BURNER_ROLE();
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
         nftCredits.burnBatch(receiver, ids, burnAmounts);

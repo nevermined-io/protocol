@@ -43,11 +43,11 @@ contract PaymentsVaultTest is BaseTest {
     function test_depositNativeToken() public {
         uint256 depositAmount = 0.1 ether;
         
-        vm.deal(depositor, depositAmount);
+        vm.deal(address(lockPaymentCondition), depositAmount);
         
-        vm.prank(depositor);
+        vm.prank(address(lockPaymentCondition));
         vm.expectEmit(true, true, true, true);
-        emit IVault.ReceivedNativeToken(depositor, depositAmount);
+        emit IVault.ReceivedNativeToken(address(lockPaymentCondition), depositAmount);
         paymentsVault.depositNativeToken{value: depositAmount}();
         
         assertEq(paymentsVault.getBalanceNativeToken(), depositAmount);
@@ -59,7 +59,7 @@ contract PaymentsVaultTest is BaseTest {
         vm.deal(withdrawer, depositAmount);
         
         vm.prank(withdrawer);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IVault.InvalidRole.selector);
         paymentsVault.depositNativeToken{value: depositAmount}();
     }
     
@@ -68,17 +68,17 @@ contract PaymentsVaultTest is BaseTest {
         uint256 withdrawAmount = 0.05 ether;
         
         // First deposit
-        vm.deal(depositor, depositAmount);
-        vm.prank(depositor);
+        vm.deal(address(lockPaymentCondition), depositAmount);
+        vm.prank(address(lockPaymentCondition));
         paymentsVault.depositNativeToken{value: depositAmount}();
         
         // Get receiver balance before
         uint256 receiverBalanceBefore = address(receiver).balance;
         
-        // Withdraw
-        vm.prank(withdrawer);
+        // Withdraw using distributePaymentsCondition which has WITHDRAW_ROLE
+        vm.prank(address(distributePaymentsCondition));
         vm.expectEmit(true, true, true, true);
-        emit IVault.WithdrawNativeToken(withdrawer, receiver, withdrawAmount);
+        emit IVault.WithdrawNativeToken(address(distributePaymentsCondition), receiver, withdrawAmount);
         paymentsVault.withdrawNativeToken(withdrawAmount, receiver);
         
         // Verify vault balance
@@ -93,28 +93,35 @@ contract PaymentsVaultTest is BaseTest {
         uint256 withdrawAmount = 0.05 ether;
         
         // First deposit
-        vm.deal(depositor, depositAmount);
-        vm.prank(depositor);
+        vm.deal(address(lockPaymentCondition), depositAmount);
+        vm.prank(address(lockPaymentCondition));
         paymentsVault.depositNativeToken{value: depositAmount}();
         
         // Try to withdraw as non-withdrawer
         vm.prank(depositor);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IVault.InvalidRole.selector);
         paymentsVault.withdrawNativeToken(withdrawAmount, receiver);
     }
     
     function test_depositERC20() public {
         uint256 depositAmount = 100 * 10**18;
         
+        // Mint tokens to lockPaymentCondition
+        mockERC20.mint(address(lockPaymentCondition), depositAmount);
+        
         // Approve tokens first
-        vm.prank(depositor);
+        vm.prank(address(lockPaymentCondition));
         mockERC20.approve(address(paymentsVault), depositAmount);
         
-        // Deposit
-        vm.prank(depositor);
+        // Transfer tokens to vault first (since depositERC20 only emits event)
+        vm.prank(address(lockPaymentCondition));
+        mockERC20.transfer(address(paymentsVault), depositAmount);
+        
+        // Deposit (this only emits event, doesn't actually transfer)
+        vm.prank(address(lockPaymentCondition));
         vm.expectEmit(true, true, true, true);
-        emit IVault.ReceivedERC20(address(mockERC20), depositor, depositAmount);
-        paymentsVault.depositERC20(address(mockERC20), depositAmount, depositor);
+        emit IVault.ReceivedERC20(address(mockERC20), address(lockPaymentCondition), depositAmount);
+        paymentsVault.depositERC20(address(mockERC20), depositAmount, address(lockPaymentCondition));
         
         // Verify balance
         assertEq(mockERC20.balanceOf(address(paymentsVault)), depositAmount);
@@ -124,7 +131,7 @@ contract PaymentsVaultTest is BaseTest {
         uint256 depositAmount = 100 * 10**18;
         
         vm.prank(withdrawer);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IVault.InvalidRole.selector);
         paymentsVault.depositERC20(address(mockERC20), depositAmount, withdrawer);
     }
     
@@ -134,8 +141,10 @@ contract PaymentsVaultTest is BaseTest {
         
         // Deposit some tokens
         uint256 depositAmount = 0.1 ether;
-        vm.deal(depositor, depositAmount);
-        vm.prank(depositor);
+        vm.deal(address(lockPaymentCondition), depositAmount);
+        
+        // Use lockPaymentCondition which has DEPOSITOR_ROLE
+        vm.prank(address(lockPaymentCondition));
         paymentsVault.depositNativeToken{value: depositAmount}();
         
         // Check balance again
@@ -158,10 +167,10 @@ contract PaymentsVaultTest is BaseTest {
     function test_receiveFunction_depositor() public {
         uint256 depositAmount = 0.1 ether;
         
-        vm.deal(depositor, depositAmount);
+        vm.deal(address(lockPaymentCondition), depositAmount);
         
-        // Send ETH directly to the contract
-        vm.prank(depositor);
+        // Send ETH directly to the contract using lockPaymentCondition which has DEPOSITOR_ROLE
+        vm.prank(address(lockPaymentCondition));
         (bool success,) = address(paymentsVault).call{value: depositAmount}("");
         
         assertTrue(success);

@@ -25,8 +25,14 @@ contract NVMConfigTest is BaseTest {
 
     function test_setNetworkFees() public {
         vm.prank(governor);
+        
+        // The setNetworkFees function emits two events, one for networkFee and one for feeReceiver
         vm.expectEmit(true, true, true, true);
-        emit INVMConfig.NeverminedConfigChange(governor, keccak256("NetworkFees"), bytes(""));
+        emit INVMConfig.NeverminedConfigChange(governor, keccak256("networkFee"), abi.encodePacked(uint256(200)));
+        
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.NeverminedConfigChange(governor, keccak256("feeReceiver"), abi.encodePacked(governor));
+        
         nvmConfig.setNetworkFees(200, governor);
         
         assertEq(nvmConfig.getNetworkFee(), 200);
@@ -59,7 +65,7 @@ contract NVMConfigTest is BaseTest {
         
         vm.prank(governor);
         vm.expectEmit(true, true, true, true);
-        emit INVMConfig.NeverminedConfigChange(governor, keccak256("Parameter"), paramValue);
+        emit INVMConfig.NeverminedConfigChange(governor, paramName, paramValue);
         nvmConfig.setParameter(paramName, paramValue);
         
         (bytes memory value, bool exists, ) = nvmConfig.getParameter(paramName);
@@ -79,9 +85,11 @@ contract NVMConfigTest is BaseTest {
     }
     
     function test_grantGovernor() public {
+        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
+        
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit INVMConfig.ConfigPermissionsChange(newGovernor, keccak256("GOVERNOR_ROLE"), true);
+        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, true);
         nvmConfig.grantGovernor(newGovernor);
         
         assertTrue(nvmConfig.isGovernor(newGovernor));
@@ -94,6 +102,8 @@ contract NVMConfigTest is BaseTest {
     }
     
     function test_revokeGovernor() public {
+        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
+        
         // First grant governor role
         vm.prank(owner);
         nvmConfig.grantGovernor(newGovernor);
@@ -102,7 +112,7 @@ contract NVMConfigTest is BaseTest {
         // Then revoke it
         vm.prank(owner);
         vm.expectEmit(true, true, true, true);
-        emit INVMConfig.ConfigPermissionsChange(newGovernor, keccak256("GOVERNOR_ROLE"), false);
+        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, false);
         nvmConfig.revokeGovernor(newGovernor);
         
         assertFalse(nvmConfig.isGovernor(newGovernor));
