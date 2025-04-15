@@ -25,6 +25,7 @@ jobs:
       - name: Lint
         run: |
           yarn lint
+          
       - name: Compile
         run: |
           yarn clean
