@@ -92,13 +92,6 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       planId = result.planId
       // console.log('Price Config:', priceConfig)
 
-      // const didSeed = generateId()
-      // did = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
-
-      // await assetsRegistry.write.registerAssetAndPlan(
-      //   [didSeed, 'https://nevermined.io', priceConfig, creditsConfig, nftCredits.address],
-      //   { account: alice.account },
-      // )
 
       const asset = await assetsRegistry.read.getAsset([did])
       
