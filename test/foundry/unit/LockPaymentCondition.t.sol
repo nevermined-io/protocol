@@ -202,19 +202,13 @@ contract LockPaymentConditionTest is BaseTest {
     }
 
     function test_revert_notTemplate() public {
-      // Try to fulfill condition from non-template account
-      bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
+        // Try to fulfill condition from non-template account
+        bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
 
-      vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
+        vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
 
-      lockPaymentCondition.fulfill{ value: 100 }(
-        conditionId,
-        agreementId,
-        planId,
-        user
-      );
+        lockPaymentCondition.fulfill{value: 100}(conditionId, agreementId, planId, user);
     }
-
 
     function test_revert_incorrectPaymentAmount() public {
         // Get plan to determine payment amount
