@@ -2,8 +2,6 @@
 // Learn more about it at https://hardhat.org/ignition
 
 import { buildModule } from '@nomicfoundation/hardhat-ignition/modules'
-import hre from 'hardhat'
-import { sha3 } from '../../test/common/utils'
 import { zeroAddress } from 'viem'
 import { AccessManagerModule } from './AccessManger'
 

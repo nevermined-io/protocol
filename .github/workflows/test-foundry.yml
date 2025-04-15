@@ -1,6 +1,9 @@
 name: Foundry tests
 on: [push]
 
+permissions:
+  contents: write
+
 jobs:
   check:
     name: Foundry project
@@ -22,10 +25,23 @@ jobs:
       - name: Lint
         run: |
           yarn lint
+          
       - name: Compile
         run: |
           yarn clean
           yarn compile
+
+      - name: Run Anvil
+        run: |
+          ./scripts/bin/anvil.sh
+  
+      - name: Deploy Contracts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+        run: |
+          source .env.hardhat.sh
+          yarn deploy:local
+
       - name: Run Unit Tests
         run: |
           yarn test:foundry
