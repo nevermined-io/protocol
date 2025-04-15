@@ -7,10 +7,13 @@ import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {IVault} from './interfaces/IVault.sol';
 
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {ReentrancyGuardTransientUpgradeable} from
+    '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
+
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
-contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSUpgradeable {
+contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to deposit assets into the Vault
      */
@@ -30,13 +33,14 @@ contract PaymentsVault is IVault, ReentrancyGuardUpgradeable, AccessManagedUUPSU
         INVMConfig nvmConfig;
     }
 
-    function initialize(address _nvmConfigAddress, address _authority) public initializer {
-        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
+        ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         PaymentsVaultStorage storage $ = _getPaymentsVaultStorage();
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        $.nvmConfig = _nvmConfigAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    // solhint-disable-next-line no-complex-fallback
     receive() external payable {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);

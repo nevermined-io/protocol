@@ -3,9 +3,11 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+import {IAsset} from '../interfaces/IAsset.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Base} from './NFT1155Base.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract NFT1155ExpirableCredits is NFT1155Base {
     // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155expirablecredits.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -25,12 +27,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     }
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
         string memory, // name
         string memory // symbol
-    ) public virtual initializer {
+    ) external virtual initializer {
         ERC1155Upgradeable.__ERC1155_init('');
         __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
     }
@@ -159,7 +161,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         return _balances;
     }
 
-    function whenWasMinted(address _owner, uint256 _planId) public view returns (uint256[] memory) {
+    function whenWasMinted(address _owner, uint256 _planId) external view returns (uint256[] memory) {
         NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
         bytes32 _key = _getTokenKey(_owner, _planId);
@@ -172,7 +174,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         return _whenMinted;
     }
 
-    function getMintedEntries(address _owner, uint256 _planId) public view returns (MintedCredits[] memory) {
+    function getMintedEntries(address _owner, uint256 _planId) external view returns (MintedCredits[] memory) {
         return _getNFT1155ExpirableCreditsStorage().credits[_getTokenKey(_owner, _planId)];
     }
 

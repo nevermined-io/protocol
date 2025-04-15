@@ -23,7 +23,7 @@ library TokenUtils {
      * @dev Will throw if transfer fails
      */
     function transferERC20(address _senderAddress, address _receiverAddress, address _tokenAddress, uint256 _amount)
-        public
+        external
     {
         if (_amount > 0) {
             IERC20 token = IERC20(_tokenAddress);
@@ -38,7 +38,7 @@ library TokenUtils {
      * @param _receiverAddress the address to receive the ETH
      * @param _amount Native token (ETH, ...) amount to be transferred
      */
-    function transferNativeToken(address payable _receiverAddress, uint256 _amount) public {
+    function transferNativeToken(address payable _receiverAddress, uint256 _amount) external {
         if (_amount > 0) {
             if (msg.value != _amount) revert InvalidTransactionAmount(msg.value, _amount);
             // solhint-disable-next-line
@@ -86,7 +86,7 @@ library TokenUtils {
         address[] calldata _receivers,
         uint256 _feeAmount,
         address _feeReceiver
-    ) public pure returns (uint256[] memory, address[] memory) {
+    ) external pure returns (uint256[] memory, address[] memory) {
         if (_feeAmount == 0 || _feeReceiver == address(0)) return (_amounts, _receivers);
 
         uint256 _totalAmount = calculateAmountSum(_amounts);

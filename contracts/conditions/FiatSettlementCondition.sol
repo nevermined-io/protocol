@@ -8,9 +8,11 @@ import {IAsset} from '../interfaces/IAsset.sol';
 import {IFiatSettlement} from '../interfaces/IFiatSettlement.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {TemplateCondition} from './TemplateCondition.sol';
-import {ReentrancyGuardUpgradeable} from '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol';
+import {ReentrancyGuardTransientUpgradeable} from
+    '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
+import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
-contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateCondition, IFiatSettlement {
+contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition, IFiatSettlement {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatSettlementCondition');
 
     /**
@@ -31,18 +33,18 @@ contract FiatSettlementCondition is ReentrancyGuardUpgradeable, TemplateConditio
     }
 
     function initialize(
-        address _nvmConfigAddress,
-        address _authority,
-        address _assetsRegistryAddress,
-        address _agreementStoreAddress
-    ) public initializer {
-        ReentrancyGuardUpgradeable.__ReentrancyGuard_init();
+        INVMConfig _nvmConfigAddress,
+        IAccessManager _authority,
+        IAsset _assetsRegistryAddress,
+        IAgreement _agreementStoreAddress
+    ) external initializer {
+        ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         FiatSettlementConditionStorage storage $ = _getFiatSettlementConditionStorage();
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
-        $.assetsRegistry = IAsset(_assetsRegistryAddress);
-        $.agreementStore = IAgreement(_agreementStoreAddress);
-        __AccessManagedUUPSUpgradeable_init(_authority);
+        $.nvmConfig = _nvmConfigAddress;
+        $.assetsRegistry = _assetsRegistryAddress;
+        $.agreementStore = _agreementStoreAddress;
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
     function fulfill(
