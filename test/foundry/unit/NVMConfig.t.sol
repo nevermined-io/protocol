@@ -4,6 +4,7 @@
 pragma solidity ^0.8.28;
 
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
 import {NVMConfigV2} from '../../../contracts/mock/NVMConfigV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
@@ -11,11 +12,116 @@ import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
 contract NVMConfigTest is BaseTest {
+    address public newGovernor;
+
     function setUp() public override {
         super.setUp();
 
         vm.prank(governor);
         nvmConfig.setNetworkFees(100, owner);
+
+        newGovernor = makeAddr('newGovernor');
+    }
+
+    function test_setNetworkFees() public {
+        vm.prank(governor);
+
+        // The setNetworkFees function emits two events, one for networkFee and one for feeReceiver
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.NeverminedConfigChange(governor, keccak256('networkFee'), abi.encodePacked(uint256(200)));
+
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.NeverminedConfigChange(governor, keccak256('feeReceiver'), abi.encodePacked(governor));
+
+        nvmConfig.setNetworkFees(200, governor);
+
+        assertEq(nvmConfig.getNetworkFee(), 200);
+        assertEq(nvmConfig.getFeeReceiver(), governor);
+    }
+
+    function test_setNetworkFees_onlyGovernor() public {
+        address nonGovernor = makeAddr('nonGovernor');
+
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(INVMConfig.OnlyGovernor.selector);
+        nvmConfig.setNetworkFees(200, governor);
+    }
+
+    function test_setNetworkFees_invalidFee() public {
+        vm.prank(governor);
+        vm.expectPartialRevert(INVMConfig.InvalidNetworkFee.selector);
+        nvmConfig.setNetworkFees(9900000, governor);
+    }
+
+    function test_setNetworkFees_invalidReceiver() public {
+        vm.prank(governor);
+        vm.expectPartialRevert(INVMConfig.InvalidFeeReceiver.selector);
+        nvmConfig.setNetworkFees(200, address(0));
+    }
+
+    function test_setParameter() public {
+        bytes32 paramName = keccak256('myparam');
+        bytes memory paramValue = abi.encodePacked('myvalue');
+
+        vm.prank(governor);
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.NeverminedConfigChange(governor, paramName, paramValue);
+        nvmConfig.setParameter(paramName, paramValue);
+
+        (bytes memory value, bool exists,) = nvmConfig.getParameter(paramName);
+        assertTrue(exists);
+        assertEq(keccak256(value), keccak256(paramValue));
+    }
+
+    function test_setParameter_onlyGovernor() public {
+        bytes32 paramName = keccak256('myparam');
+        bytes memory paramValue = abi.encodePacked('myvalue');
+
+        address nonGovernor = makeAddr('nonGovernor');
+
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(INVMConfig.OnlyGovernor.selector);
+        nvmConfig.setParameter(paramName, paramValue);
+    }
+
+    function test_grantGovernor() public {
+        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
+
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, true);
+        nvmConfig.grantGovernor(newGovernor);
+
+        assertTrue(nvmConfig.isGovernor(newGovernor));
+    }
+
+    function test_grantGovernor_onlyOwner() public {
+        vm.prank(governor);
+        vm.expectPartialRevert(INVMConfig.OnlyOwner.selector);
+        nvmConfig.grantGovernor(newGovernor);
+    }
+
+    function test_revokeGovernor() public {
+        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
+
+        // First grant governor role
+        vm.prank(owner);
+        nvmConfig.grantGovernor(newGovernor);
+        assertTrue(nvmConfig.isGovernor(newGovernor));
+
+        // Then revoke it
+        vm.prank(owner);
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, false);
+        nvmConfig.revokeGovernor(newGovernor);
+
+        assertFalse(nvmConfig.isGovernor(newGovernor));
+    }
+
+    function test_revokeGovernor_onlyOwner() public {
+        vm.prank(governor);
+        vm.expectPartialRevert(INVMConfig.OnlyOwner.selector);
+        nvmConfig.revokeGovernor(newGovernor);
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {

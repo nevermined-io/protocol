@@ -192,4 +192,35 @@ abstract contract BaseTest is Test, ToArrayUtils {
         assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
     }
+
+    function _createExpirablePlan(uint256 amount, uint256 durationSecs) internal returns (uint256) {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = owner;
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.EXPIRABLE,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: durationSecs,
+            amount: amount,
+            minAmount: 1,
+            maxAmount: amount
+        });
+
+        vm.prank(owner);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftExpirableCredits));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), owner);
+    }
 }
