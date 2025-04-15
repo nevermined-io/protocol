@@ -20,33 +20,33 @@ contract LockPaymentConditionTest is BaseTest {
   bytes32 public conditionId;
   bytes32 public agreementId;
   bytes32 public did;
-  bytes32 public planId;
+  uint256 public planId;
 
   function setUp() public override {
     super.setUp();
-
+    
     // Setup addresses
     receiver = makeAddr('receiver');
     template = makeAddr('template');
     user = makeAddr('user');
-
+    
     // Deploy MockERC20
     mockERC20 = new MockERC20('Test Token', 'TST');
-
+    
     // Grant template role
     vm.startPrank(governor);
     nvmConfig.grantTemplate(template);
     vm.stopPrank();
-
+    
     // Create a plan with native token
     uint256[] memory amounts = new uint256[](1);
     amounts[0] = 100;
     address[] memory receivers = new address[](1);
     receivers[0] = receiver;
-
+    
     (uint256[] memory finalAmounts, address[] memory finalReceivers) = assetsRegistry
       .addFeesToPaymentsDistribution(amounts, receivers);
-
+      
     IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
       priceType: IAsset.PriceType.FIXED_PRICE,
       tokenAddress: address(0),
@@ -54,7 +54,7 @@ contract LockPaymentConditionTest is BaseTest {
       receivers: finalReceivers,
       contractAddress: address(0)
     });
-
+    
     IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
       creditsType: IAsset.CreditsType.FIXED,
       redemptionType: IAsset.RedemptionType.ONLY_OWNER,
@@ -63,11 +63,11 @@ contract LockPaymentConditionTest is BaseTest {
       minAmount: 1,
       maxAmount: 100
     });
-
+    
     // Register asset and plan
     bytes32 didSeed = bytes32(uint256(1));
     did = assetsRegistry.hashDID(didSeed, address(this));
-
+    
     vm.prank(address(this));
     assetsRegistry.registerAssetAndPlan(
       didSeed,
@@ -76,9 +76,9 @@ contract LockPaymentConditionTest is BaseTest {
       creditsConfig,
       address(0)
     );
-
+    
     // Get the plan ID
-    planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+    planId = uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this)));
 
     // Create agreement
     bytes32 agreementSeed = bytes32(uint256(2));
@@ -123,8 +123,13 @@ contract LockPaymentConditionTest is BaseTest {
 
     // Fulfill condition with native token
     vm.prank(template);
-    lockPaymentCondition.fulfill{ value: totalAmount }(conditionId, agreementId, did, planId, user);
-
+    lockPaymentCondition.fulfill{ value: totalAmount }(
+      conditionId,
+      agreementId,
+      planId,
+      user
+    );
+    
     // Verify condition state
     IAgreement.ConditionState conditionState = agreementsStore.getConditionState(
       agreementId,
@@ -178,12 +183,12 @@ contract LockPaymentConditionTest is BaseTest {
     );
 
     // Get the plan ID
-    bytes32 erc20PlanId = assetsRegistry.hashPlanId(
+    uint256 erc20PlanId = uint256(assetsRegistry.hashPlanId(
       priceConfig,
       creditsConfig,
       address(0),
       address(this)
-    );
+    ));
 
     // Create agreement
     bytes32 agreementSeed = bytes32(uint256(4));
@@ -223,7 +228,12 @@ contract LockPaymentConditionTest is BaseTest {
 
     // Fulfill condition with ERC20 token
     vm.prank(template);
-    lockPaymentCondition.fulfill(erc20ConditionId, erc20AgreementId, erc20Did, erc20PlanId, user);
+    lockPaymentCondition.fulfill(
+      erc20ConditionId,
+      erc20AgreementId,
+      erc20PlanId,
+      user
+    );
 
     // Verify condition state
     IAgreement.ConditionState conditionState = agreementsStore.getConditionState(
@@ -242,7 +252,12 @@ contract LockPaymentConditionTest is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user));
 
     vm.prank(user);
-    lockPaymentCondition.fulfill{ value: 100 }(conditionId, agreementId, did, planId, user);
+    lockPaymentCondition.fulfill{ value: 100 }(
+      conditionId,
+      agreementId,
+      planId,
+      user
+    );
   }
 
   function test_revert_agreementNotFound() public {
@@ -252,7 +267,12 @@ contract LockPaymentConditionTest is BaseTest {
     vm.expectRevert(abi.encodeWithSelector(IAgreement.AgreementNotFound.selector, fakeAgreementId));
 
     vm.prank(template);
-    lockPaymentCondition.fulfill{ value: 100 }(conditionId, fakeAgreementId, did, planId, user);
+    lockPaymentCondition.fulfill{ value: 100 }(
+      conditionId,
+      fakeAgreementId,
+      planId,
+      user
+    );
   }
 
   function test_revert_incorrectPaymentAmount() public {
@@ -276,7 +296,6 @@ contract LockPaymentConditionTest is BaseTest {
     lockPaymentCondition.fulfill{ value: totalAmount - 1 }(
       conditionId,
       agreementId,
-      did,
       planId,
       user
     );
@@ -323,12 +342,12 @@ contract LockPaymentConditionTest is BaseTest {
     );
 
     // Get the plan ID
-    bytes32 fiatPlanId = assetsRegistry.hashPlanId(
+    uint256 fiatPlanId = uint256(assetsRegistry.hashPlanId(
       priceConfig,
       creditsConfig,
       address(0),
       address(this)
-    );
+    ));
 
     // Create agreement
     bytes32 agreementSeed = bytes32(uint256(6));
@@ -365,7 +384,12 @@ contract LockPaymentConditionTest is BaseTest {
     );
 
     vm.prank(template);
-    lockPaymentCondition.fulfill(fiatConditionId, fiatAgreementId, fiatDid, fiatPlanId, user);
+    lockPaymentCondition.fulfill(
+      fiatConditionId,
+      fiatAgreementId,
+      fiatPlanId,
+      user
+    );
   }
 
   // Helper function to calculate the total amount from an array of amounts
