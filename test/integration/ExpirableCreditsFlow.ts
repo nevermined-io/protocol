@@ -1,11 +1,9 @@
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpers'
-import { ignition } from 'hardhat'
 import { expect } from 'chai'
 import { FoundryTools } from '../common/FoundryTools'
 import hre from 'hardhat'
 import {
-  generateId,
-  getTxParsedLogs,
+  generateId
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 

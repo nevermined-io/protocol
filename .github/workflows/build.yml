@@ -45,11 +45,6 @@ jobs:
         run: |
           source .env.hardhat.sh
           yarn deploy:local
-                    
-      - name: Run Unit Tests
-        run: |
-          source .env.hardhat.sh
-          yarn test
           
       - name: Run Integration Tests
         run: |

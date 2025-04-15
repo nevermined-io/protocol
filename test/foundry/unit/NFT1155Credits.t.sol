@@ -218,7 +218,7 @@ contract NFT1155CreditsTest is BaseTest {
 
         nftCredits.mintBatch(receiver, ids, mintAmounts, '');
 
-        bytes32 burnerRole = nftCredits.CREDITS_BURNER_ROLE();
+        // bytes32 burnerRole = nftCredits.CREDITS_BURNER_ROLE();
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
         nftCredits.burnBatch(receiver, ids, burnAmounts);
