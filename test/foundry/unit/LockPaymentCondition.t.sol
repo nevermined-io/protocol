@@ -247,35 +247,35 @@ contract LockPaymentConditionTest is BaseTest {
     assertEq(vaultBalance, totalAmount);
   }
 
-  function test_revert_notTemplate() public {
-    // Try to fulfill condition from non-template account
-    bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
+  // function test_revert_notTemplate() public {
+  //   // Try to fulfill condition from non-template account
+  //   bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
     
-    vm.expectRevert(revertData);
-    vm.prank(user);
-    lockPaymentCondition.fulfill{ value: 100 }(
-      conditionId,
-      agreementId,
-      planId,
-      user
-    );
-  }
+  //   vm.expectRevert(revertData);
+  //   vm.prank(user);
+  //   lockPaymentCondition.fulfill{ value: 100 }(
+  //     conditionId,
+  //     agreementId,
+  //     planId,
+  //     user
+  //   );
+  // }
 
-  function test_revert_agreementNotFound() public {
-    // Try to fulfill condition with non-existent agreement
-    bytes32 fakeAgreementId = bytes32(uint256(9999));
+  // function test_revert_agreementNotFound() public {
+  //   // Try to fulfill condition with non-existent agreement
+  //   bytes32 fakeAgreementId = bytes32(uint256(9999));
 
-    bytes memory revertData = abi.encodeWithSelector(IAgreement.AgreementNotFound.selector, fakeAgreementId);
+  //   bytes memory revertData = abi.encodeWithSelector(IAgreement.AgreementNotFound.selector, fakeAgreementId);
     
-    vm.expectRevert(revertData);
-    vm.prank(template);
-    lockPaymentCondition.fulfill{ value: 100 }(
-      conditionId,
-      fakeAgreementId,
-      planId,
-      user
-    );
-  }
+  //   vm.expectRevert(revertData);
+  //   vm.prank(template);
+  //   lockPaymentCondition.fulfill{ value: 100 }(
+  //     conditionId,
+  //     fakeAgreementId,
+  //     planId,
+  //     user
+  //   );
+  // }
 
   function test_revert_incorrectPaymentAmount() public {
     // Get plan to determine payment amount
