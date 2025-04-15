@@ -29,6 +29,18 @@ jobs:
         run: |
           yarn clean
           yarn compile
+
+      - name: Run Anvil
+        run: |
+          ./scripts/bin/anvil.sh
+  
+      - name: Deploy Contracts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}      
+        run: |
+          source .env.hardhat.sh
+          yarn deploy:local
+
       - name: Run Unit Tests
         run: |
           yarn test:foundry
