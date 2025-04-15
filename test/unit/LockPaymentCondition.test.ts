@@ -11,23 +11,37 @@ import {
   createAgreement,
 } from '../common/utils'
 import chaiString from 'chai-string'
-import FullDeploymentModule from '../../ignition/modules/FullDeployment'
+import { FoundryTools } from '../common/FoundryTools'
+// import FullDeploymentModule from '../../ignition/modules/FullDeployment'
 
 // Configure chai plugins
 chai.use(chaiString)
 
 describe('LockPaymentCondition', function () {
+  
   // We define a fixture to reuse the same setup in every test.
   async function deployInstance() {
     // Contracts are deployed using the first signer/account by default
-    const [owner, governor, template, user] = await hre.viem.getWalletClients()
+    const wallets = await hre.viem.getWalletClients()
+    const owner = wallets[0]
+    const governor = wallets[1]
+    const template = wallets[2]
+    const user = wallets[3]
+
+    const foundryTools = new FoundryTools(wallets)
+    const { nvmConfig, assetsRegistry, agreementsStore, paymentsVault, lockPaymentCondition } =  
+    await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON || 'deployment-latest.json')
 
     // Deploy full module
-    const { nvmConfig, assetsRegistry, agreementsStore, paymentsVault, lockPaymentCondition } =
-      await hre.ignition.deploy(FullDeploymentModule)
+    // const { nvmConfig, assetsRegistry, agreementsStore, paymentsVault, lockPaymentCondition } =
+    //   await hre.ignition.deploy(FullDeploymentModule)
 
     // Deploy MockERC20
-    const mockERC20 = await hre.viem.deployContract('MockERC20', ['Mock Token', 'MTK'])
+    const mockERC20 = await foundryTools.deployContract(
+      'MockERC20',
+      ['Test Token', 'TST'],
+      'artifacts/contracts/test/MockERC20.sol/MockERC20.json',
+    )
 
     // Grant template role to the template account
     await nvmConfig.write.grantTemplate([template.account.address], {
@@ -48,6 +62,7 @@ describe('LockPaymentCondition', function () {
     // Mint some tokens to user
     await mockERC20.write.mint([user.account.address, 1000n * 10n ** 18n], {
       account: owner.account,
+      chain: (await hre.viem.getPublicClient()).chain
     })
 
     const publicClient = await hre.viem.getPublicClient()
@@ -85,13 +100,15 @@ describe('LockPaymentCondition', function () {
     beforeEach(async function () {
       const { assetsRegistry, agreementsStore, lockPaymentCondition, owner, user, template } =
         await loadFixture(deployInstance)
+      
+      const priceConfig = createPriceConfig(zeroAddress, owner.account.address)
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
         assetsRegistry,
-        zeroAddress,
-        owner,
-        owner.account.address,
+        priceConfig,
+        createCreditsConfig(),
+        owner
       )
       did = assetData.did
       planId = assetData.planId
@@ -123,10 +140,16 @@ describe('LockPaymentCondition', function () {
       // Register asset and plan with user as creator
       const assetData = await registerAssetAndPlan(
         assetsRegistry,
-        zeroAddress,
-        user,
-        user.account.address,
+        createPriceConfig(zeroAddress, user.account.address),
+        createCreditsConfig(),
+        user
       )
+      // const assetData = await registerAssetAndPlan(
+      //   assetsRegistry,
+      //   zeroAddress,
+      //   user,
+      //   user.account.address,
+      // )
       const testDid = assetData.did
       const testPlanId = assetData.planId
 
@@ -193,10 +216,11 @@ describe('LockPaymentCondition', function () {
       // Register asset and plan with ERC20 token
       const assetData = await registerAssetAndPlan(
         assetsRegistry,
-        mockERC20.address,
-        owner,
-        owner.account.address,
+        createPriceConfig(mockERC20.address, owner.account.address),
+        createCreditsConfig(),
+        owner
       )
+      
       did = assetData.did
       planId = assetData.planId
 
@@ -250,13 +274,14 @@ describe('LockPaymentCondition', function () {
       // Get plan to determine payment amount
       const plan = await assetsRegistry.read.getPlan([testPlanId])
       const totalAmount = plan.price.amounts.reduce((a, b) => a + b, 0n)
-
       // Mint tokens for user and approve for LockPaymentCondition contract
       await mockERC20.write.mint([user.account.address, totalAmount], {
         account: user.account,
+        chain: publicClient.chain
       })
       await mockERC20.write.approve([lockPaymentCondition.address, totalAmount], {
         account: user.account,
+        chain: publicClient.chain
       })
 
       // Fulfill condition
@@ -298,11 +323,17 @@ describe('LockPaymentCondition', function () {
 
       // Register asset and plan
       const assetData = await registerAssetAndPlan(
-        assetsRegistry,
-        zeroAddress,
-        owner,
-        owner.account.address,
+        assetsRegistry, 
+        createPriceConfig(zeroAddress, owner.account.address), 
+        createCreditsConfig(), 
+        owner
       )
+      // const assetData = await registerAssetAndPlan(
+      //   assetsRegistry,
+      //   zeroAddress,
+      //   owner,
+      //   owner.account.address,
+      // )
       did = assetData.did
       planId = assetData.planId
 

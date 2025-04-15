@@ -13,6 +13,7 @@ import {
   http,
   parseEventLogs,
   publicActions,
+  PublicClient,
   walletActions,
   WalletClient,
 } from 'viem'
@@ -21,8 +22,8 @@ import { foundry } from 'viem/chains'
 
 export class FoundryTools {
   private testClient
-  private publicClient
-  private walletClient
+  private publicClient: PublicClient
+  private walletClient: WalletClient
 
   constructor(
     private readonly wallets: WalletClient[] = [],
@@ -168,7 +169,7 @@ export class FoundryTools {
       abi: artifact.abi,
       args,
       name: contractName,
-      account: this.wallets[0].account?.address,
+      account: this.wallets[0].account?.address ,
       bytecode: artifact.bytecode,
       chain: foundry,
     })
@@ -201,13 +202,13 @@ export class FoundryTools {
     return this.walletClient
   }
 
-  async getTxEvents(txHash: string) {
+  async getTxEvents(txHash: `0x${string}`) {
     const receipt = await this.publicClient.waitForTransactionReceipt({ hash: txHash })
     if (receipt.status !== 'success') return []
     return receipt.logs
   }
 
-  async getTxParsedLogs(txHash: string, abi: any) {
+  async getTxParsedLogs(txHash: `0x${string}`, abi: any) {
     const logs = await this.getTxEvents(txHash)
     if (logs.length > 0) return parseEventLogs({ abi, logs }) as any[]
     return []
