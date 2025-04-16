@@ -16,6 +16,7 @@ import {
   PublicClient,
   walletActions,
   WalletClient,
+  zeroAddress,
 } from 'viem'
 import fs from 'fs'
 import { foundry } from 'viem/chains'
@@ -27,7 +28,6 @@ export class FoundryTools {
 
   constructor(
     private readonly wallets: WalletClient[] = [],
-    private readonly blockReset = 0n,
     private readonly rpc = 'http://localhost:8545',
   ) {
     this.publicClient = createPublicClient({
@@ -46,17 +46,20 @@ export class FoundryTools {
     })
       .extend(publicActions)
       .extend(walletActions)
-    if (blockReset > 0) {
-      console.log('Resetting blockchain to block number:', this.blockReset)
-      this.testClient.reset({ blockNumber: this.blockReset })
-    }
+    
   }
 
-  async connectToInstance(deploymentJsonPath = 'deployments/latest-hardhat.json') {
+  async connectToInstance(deploymentJsonPath = 'deployments/latest-hardhat.json', backToDeploymentBlock = true) {
     console.log('Connect to contracts instance...')
     console.log('RPC:', this.rpc)
     const deploymentJson = this.parseDeploymentJson(deploymentJsonPath)
     console.log('Deployment JSON:', deploymentJson)
+
+    const blockNumber = deploymentJson.blockNumber || 0
+    const snapshotId = deploymentJson.snapshotId || 0
+    if (backToDeploymentBlock && blockNumber > 0) {
+      await this.revertToSnapshot(snapshotId)
+    }
 
     const nvmConfig = await this.getContractInstance(
       'NVMConfig',
@@ -236,6 +239,15 @@ export class FoundryTools {
 
     console.log('Decoded Error:', decoded)
     return decoded
+  }
+
+  async createSnapshot() {
+    return await this.testClient.request({})
+  }
+
+  async revertToSnapshot(snapshotId: bigint) {
+    console.log('Resetting blockchain to snapshot:', snapshotId)
+    await this.testClient.request({ method: 'evm_revert', params: [snapshotId] })
   }
 
   // async connectToContracts(deploymentJson: any): Promise<void> {
