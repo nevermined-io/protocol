@@ -191,6 +191,21 @@ abstract contract BaseTest is Test, ToArrayUtils {
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
     }
 
+    function _registerAsset(uint256 _planId) internal returns (bytes32) {
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = _planId;
+
+        // Get the DID that will be generated
+        bytes32 did = assetsRegistry.hashDID('test-did', address(this));
+
+        vm.prank(address(this));
+        vm.expectEmit(true, true, false, false);
+        emit IAsset.AssetRegistered(did, address(this));
+
+        assetsRegistry.register('test-did', 'https://example.com', planIds);
+        return did;
+    }
+
     function _createExpirablePlan(uint256 amount, uint256 durationSecs) internal returns (uint256) {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 100;
