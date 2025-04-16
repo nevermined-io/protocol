@@ -42,13 +42,14 @@ contract ConfigureAll is Script, DeployConfig {
 
         setNetworkFees.run(governorAddress, vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
         
-        // Add block number to the JSON content
-        string memory rootJsonKey = 'root';
-        string memory jsonContent = json;
-        jsonContent = vm.serializeUint(rootJsonKey, 'blockNumber', block.number);
+        // Parse the existing JSON content
+        string memory jsonObj = vm.parseJSONString(json, '$');
         
-        // Write the updated JSON back to the file
-        vm.writeJson(jsonContent, addressesJson);
-        console2.log('Updated JSON with block number:', block.number);
+        // Add block number to the existing JSON content
+        string memory updatedJson = vm.serializeUint('', 'blockNumber', block.number);
+        
+        // Merge the existing JSON with the new blockNumber field
+        vm.writeJson(updatedJson, addressesJson, jsonObj);
+        console2.log('Added block number to JSON:', block.number);
     }
 }
