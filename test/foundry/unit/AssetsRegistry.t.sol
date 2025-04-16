@@ -6,6 +6,7 @@ pragma solidity ^0.8.28;
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
+import {console2} from 'forge-std/console2.sol';
 
 import {AssetsRegistryV2} from '../../../contracts/mock/AssetsRegistryV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
@@ -145,13 +146,6 @@ contract AssetsRegistryTest is BaseTest {
         assertEq(plan.lastUpdated, 0);
     }
 
-    // TODO: Implement this test properly
-    // function test_cannotRegisterPlanWithoutFeesIncluded() public {
-    // Skip this test for now - we'll implement it properly after fixing the other tests
-    // This test is failing because of complex interactions with the fee system
-    // We'll come back to it after we have all other tests passing
-    // }
-
     function test_addFeesToPaymentsDistribution() public view {
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -166,6 +160,135 @@ contract AssetsRegistryTest is BaseTest {
 
         bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(newAmounts, newReceivers);
         assertTrue(areFeesIncluded);
+    }
+
+    function test_addPlanToAsset_assetNotFound() public {
+        vm.expectPartialRevert(IAsset.AssetNotFound.selector);
+        assetsRegistry.addPlanToAsset(bytes32(0), 1);
+    }
+
+    function test_addPlanToAsset_notOwner() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        uint256 anotherPlan = _createPlan(999);
+
+        // Try to add a plan as a non-owner
+        address nonOwner = makeAddr('nonOwner');
+        vm.prank(nonOwner);
+        vm.expectPartialRevert(IAsset.NotAssetOwner.selector);
+        assetsRegistry.addPlanToAsset(did, anotherPlan);
+    }
+
+    function test_addPlanToAsset_success() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        uint256 anotherPlan = _createPlan(999);
+
+        // Add the second plan to the asset
+        assetsRegistry.addPlanToAsset(did, anotherPlan);
+
+        // Verify that the plan was added
+        IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
+        assertEq(asset.plans.length, 2);
+        assertEq(asset.plans[0], planId);
+        assertEq(asset.plans[1], anotherPlan);
+    }
+
+    function test_removePlanFromAsset_assetNotFound() public {
+        vm.expectPartialRevert(IAsset.AssetNotFound.selector);
+        assetsRegistry.removePlanFromAsset(bytes32(0), 1);
+    }
+
+    function test_removePlanFromAsset_notOwner() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        address nonOwner = makeAddr('nonOwner');
+        vm.prank(nonOwner);
+        vm.expectPartialRevert(IAsset.NotAssetOwner.selector);
+        assetsRegistry.removePlanFromAsset(did, planId);
+    }
+
+    function test_removePlanFromAsset_success() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        uint256 planId2 = _createPlan(999);
+        uint256 planId3 = _createPlan(998);
+        uint256 planId4 = _createPlan(997);
+
+        // Add the second plan to the asset
+        assetsRegistry.addPlanToAsset(did, planId2);
+        assetsRegistry.addPlanToAsset(did, planId3);
+        assetsRegistry.addPlanToAsset(did, planId4);
+
+        // Verify that the plan was added
+        IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
+        assertEq(asset.plans.length, 4);
+        console2.log(planId, planId2, planId3, planId4);
+
+        // Remove the second plan from the asset
+        assetsRegistry.removePlanFromAsset(did, planId2);
+        asset = assetsRegistry.getAsset(did);
+        assertEq(asset.plans.length, 3);
+        console2.log(asset.plans[0], asset.plans[1], asset.plans[2]);
+
+        assertEq(asset.plans[0], planId);
+        assertEq(asset.plans[1], planId4);
+        assertEq(asset.plans[2], planId3);
+    }
+
+    function test_replacePlanFromAsset_assetNotFound() public {
+        uint256[] memory noPlans = new uint256[](0);
+        vm.expectPartialRevert(IAsset.AssetNotFound.selector);
+        assetsRegistry.replacePlansForAsset(bytes32(0), noPlans);
+    }
+
+    function test_replacePlanFromAsset_notOwner() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        uint256 planId2 = _createPlan(999);
+        bytes32 did = _registerAsset(planId);
+
+        uint256[] memory newPlans = new uint256[](2);
+        newPlans[0] = planId;
+        newPlans[1] = planId2;
+
+        address nonOwner = makeAddr('nonOwner');
+        vm.prank(nonOwner);
+        vm.expectPartialRevert(IAsset.NotAssetOwner.selector);
+        assetsRegistry.replacePlansForAsset(did, newPlans);
+    }
+
+    function test_replaceEmptyArrayPlans_success() public {
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        uint256[] memory noPlans = new uint256[](0);
+        assetsRegistry.replacePlansForAsset(did, noPlans);
+        IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
+
+        assertEq(asset.plans.length, 0);
+    }
+
+    function test_replacePlans_success() public {
+        uint256 planId = _createPlan();
+        uint256 planId2 = _createPlan(999);
+        bytes32 did = _registerAsset(planId);
+
+        uint256[] memory newPlans = new uint256[](2);
+        newPlans[0] = planId;
+        newPlans[1] = planId2;
+        assetsRegistry.replacePlansForAsset(did, newPlans);
+        IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
+
+        assertEq(asset.plans.length, 2);
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {

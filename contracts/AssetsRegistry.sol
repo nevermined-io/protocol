@@ -171,6 +171,117 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     }
 
     /**
+     * @notice Add a new plan to an asset. This can only be done by the asset owner.
+     * @param _did the unique identifier of the asset
+     * @param _planId the unique identifier of the plan to add
+     */
+    function addPlanToAsset(bytes32 _did, uint256 _planId) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if ($.assets[_did].lastUpdated == 0) {
+            revert AssetNotFound(_did);
+        }
+
+        if ($.assets[_did].owner != msg.sender) {
+            revert NotAssetOwner(_did, msg.sender, $.assets[_did].owner);
+        }
+
+        if ($.plans[_planId].lastUpdated == 0) {
+            revert PlanNotFound(_planId);
+        }
+
+        // Check if plan is already in the asset's plans array
+        uint256[] memory currentPlans = $.assets[_did].plans;
+        for (uint256 i = 0; i < currentPlans.length; i++) {
+            if (currentPlans[i] == _planId) {
+                // Plan is already in the list, nothing to do
+                return;
+            }
+        }
+
+        // Add plan to the asset's plans array
+        $.assets[_did].plans.push(_planId);
+        $.assets[_did].lastUpdated = block.timestamp;
+
+        emit PlanAddedToAsset(_did, _planId, msg.sender);
+    }
+
+    /**
+     * @notice Remove a plan from an asset. This can only be done by the asset owner.
+     * @param _did the unique identifier of the asset
+     * @param _planId the unique identifier of the plan to remove
+     */
+    function removePlanFromAsset(bytes32 _did, uint256 _planId) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if ($.assets[_did].lastUpdated == 0) {
+            revert AssetNotFound(_did);
+        }
+
+        if ($.assets[_did].owner != msg.sender) {
+            revert NotAssetOwner(_did, msg.sender, $.assets[_did].owner);
+        }
+
+        uint256[] storage plans = $.assets[_did].plans;
+        bool found = false;
+        uint256 indexToRemove;
+
+        // Find the index of the plan to remove
+        for (uint256 i = 0; i < plans.length; i++) {
+            if (plans[i] == _planId) {
+                found = true;
+                indexToRemove = i;
+                break;
+            }
+        }
+
+        if (!found) {
+            revert PlanNotInAsset(_did, _planId);
+        }
+
+        // Remove the plan by swapping with the last element and popping
+        if (indexToRemove != plans.length - 1) {
+            plans[indexToRemove] = plans[plans.length - 1];
+        }
+        plans.pop();
+
+        // Update the lastUpdated timestamp
+        $.assets[_did].lastUpdated = block.timestamp;
+
+        emit PlanRemovedFromAsset(_did, _planId, msg.sender);
+    }
+
+    /**
+     * @notice Replace all plans for an asset with a new set of plans. This can only be done by the asset owner.
+     * @param _did the unique identifier of the asset
+     * @param _plans the new array of plan IDs to associate with the asset
+     */
+    function replacePlansForAsset(bytes32 _did, uint256[] memory _plans) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if ($.assets[_did].lastUpdated == 0) {
+            revert AssetNotFound(_did);
+        }
+
+        if ($.assets[_did].owner != msg.sender) {
+            revert NotAssetOwner(_did, msg.sender, $.assets[_did].owner);
+        }
+
+        // Validate that all plans exist
+        for (uint256 i = 0; i < _plans.length; i++) {
+            if ($.plans[_plans[i]].lastUpdated == 0) {
+                revert PlanNotFound(_plans[i]);
+            }
+        }
+
+        // Replace the plans
+        $.assets[_did].plans = _plans;
+        $.assets[_did].lastUpdated = block.timestamp;
+
+        emit AssetPlansReplaced(_did, msg.sender);
+    }
+
+    /**
      * @notice Transfers the ownership of an asset to a new owner
      * @param _did The identifier of the asset
      * @param _newOwner The address of the new owner

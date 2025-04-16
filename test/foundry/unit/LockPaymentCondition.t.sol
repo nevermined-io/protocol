@@ -150,7 +150,6 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Register new asset and plan
         bytes32 didSeed = bytes32(uint256(3));
-        bytes32 erc20Did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
         assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(0));
@@ -254,7 +253,6 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Register new asset and plan
         bytes32 didSeed = bytes32(uint256(5));
-        bytes32 fiatDid = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
         assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(0));
