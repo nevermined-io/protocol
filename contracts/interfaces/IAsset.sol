@@ -138,6 +138,22 @@ interface IAsset {
      */
     event PlanRegistered(uint256 indexed planId, address indexed creator);
 
+    /**
+     * @notice Event that is emitted when an asset ownership is transferred
+     * @param did the unique identifier of the asset
+     * @param previousOwner the address of the previous owner
+     * @param newOwner the address of the new owner
+     */
+    event AssetOwnershipTransferred(bytes32 indexed did, address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @notice Event that is emitted when a plan ownership is transferred
+     * @param planId the unique identifier of the plan
+     * @param previousOwner the address of the previous owner
+     * @param newOwner the address of the new owner
+     */
+    event PlanOwnershipTransferred(uint256 indexed planId, address indexed previousOwner, address indexed newOwner);
+
     /// A plan with the same `plainId` is already registered and can not be registered again.abi
     /// The `planId` is computed using the hash of the `PriceConfig`, `CreditsConfig`, `nftAddress` and the creator of the plan
     /// @param planId The identifier of the plan
@@ -172,8 +188,19 @@ interface IAsset {
     /// @param planId The identifier of the plan
     /// @param creditsType The type of credits
     /// @param amount The amount of credits to redeem
-
     error InvalidRedemptionAmount(uint256 planId, CreditsType creditsType, uint256 amount);
+
+    /// The caller with address `caller` is not the owner (`owner`) of the asset `did`
+    /// @param did The identifier of the asset
+    /// @param caller The address of the caller
+    /// @param owner The current address of the owner
+    error NotAssetOwner(bytes32 did, address caller, address owner);
+
+    /// The caller with address `caller` is not the owner (`owner`) of the plan `planId`
+    /// @param planId The identifier of the plan
+    /// @param caller The address of the caller
+    /// @param owner The current address of the owner
+    error NotPlanOwner(uint256 planId, address caller, address owner);
 
     function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
@@ -187,4 +214,20 @@ interface IAsset {
         external
         view
         returns (bool);
+
+    /**
+     * @notice Transfers the ownership of an asset to a new owner.
+     * @notice This function can only be called by the current owner of the asset
+     * @param _did The identifier of the asset
+     * @param _newOwner The address of the new owner
+     */
+    function transferAssetOwnership(bytes32 _did, address _newOwner) external;
+
+    /**
+     * @notice Transfers the ownership of a plan to a new owner.
+     * @notice This function can only be called by the current owner of the plan
+     * @param _planId The identifier of the plan
+     * @param _newOwner The address of the new owner
+     */
+    function transferPlanOwnership(uint256 _planId, address _newOwner) external;
 }

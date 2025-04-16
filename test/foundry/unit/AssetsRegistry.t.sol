@@ -31,6 +31,61 @@ contract AssetsRegistryTest is BaseTest {
         assertEq(asset.lastUpdated, 0);
     }
 
+    function test_transferAssetOwnership() public {
+        address newOwner = makeAddr('newOwner');
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+        // Verify initial owner
+        IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
+        assertEq(asset.owner, address(this));
+
+        // Transfer ownership
+        vm.prank(address(this));
+        assetsRegistry.transferAssetOwnership(did, newOwner);
+
+        // Verify new owner
+        asset = assetsRegistry.getAsset(did);
+        assertEq(asset.owner, newOwner);
+    }
+
+    function test_transferAssetOwnership_revertIfNotOwner() public {
+        // Try to transfer ownership from non-owner account
+        address nonOwner = makeAddr('nonOwner');
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.NotAssetOwner.selector, did, nonOwner, address(this)));
+        assetsRegistry.transferAssetOwnership(did, nonOwner);
+    }
+
+    function test_transferPlanOwnership() public {
+        address newOwner = makeAddr('newOwner');
+        uint256 planId = _createPlan();
+
+        // Verify initial owner
+        IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
+        assertEq(plan.owner, address(this));
+
+        // Transfer ownership
+        vm.prank(address(this));
+        assetsRegistry.transferPlanOwnership(planId, newOwner);
+
+        // Verify new owner
+        plan = assetsRegistry.getPlan(planId);
+        assertEq(plan.owner, newOwner);
+    }
+
+    function test_transferPlanOwnership_revertIfNotOwner() public {
+        // Try to transfer ownership from non-owner account
+        address nonOwner = makeAddr('nonOwner');
+        uint256 planId = _createPlan();
+
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.NotPlanOwner.selector, planId, nonOwner, address(this)));
+        assetsRegistry.transferPlanOwnership(planId, nonOwner);
+    }
+
     function test_registerAsset() public {
         // Create a valid plan first
         uint256 planId = _createPlan();
