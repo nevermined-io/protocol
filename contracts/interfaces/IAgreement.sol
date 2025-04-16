@@ -44,7 +44,6 @@ interface IAgreement {
     }
 
     struct Agreement {
-        bytes32 did;
         uint256 planId;
         address agreementCreator;
         bytes32[] conditionIds;

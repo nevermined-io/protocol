@@ -40,7 +40,7 @@ contract AgreementsStoreTest is BaseTest {
         conditionIds[0] = bytes32(0);
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
-        agreementsStore.register(agreementId, address(this), bytes32(0), 0, conditionIds, conditionStates, params);
+        agreementsStore.register(agreementId, address(this), 0, conditionIds, conditionStates, params);
     }
 
     function test_registerAgreementSuccessfully() public {
@@ -55,7 +55,7 @@ contract AgreementsStoreTest is BaseTest {
         conditionIds[0] = bytes32(0);
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
-        agreementsStore.register(agreementId, address(this), bytes32(0), 0, conditionIds, conditionStates, params);
+        agreementsStore.register(agreementId, address(this), 0, conditionIds, conditionStates, params);
 
         // Verify agreement was registered
         IAgreement.Agreement memory agreement = agreementsStore.getAgreement(agreementId);
@@ -81,7 +81,7 @@ contract AgreementsStoreTest is BaseTest {
         conditionIds[0] = bytes32(0);
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
-        agreementsStore.register(agreementId, address(this), bytes32(0), 0, conditionIds, conditionStates, params);
+        agreementsStore.register(agreementId, address(this), 0, conditionIds, conditionStates, params);
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {

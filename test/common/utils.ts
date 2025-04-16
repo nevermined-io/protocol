@@ -149,7 +149,6 @@ export async function registerAssetAndPlan(
 export async function createAgreement(
   agreementsStore: any,
   lockPaymentCondition: any,
-  did: `0x${string}`,
   planId: bigint,
   user: any,
   template: any,
@@ -164,7 +163,7 @@ export async function createAgreement(
   const conditionId = await lockPaymentCondition.read.hashConditionId([agreementId, contractName])
 
   await agreementsStore.write.register(
-    [agreementId, user.account.address, did, planId, [conditionId], [0], []],
+    [agreementId, user.account.address, planId, [conditionId], [0], []],
     { account: template.account },
   )
 
