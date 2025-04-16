@@ -28,7 +28,6 @@ export class FoundryTools {
 
   constructor(
     private readonly wallets: WalletClient[] = [],
-    private readonly blockReset = 0n,
     private readonly rpc = 'http://localhost:8545',
   ) {
     this.publicClient = createPublicClient({
@@ -47,10 +46,7 @@ export class FoundryTools {
     })
       .extend(publicActions)
       .extend(walletActions)
-    if (blockReset > 0) {
-      console.log('Resetting blockchain to block number:', this.blockReset)
-      this.testClient.reset({ blockNumber: this.blockReset })
-    }
+    
   }
 
   async connectToInstance(deploymentJsonPath = 'deployments/latest-hardhat.json', backToDeploymentBlock = true) {
