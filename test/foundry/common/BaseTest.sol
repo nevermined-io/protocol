@@ -164,6 +164,11 @@ abstract contract BaseTest is Test, ToArrayUtils {
     }
 
     function _createPlan() internal returns (uint256) {
+        uint256 nonce = block.number;
+        return _createPlan(nonce);
+    }
+
+    function _createPlan(uint256 nonce) internal returns (uint256) {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 100;
         address[] memory _receivers = new address[](1);
@@ -187,8 +192,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
             maxAmount: 1
         });
 
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0), nonce);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this), nonce);
     }
 
     function _registerAsset(uint256 _planId) internal returns (bytes32) {

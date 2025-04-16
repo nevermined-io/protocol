@@ -124,6 +124,10 @@ interface IAsset {
         uint256 lastUpdated;
     }
 
+    ///////////////////////////////////////////////////////////////////////////////
+    //////////////// EVENTS ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
     /**
      * @notice Event that is emitted when a new Asset is registered
      * @param did the unique identifier of the asset
@@ -153,6 +157,33 @@ interface IAsset {
      * @param newOwner the address of the new owner
      */
     event PlanOwnershipTransferred(uint256 indexed planId, address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @notice Event that is emitted when a plan is added to an asset
+     * @param did the unique identifier of the asset
+     * @param planId the unique identifier of the plan
+     * @param owner the address of the account that added the plan
+     */
+    event PlanAddedToAsset(bytes32 indexed did, uint256 indexed planId, address indexed owner);
+
+    /**
+     * @notice Event that is emitted when a plan is removed from an asset
+     * @param did the unique identifier of the asset
+     * @param planId the unique identifier of the plan
+     * @param owner the address of the account that removed the plan
+     */
+    event PlanRemovedFromAsset(bytes32 indexed did, uint256 indexed planId, address indexed owner);
+
+    /**
+     * @notice Event that is emitted when all plans for an asset are replaced
+     * @param did the unique identifier of the asset
+     * @param owner the address of the account that replaced the plans
+     */
+    event AssetPlansReplaced(bytes32 indexed did, address indexed owner);
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //////////////// ERRORS ///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
 
     /// A plan with the same `plainId` is already registered and can not be registered again.abi
     /// The `planId` is computed using the hash of the `PriceConfig`, `CreditsConfig`, `nftAddress` and the creator of the plan
@@ -202,6 +233,15 @@ interface IAsset {
     /// @param owner The current address of the owner
     error NotPlanOwner(uint256 planId, address caller, address owner);
 
+    /// The `planId` is not associated with the asset `did`
+    /// @param did The decentralized identifier of the Asset
+    /// @param planId The unique identifier of a Plan
+    error PlanNotInAsset(bytes32 did, uint256 planId);
+
+    ///////////////////////////////////////////////////////////////////////////////
+    //////////////// FUNCTIONS ////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////
+
     function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
     function assetExists(bytes32 _did) external view returns (bool);
@@ -214,6 +254,12 @@ interface IAsset {
         external
         view
         returns (bool);
+
+    function addPlanToAsset(bytes32 _did, uint256 _planId) external;
+
+    function removePlanFromAsset(bytes32 _did, uint256 _planId) external;
+
+    function replacePlansForAsset(bytes32 _did, uint256[] memory _plans) external;
 
     /**
      * @notice Transfers the ownership of an asset to a new owner.
