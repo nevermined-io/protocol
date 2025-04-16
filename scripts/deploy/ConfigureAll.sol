@@ -42,12 +42,9 @@ contract ConfigureAll is Script, DeployConfig {
 
         setNetworkFees.run(governorAddress, vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
         
-        // Add block number to the existing JSON content
-        string memory blockNumberJson = vm.serializeUint("", "blockNumber", block.number);
-        
-        // Write the block number to the existing JSON file
-        // The third parameter allows adding/updating a specific key without replacing the entire JSON
-        vm.writeJson(blockNumberJson, addressesJson, "blockNumber");
+        string memory blockNumberJson = vm.toString(block.number);
+
+        vm.writeJson(blockNumberJson, addressesJson, "$.blockNumber");
         
         console2.log('Added block number to JSON:', block.number);
     }

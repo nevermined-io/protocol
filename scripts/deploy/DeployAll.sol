@@ -272,6 +272,7 @@ contract DeployAll is Script, DeployConfig {
         jsonContent = vm.serializeAddress(rootJsonKey, 'owner', ownerAddress);
         jsonContent = vm.serializeAddress(rootJsonKey, 'governor', governorAddress);
         jsonContent = vm.serializeUint(rootJsonKey, 'chainId', block.chainid);
+        jsonContent = vm.serializeUint(rootJsonKey, 'blockNumber', block.number);
         jsonContent = vm.serializeUint(rootJsonKey, 'deployedAt', block.timestamp);
 
         // Start contracts object
