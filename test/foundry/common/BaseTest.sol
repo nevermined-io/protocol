@@ -159,9 +159,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
 
         _grantTemplateRole(address(this));
         bytes32 agreementId = keccak256('123');
-        agreementsStore.register(
-            agreementId, _caller, bytes32(0), _planId, conditionIds, conditionStates, new bytes[](0)
-        );
+        agreementsStore.register(agreementId, _caller, _planId, conditionIds, conditionStates, new bytes[](0));
         return agreementId;
     }
 

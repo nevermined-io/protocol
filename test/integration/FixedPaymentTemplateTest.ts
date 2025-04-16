@@ -148,7 +148,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       const agreementIdSeed = generateId()
       const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, []],
+        [agreementIdSeed, planId, []],
         { account: bob.account, value: totalAmount },
       )
 
@@ -225,7 +225,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       console.log('Agreement ID Seed:', agreementIdSeed)
       // Create agreement first time
       let txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, []],
+        [agreementIdSeed, planId, []],
         {
           account: bob.account,
           value: totalAmount,
@@ -235,7 +235,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       console.log(tx.status)
 
       txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, []],
+        [agreementIdSeed, planId, []],
         {
           account: bob.account,
           value: totalAmount,
@@ -248,30 +248,12 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       // expect(customError.errorName).to.be.equal('AgreementAlreadyRegistered')
     })
 
-    it('Should reject if asset does not exist', async () => {
-      const nonExistentDid = generateId()
-      const newAgreementIdSeed = generateId()
-
-      const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, nonExistentDid, planId, []],
-        { account: alice.account, value: 100n },
-      )
-      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
-      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
-
-      const customError = await foundryTools.decodeCustomErrorFromTx(
-        txHash,
-        fixedPaymentTemplate.abi,
-      )
-      expect(customError.errorName).to.be.equal('AssetNotFound')
-    })
-
     it('Should reject if plan does not exist', async () => {
       const nonExistentPlanId = generateId()
       const newAgreementIdSeed = generateId()
 
       const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, did, nonExistentPlanId, []],
+        [newAgreementIdSeed, nonExistentPlanId, []],
         { account: alice.account, value: 100n },
       )
       const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
@@ -292,7 +274,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       const totalAmount = plan.price.amounts.reduce((a: bigint, b: bigint) => a + b, 0n)
 
       const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, did, planId, []],
+        [newAgreementIdSeed, planId, []],
         {
           account: bob.account,
           value: totalAmount - 1n,
@@ -324,7 +306,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       // Try to create agreement with unsupported price type
       const newAgreementIdSeed = generateId()
       const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, newDid, newPlanId, []],
+        [newAgreementIdSeed, newPlanId, []],
         {
           account: bob.account,
           value: 200n,
@@ -396,7 +378,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       const agreementIdSeed = generateId()
       const txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, []],
+        [agreementIdSeed, planId, []],
         { account: bob.account },
       )
 

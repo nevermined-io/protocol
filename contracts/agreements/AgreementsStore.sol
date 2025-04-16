@@ -30,7 +30,6 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     function register(
         bytes32 _agreementId,
         address _agreementCreator,
-        bytes32 _did,
         uint256 _planId,
         bytes32[] memory _conditionIds,
         ConditionState[] memory _conditionStates,
@@ -44,7 +43,6 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
             revert AgreementAlreadyRegistered(_agreementId);
         }
         $.agreements[_agreementId] = IAgreement.Agreement({
-            did: _did,
             planId: _planId,
             agreementCreator: _agreementCreator,
             conditionIds: _conditionIds,

@@ -51,21 +51,19 @@ contract FixedPaymentTemplate is BaseTemplate {
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
-    function createAgreement(bytes32 _seed, bytes32 _did, uint256 _planId, bytes[] memory _params) external payable {
+    function createAgreement(bytes32 _seed, uint256 _planId, bytes[] memory _params) external payable {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
         BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
 
         // Validate inputs
         if (_seed == bytes32(0)) revert InvalidSeed(_seed);
-        if (_did == bytes32(0)) revert InvalidDID(_did);
         if (_planId == 0) revert InvalidPlanId(_planId);
 
-        // Check if the DID & Plan are registered in the AssetsRegistry
-        if (!$.assetsRegistry.assetExists(_did)) revert IAsset.AssetNotFound(_did);
+        // Check if the Plan is registered in the AssetsRegistry
         if (!$.assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
         // Calculate agreementId
-        bytes32 agreementId = keccak256(abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _did, _planId, _params));
+        bytes32 agreementId = keccak256(abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _planId, _params));
 
         // Check if the agreement is already registered
         IAgreement.Agreement memory agreement = $bt.agreementStore.getAgreement(agreementId);
@@ -84,7 +82,7 @@ contract FixedPaymentTemplate is BaseTemplate {
         );
 
         $bt.agreementStore.register(
-            agreementId, msg.sender, _did, _planId, conditionIds, new IAgreement.ConditionState[](3), _params
+            agreementId, msg.sender, _planId, conditionIds, new IAgreement.ConditionState[](3), _params
         );
 
         // Lock the payment
@@ -115,7 +113,6 @@ contract FixedPaymentTemplate is BaseTemplate {
     function _transferPlan(
         bytes32 _conditionId,
         bytes32 _agreementId,
-        // bytes32 _did,
         uint256 _planId,
         bytes32 _lockPaymentCondition,
         address _receiverAddress

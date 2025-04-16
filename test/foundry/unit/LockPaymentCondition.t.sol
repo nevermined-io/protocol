@@ -91,7 +91,7 @@ contract LockPaymentConditionTest is BaseTest {
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
         vm.prank(template);
-        agreementsStore.register(agreementId, user, did, planId, conditionIds, conditionStates, new bytes[](0));
+        agreementsStore.register(agreementId, user, planId, conditionIds, conditionStates, new bytes[](0));
     }
 
     function test_deployment() public view {
@@ -174,9 +174,7 @@ contract LockPaymentConditionTest is BaseTest {
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
         vm.prank(template);
-        agreementsStore.register(
-            erc20AgreementId, user, erc20Did, erc20PlanId, conditionIds, conditionStates, new bytes[](0)
-        );
+        agreementsStore.register(erc20AgreementId, user, erc20PlanId, conditionIds, conditionStates, new bytes[](0));
 
         // Get plan to determine payment amount
         IAsset.Plan memory plan = assetsRegistry.getPlan(erc20PlanId);
@@ -280,9 +278,7 @@ contract LockPaymentConditionTest is BaseTest {
         conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
 
         vm.prank(template);
-        agreementsStore.register(
-            fiatAgreementId, user, fiatDid, fiatPlanId, conditionIds, conditionStates, new bytes[](0)
-        );
+        agreementsStore.register(fiatAgreementId, user, fiatPlanId, conditionIds, conditionStates, new bytes[](0));
 
         // Try to fulfill condition with FIXED_FIAT_PRICE
         vm.expectRevert(

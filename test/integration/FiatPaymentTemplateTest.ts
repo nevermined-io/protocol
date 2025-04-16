@@ -123,7 +123,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
 
       const agreementIdSeed = generateId()
       const txHash = await fiatPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, bob.account.address, []],
+        [agreementIdSeed, planId, bob.account.address, []],
         { account: fiatOracle.account },
       )
 
@@ -154,14 +154,14 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
 
       // Create agreement first time
       await fiatPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, bob.account.address, []],
+        [agreementIdSeed, planId, bob.account.address, []],
         {
           account: fiatOracle.account,
         },
       )
 
       const txHash = await fiatPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, did, planId, bob.account.address, []],
+        [agreementIdSeed, planId, bob.account.address, []],
         {
           account: fiatOracle.account,
         })
@@ -171,26 +171,12 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       expect(customError.errorName).to.be.equal('AgreementAlreadyRegistered')
     })
 
-    it('Should reject if asset does not exist', async () => {
-      const nonExistentDid = generateId()
-      const newAgreementIdSeed = generateId()
-
-      const txHash = await fiatPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, nonExistentDid, planId, bob.account.address, []],
-        { account: fiatOracle.account },
-      )
-      const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
-      // /AssetNotFound/
-      expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
-
-    })
-
     it('Should reject if plan does not exist', async () => {
       const nonExistentPlanId = generateId()
       const newAgreementIdSeed = generateId()
 
       const txHash = await fiatPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, did, nonExistentPlanId, bob.account.address, []],
+        [newAgreementIdSeed, nonExistentPlanId, bob.account.address, []],
         { account: fiatOracle.account },
       )
       const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
@@ -235,7 +221,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       // Try to create agreement with unsupported price type
       const newAgreementIdSeed = generateId()
       const txHash = await fiatPaymentTemplate.write.createAgreement(
-        [newAgreementIdSeed, newDid, newPlanId, bob.account.address, []],
+        [newAgreementIdSeed, newPlanId, bob.account.address, []],
         {
           account: fiatOracle.account,
         },

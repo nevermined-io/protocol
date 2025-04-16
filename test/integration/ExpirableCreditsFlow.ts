@@ -156,7 +156,7 @@ describe('IT: Expirable Credits e2e flow', function () {
 
     const agreementIdSeed = generateId()
     const txHash = await fixedPaymentTemplate.write.createAgreement(
-      [agreementIdSeed, did, planId, []],
+      [agreementIdSeed, planId, []],
       { account: bob.account, value: totalAmount },
     )
     expect(txHash).to.be.a('string').to.startWith('0x')
