@@ -258,6 +258,52 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         return (_feeAmount * _totalAmount) / _feeDenominator;
     }
 
+    /**
+     * @notice Transfers the ownership of an asset to a new owner
+     * @param _did The identifier of the asset
+     * @param _newOwner The address of the new owner
+     */
+    function transferAssetOwnership(bytes32 _did, address _newOwner) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+        
+        if ($.assets[_did].lastUpdated == 0) {
+            revert AssetNotFound(_did);
+        }
+        
+        if ($.assets[_did].owner != msg.sender) {
+            revert NotAssetOwner(_did, msg.sender, $.assets[_did].owner);
+        }
+        
+        address previousOwner = $.assets[_did].owner;
+        $.assets[_did].owner = _newOwner;
+        $.assets[_did].lastUpdated = block.timestamp;
+        
+        emit AssetOwnershipTransferred(_did, previousOwner, _newOwner);
+    }
+    
+    /**
+     * @notice Transfers the ownership of a plan to a new owner
+     * @param _planId The identifier of the plan
+     * @param _newOwner The address of the new owner
+     */
+    function transferPlanOwnership(uint256 _planId, address _newOwner) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+        
+        if ($.plans[_planId].lastUpdated == 0) {
+            revert PlanNotFound(_planId);
+        }
+        
+        if ($.plans[_planId].owner != msg.sender) {
+            revert NotPlanOwner(_planId, msg.sender, $.plans[_planId].owner);
+        }
+        
+        address previousOwner = $.plans[_planId].owner;
+        $.plans[_planId].owner = _newOwner;
+        $.plans[_planId].lastUpdated = block.timestamp;
+        
+        emit PlanOwnershipTransferred(_planId, previousOwner, _newOwner);
+    }
+
     function _getAssetsRegistryStorage() internal pure returns (AssetsRegistryStorage storage $) {
         assembly ("memory-safe") {
             $.slot := ASSETS_REGISTRY_STORAGE_LOCATION
