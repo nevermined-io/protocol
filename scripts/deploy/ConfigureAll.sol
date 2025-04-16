@@ -42,12 +42,26 @@ contract ConfigureAll is Script, DeployConfig {
 
         setNetworkFees.run(governorAddress, vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
         
-        // Add block number to the existing JSON content
-        string memory blockNumberJson = vm.serializeUint("", "blockNumber", block.number);
+        // Parse the existing JSON into a new object
+        string memory jsonObj = vm.readFile(addressesJson);
         
-        // Write the block number to the existing JSON file
-        // The third parameter allows adding/updating a specific key without replacing the entire JSON
-        vm.writeJson(blockNumberJson, addressesJson, "blockNumber");
+        // Create a temporary file with the existing JSON
+        string memory tempFile = string(abi.encodePacked(addressesJson, ".temp"));
+        vm.writeFile(tempFile, jsonObj);
+        
+        // Add block number to the root of the JSON
+        string memory rootJsonKey = "root";
+        string memory jsonContent = vm.serializeUint(rootJsonKey, "blockNumber", block.number);
+        
+        // Write the block number to the temporary file
+        vm.writeJson(jsonContent, tempFile);
+        
+        // Read the updated JSON and write it back to the original file
+        string memory updatedJson = vm.readFile(tempFile);
+        vm.writeFile(addressesJson, updatedJson);
+        
+        // Clean up the temporary file
+        vm.removeFile(tempFile);
         
         console2.log('Added block number to JSON:', block.number);
     }
