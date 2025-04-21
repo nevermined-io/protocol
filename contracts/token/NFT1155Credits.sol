@@ -48,7 +48,6 @@ contract NFT1155Credits is NFT1155Base {
         super.burnBatch(_from, _ids, _values);
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /**
      * @notice Internal initialization function for NFT1155Credits
      * @param _nvmConfigAddress Address of the NVMConfig contract
@@ -56,6 +55,7 @@ contract NFT1155Credits is NFT1155Base {
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Called by the initialize function
      */
+    // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Credits_init(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,

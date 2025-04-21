@@ -192,8 +192,9 @@ abstract contract BaseTest is Test, ToArrayUtils {
             maxAmount: 1
         });
 
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0), nonce);
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this), nonce);
+        address nftAddress = address(nftCredits);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, nonce);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, address(this), nonce);
     }
 
     function _registerAsset(uint256 _planId) internal returns (bytes32) {

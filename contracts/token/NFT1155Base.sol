@@ -39,7 +39,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
         IAsset assetsRegistry;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /**
      * @notice Initializes the NFT1155Base contract with required dependencies
      * @param _nvmConfigAddress Address of the NVMConfig contract
@@ -47,6 +46,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Internal initialization function to be called by inheriting contracts
      */
+    // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
         internal
         onlyInitializing

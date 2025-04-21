@@ -6,7 +6,7 @@ import {
   getTxParsedLogs,
   createPriceConfig,
   createCreditsConfig,
-  registerAssetAndPlan
+  registerAssetAndPlan,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 import { FoundryTools } from '../common/FoundryTools'
@@ -69,7 +69,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     await mockERC20.write.mint([bob.account.address, 1000n * 100n ** 18n], {
       account: owner.account,
     })
-    
+
     return {
       nvmConfig,
       assetsRegistry,
@@ -103,7 +103,13 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     it('Alice can register an asset with a plan', async () => {
       priceConfig = createPriceConfig(zeroAddress, alice.account.address)
       creditsConfig = createCreditsConfig()
-      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice, nftCredits.address)
+      const result = await registerAssetAndPlan(
+        assetsRegistry,
+        priceConfig,
+        creditsConfig,
+        alice,
+        nftCredits.address,
+      )
       did = result.did
       planId = result.planId
 
@@ -205,7 +211,13 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       priceConfig = createPriceConfig(zeroAddress, bob.account.address)
       creditsConfig = createCreditsConfig()
 
-      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice, nftCredits.address)
+      const result = await registerAssetAndPlan(
+        assetsRegistry,
+        priceConfig,
+        creditsConfig,
+        alice,
+        nftCredits.address,
+      )
       did = result.did
       planId = result.planId
 
@@ -224,23 +236,17 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       const agreementIdSeed = generateId()
       console.log('Agreement ID Seed:', agreementIdSeed)
       // Create agreement first time
-      let txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, planId, []],
-        {
-          account: bob.account,
-          value: totalAmount,
-        },
-      )
+      let txHash = await fixedPaymentTemplate.write.createAgreement([agreementIdSeed, planId, []], {
+        account: bob.account,
+        value: totalAmount,
+      })
       let tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
       console.log(tx.status)
 
-      txHash = await fixedPaymentTemplate.write.createAgreement(
-        [agreementIdSeed, planId, []],
-        {
-          account: bob.account,
-          value: totalAmount,
-        },
-      )
+      txHash = await fixedPaymentTemplate.write.createAgreement([agreementIdSeed, planId, []], {
+        account: bob.account,
+        value: totalAmount,
+      })
       tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
       expect(tx.status).to.be.a('string').equalIgnoreCase('reverted') // AgreementAlreadyRegistered
 
@@ -282,7 +288,6 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       )
       const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
       expect(tx.status).to.be.a('string').equalIgnoreCase('reverted') // InvalidTransactionAmount
-
     })
 
     it('Should reject unsupported price types', async () => {
@@ -295,7 +300,13 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         contractAddress: zeroAddress,
       }
 
-      const result = await registerAssetAndPlan(assetsRegistry, unsupportedPriceConfig, creditsConfig, alice, nftCredits.address)
+      const result = await registerAssetAndPlan(
+        assetsRegistry,
+        unsupportedPriceConfig,
+        creditsConfig,
+        alice,
+        nftCredits.address,
+      )
       const newDid = result.did
       const newPlanId = result.planId
 
@@ -326,14 +337,14 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     let vaultERC20BalanceAfter: bigint
 
     it('Alice can register an asset with ERC20 payment plan', async () => {
-
       const priceConfig = createPriceConfig(mockERC20.address, alice.account.address)
       const result = await registerAssetAndPlan(
         assetsRegistry,
         priceConfig,
         createCreditsConfig(),
         alice,
-        nftCredits.address)
+        nftCredits.address,
+      )
       did = result.did
       planId = result.planId
 

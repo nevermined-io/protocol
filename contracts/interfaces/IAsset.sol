@@ -190,6 +190,10 @@ interface IAsset {
     /// @param planId The identifier of the plan
     error PlanAlreadyRegistered(uint256 planId);
 
+    /// The address provided as `nftAddress` is not a valid address
+    /// @param nftAddress The address of the NFT contract that accounts for the plan
+    error InvalidNFTAddress(address nftAddress);
+
     /// The DID `did` representing the key for an Asset is already registered
     /// @param did The identifier of the asset to register
     error DIDAlreadyRegistered(bytes32 did);

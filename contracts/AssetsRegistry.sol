@@ -7,6 +7,7 @@ import {IAsset} from './interfaces/IAsset.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
+import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
 contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("nevermined.assetsregistry.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -154,6 +155,9 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
             revert PlanAlreadyRegistered(planId);
         }
 
+        if (!_isNFT1155Contract(_nftAddress)) {
+            revert InvalidNFTAddress(_nftAddress);
+        }
         // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
         if (
             _priceConfig.priceType == IAsset.PriceType.FIXED_PRICE
@@ -481,6 +485,15 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         returns (uint256)
     {
         return (_feeAmount * _totalAmount) / _feeDenominator;
+    }
+
+    function _isNFT1155Contract(address _nftAddress) internal view returns (bool) {
+        if (!(_nftAddress.code.length > 0)) return false;
+        try IERC165(_nftAddress).supportsInterface(0xd9b67a26) returns (bool supported) {
+            return supported;
+        } catch {
+            return false;
+        }
     }
 
     function _getAssetsRegistryStorage() internal pure returns (AssetsRegistryStorage storage $) {

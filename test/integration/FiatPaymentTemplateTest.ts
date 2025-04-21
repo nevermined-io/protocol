@@ -43,7 +43,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
 
     foundryTools = new FoundryTools(wallets)
     const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON)
-    
+
     nvmConfig = _deployment.nvmConfig
     assetsRegistry = _deployment.assetsRegistry
     paymentsVault = _deployment.paymentsVault
@@ -87,14 +87,19 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       creditsConfig = createCreditsConfig()
 
       priceConfig.priceType = 1 // FIXED_FIAT_PRICE
-      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice, nftCredits.address)
+      const result = await registerAssetAndPlan(
+        assetsRegistry,
+        priceConfig,
+        creditsConfig,
+        alice,
+        nftCredits.address,
+      )
       did = result.did
       planId = result.planId
       // console.log('Price Config:', priceConfig)
 
-
       const asset = await assetsRegistry.read.getAsset([did])
-      
+
       console.log('Asset:', asset)
 
       // Verify asset and plan are registered
@@ -164,7 +169,8 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
         [agreementIdSeed, planId, bob.account.address, []],
         {
           account: fiatOracle.account,
-        })
+        },
+      )
       const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
       expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
       const customError = await foundryTools.decodeCustomErrorFromTx(txHash, agreementsStore.abi)
@@ -229,7 +235,6 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       const tx = await publicClient.waitForTransactionReceipt({ hash: txHash })
       // // /OnlyPlanWithFiatPrice/
       expect(tx.status).to.be.a('string').equalIgnoreCase('reverted')
-
 
       // await expect(
       //   ,
