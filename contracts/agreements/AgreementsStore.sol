@@ -22,11 +22,27 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => IAgreement.Agreement) agreements;
     }
 
+    /**
+     * @notice Initializes the AgreementsStore contract
+     * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
+     * @param _authority Address of the AccessManager contract handling permissions
+     */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         _getAgreementsStoreStorage().nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Registers a new agreement with its conditions
+     * @param _agreementId Unique identifier for the agreement
+     * @param _agreementCreator Address of the agreement creator
+     * @param _planId Identifier of the pricing plan
+     * @param _conditionIds Array of condition identifiers associated with the agreement
+     * @param _conditionStates Initial states of the conditions
+     * @param _params Additional parameters for the agreement
+     * @dev Only templates can register agreements
+     * @dev Emits AgreementRegistered event on successful registration
+     */
     function register(
         bytes32 _agreementId,
         address _agreementCreator,
@@ -53,6 +69,14 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         emit AgreementRegistered(_agreementId, _agreementCreator);
     }
 
+    /**
+     * @notice Updates the status of a condition within an agreement
+     * @param _agreementId Identifier of the agreement
+     * @param _conditionId Identifier of the condition to update
+     * @param _state New state for the condition
+     * @dev Only templates or conditions can update condition states
+     * @dev Emits ConditionUpdated event on successful update
+     */
     function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state) external {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
 
@@ -75,11 +99,23 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         revert IAgreement.ConditionIdNotFound(_conditionId);
     }
 
+    /**
+     * @notice Retrieves an agreement by its identifier
+     * @param _agreementId The unique identifier of the agreement to retrieve
+     * @return The Agreement structure containing the agreement's details
+     */
     function getAgreement(bytes32 _agreementId) external view returns (IAgreement.Agreement memory) {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
         return $.agreements[_agreementId];
     }
 
+    /**
+     * @notice Gets the current state of a specific condition within an agreement
+     * @param _agreementId Identifier of the agreement
+     * @param _conditionId Identifier of the condition
+     * @return state The current state of the condition
+     * @dev Reverts if the agreement or condition doesn't exist
+     */
     function getConditionState(bytes32 _agreementId, bytes32 _conditionId)
         external
         view
@@ -96,11 +132,25 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         revert ConditionIdNotFound(_conditionId);
     }
 
+    /**
+     * @notice Checks if an agreement exists by its identifier
+     * @param _agreementId The unique identifier of the agreement to check
+     * @return Boolean indicating whether the agreement exists
+     */
     function agreementExists(bytes32 _agreementId) external view returns (bool) {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
         return $.agreements[_agreementId].lastUpdated != 0;
     }
 
+    /**
+     * @notice Checks if all required conditions are fulfilled for a specific condition
+     * @param _agreementId Identifier of the agreement
+     * @param _conditionId Identifier of the condition to check
+     * @param _dependantConditions Array of dependent condition identifiers that must be fulfilled
+     * @return Boolean indicating whether all required conditions are fulfilled
+     * @dev Returns false if the target condition is already fulfilled or aborted
+     * @dev Returns false if any dependent condition is not fulfilled
+     */
     function areConditionsFulfilled(bytes32 _agreementId, bytes32 _conditionId, bytes32[] memory _dependantConditions)
         external
         view
@@ -140,10 +190,10 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     }
 
     /**
-     * @notice It generates a agreementId using as seed a bytes32 and the address of the Agreement creator
-     * @param _seed refers to the agreementId seed used as base to generate the final agreementId
-     * @param _creator address of the creator of the Agreement
-     * @return the new agreementId created
+     * @notice Generates a unique agreement ID from a seed and creator address
+     * @param _seed Seed for agreement ID generation
+     * @param _creator Address of the agreement creator
+     * @return The generated agreement ID
      */
     function hashAgreementId(bytes32 _seed, address _creator) external pure returns (bytes32) {
         return keccak256(abi.encode(_seed, _creator));

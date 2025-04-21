@@ -40,6 +40,13 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
     }
 
     // solhint-disable-next-line func-name-mixedcase
+    /**
+     * @notice Initializes the NFT1155Base contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @dev Internal initialization function to be called by inheriting contracts
+     */
     function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
         internal
         onlyInitializing
@@ -164,6 +171,15 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
         revert IAsset.InvalidRedemptionAmount(_planId, _creditsType, _amount);
     }
 
+    /**
+     * @notice Internal function to check if an account can redeem credits for a plan
+     * @param _planId Identifier of the plan
+     * @param _owner Owner of the plan
+     * @param _redemptionType Type of redemption allowed for the plan
+     * @param _sender Address attempting to redeem credits
+     * @return Boolean indicating whether the sender can redeem credits
+     * @dev Checks redemption permissions based on the plan's redemption type
+     */
     function _canRedeemCredits(uint256 _planId, address _owner, IAsset.RedemptionType _redemptionType, address _sender)
         internal
         view
@@ -203,6 +219,12 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
         revert INVMConfig.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
     }
 
+    /**
+     * @notice Checks if the contract supports a given interface
+     * @param interfaceId Interface identifier to check
+     * @return Boolean indicating whether the interface is supported
+     * @dev Supports ERC1155 and ERC2981 interfaces
+     */
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
         return ERC1155Upgradeable.supportsInterface(interfaceId) || interfaceId == type(IERC2981).interfaceId;
     }

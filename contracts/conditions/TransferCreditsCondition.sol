@@ -28,6 +28,13 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         IAgreement agreementStore;
     }
 
+    /**
+     * @notice Initializes the TransferCreditsCondition contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -43,6 +50,18 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Fulfills the transfer credits condition for an agreement
+     * @param _conditionId Identifier of the condition to fulfill
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _requiredConditions Array of condition identifiers that must be fulfilled first
+     * @param _receiverAddress Address that will receive the credits
+     * @dev Only registered templates can call this function
+     * @dev Checks if required conditions are fulfilled before proceeding
+     * @dev Mints credits based on the plan's configuration (expirable or fixed)
+     * @dev Reverts for unsupported credit types (dynamic)
+     */
     function fulfill(
         bytes32 _conditionId,
         bytes32 _agreementId,

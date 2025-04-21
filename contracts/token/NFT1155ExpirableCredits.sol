@@ -26,6 +26,13 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         mapping(bytes32 => MintedCredits[]) credits;
     }
 
+    /**
+     * @notice Initializes the NFT1155ExpirableCredits contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @dev Also accepts unused name and symbol parameters for compatibility
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -41,6 +48,15 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         mint(_to, _planId, _value, 0, _data);
     }
 
+    /**
+     * @notice Mints credits with an expiration duration for a specific plan
+     * @param _to Address that will receive the credits
+     * @param _planId Identifier of the plan
+     * @param _value Amount of credits to mint
+     * @param _secsDuration Duration in seconds before the credits expire (0 for non-expiring)
+     * @param _data Additional data to pass to the receiver
+     * @dev Records the minting operation with timestamp and expiration information
+     */
     function mint(address _to, uint256 _planId, uint256 _value, uint256 _secsDuration, bytes memory _data)
         public
         virtual
@@ -64,6 +80,15 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         mintBatch(_to, _ids, _values, _secsDurations, _data);
     }
 
+    /**
+     * @notice Mints multiple credits with expiration durations for multiple plans
+     * @param _to Address that will receive the credits
+     * @param _ids Array of plan identifiers
+     * @param _values Array of credit amounts to mint
+     * @param _secsDurations Array of durations in seconds before credits expire
+     * @param _data Additional data to pass to the receiver
+     * @dev Validates array lengths match before minting each credit batch
+     */
     function mintBatch(
         address _to,
         uint256[] memory _ids,
@@ -119,6 +144,13 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         }
     }
 
+    /**
+     * @notice Gets the current balance of credits for a specific owner and plan
+     * @param _owner Address of the credits owner
+     * @param _planId Identifier of the plan
+     * @return The current balance of non-expired credits
+     * @dev Calculates balance by tracking minted and burned credits, considering expiration
+     */
     function balanceOf(address _owner, uint256 _planId) public view virtual override returns (uint256) {
         NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
@@ -161,6 +193,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         return _balances;
     }
 
+    /**
+     * @notice Gets the timestamps when credits were minted for a specific owner and plan
+     * @param _owner Address of the credits owner
+     * @param _planId Identifier of the plan
+     * @return Array of timestamps when credits were minted
+     */
     function whenWasMinted(address _owner, uint256 _planId) external view returns (uint256[] memory) {
         NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
@@ -174,10 +212,22 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         return _whenMinted;
     }
 
+    /**
+     * @notice Gets all minted credit entries for a specific owner and plan
+     * @param _owner Address of the credits owner
+     * @param _planId Identifier of the plan
+     * @return Array of MintedCredits structures containing detailed minting information
+     */
     function getMintedEntries(address _owner, uint256 _planId) external view returns (MintedCredits[] memory) {
         return _getNFT1155ExpirableCreditsStorage().credits[_getTokenKey(_owner, _planId)];
     }
 
+    /**
+     * @notice Internal function to generate a unique key for tracking credits
+     * @param _account Address of the credits owner
+     * @param _planId Identifier of the plan
+     * @return A unique bytes32 key generated from the account and plan ID
+     */
     function _getTokenKey(address _account, uint256 _planId) internal pure returns (bytes32) {
         return keccak256(abi.encode(_account, _planId));
     }

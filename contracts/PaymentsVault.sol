@@ -33,6 +33,11 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         INVMConfig nvmConfig;
     }
 
+    /**
+     * @notice Initializes the PaymentsVault contract
+     * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
+     * @param _authority Address of the AccessManager contract handling permissions
+     */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         PaymentsVaultStorage storage $ = _getPaymentsVaultStorage();
@@ -48,6 +53,11 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         emit ReceivedNativeToken(msg.sender, msg.value);
     }
 
+    /**
+     * @notice Deposits native tokens (ETH) to the vault
+     * @dev Caller must have DEPOSITOR_ROLE to call this function
+     * @dev Emits ReceivedNativeToken event on successful deposit
+     */
     function depositNativeToken() external payable nonReentrant {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
@@ -55,6 +65,14 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         emit ReceivedNativeToken(msg.sender, msg.value);
     }
 
+    /**
+     * @notice Withdraws native tokens (ETH) from the vault to a specified receiver
+     * @param _amount Amount of native tokens to withdraw
+     * @param _receiver Address to receive the withdrawn tokens
+     * @dev Caller must have WITHDRAW_ROLE to call this function
+     * @dev Emits WithdrawNativeToken event on successful withdrawal
+     * @dev Follows checks-effects-interactions pattern for security
+     */
     function withdrawNativeToken(uint256 _amount, address _receiver) external nonReentrant {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
             revert InvalidRole(msg.sender, WITHDRAW_ROLE);
@@ -70,6 +88,15 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         }
     }
 
+    /**
+     * @notice Records a deposit of ERC20 tokens to the vault
+     * @param _erc20TokenAddress Address of the ERC20 token contract
+     * @param _amount Amount of tokens being deposited
+     * @param _from Original sender of the tokens
+     * @dev Caller must have DEPOSITOR_ROLE to call this function
+     * @dev Emits ReceivedERC20 event on successful deposit
+     * @dev This function only records the deposit event; actual token transfer must be done separately
+     */
     function depositERC20(address _erc20TokenAddress, uint256 _amount, address _from) external nonReentrant {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
@@ -77,6 +104,15 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         emit ReceivedERC20(_erc20TokenAddress, _from, _amount);
     }
 
+    /**
+     * @notice Withdraws ERC20 tokens from the vault to a specified receiver
+     * @param _erc20TokenAddress Address of the ERC20 token contract
+     * @param _amount Amount of tokens to withdraw
+     * @param _receiver Address to receive the withdrawn tokens
+     * @dev Caller must have WITHDRAW_ROLE to call this function
+     * @dev Emits WithdrawERC20 event on successful withdrawal
+     * @dev Follows checks-effects-interactions pattern for security
+     */
     function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver) external nonReentrant {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, WITHDRAW_ROLE)) {
             revert InvalidRole(msg.sender, WITHDRAW_ROLE);
@@ -93,10 +129,19 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         }
     }
 
+    /**
+     * @notice Gets the current balance of native tokens (ETH) in the vault
+     * @return balance The current native token balance
+     */
     function getBalanceNativeToken() external view returns (uint256 balance) {
         return address(this).balance;
     }
 
+    /**
+     * @notice Gets the current balance of a specific ERC20 token in the vault
+     * @param _erc20TokenAddress Address of the ERC20 token contract
+     * @return balance The current token balance
+     */
     function getBalanceERC20(address _erc20TokenAddress) external view returns (uint256 balance) {
         IERC20 token = IERC20(_erc20TokenAddress);
         return token.balanceOf(address(this));

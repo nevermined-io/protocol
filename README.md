@@ -9,6 +9,15 @@
 
 Nevermined Smart Contracts form the core of the Nevermined protocol, enabling secure asset registration, access control, and payment management in a decentralized environment. This protocol facilitates the entire lifecycle of digital assets, from registration and pricing to access management and payment processing.
 
+The Nevermined protocol allows users to:
+- Register digital assets with flexible pricing models
+- Set up various subscription and one-time payment plans
+- Manage access rights through NFT-based credit systems
+- Process both cryptocurrency and fiat payments
+- Establish time-limited (expirable) and fixed-amount access rights
+- Execute agreements between parties with automated condition fulfillment
+- Distribute payments to multiple receivers with configurable fee structures
+
 ### Key Features
 
 - **Asset Registration**: Register digital assets with customizable access plans
@@ -27,26 +36,36 @@ The Nevermined Smart Contracts are organized around several core components:
    - Central registry for roles, fees, and contract addresses
    - Manages access control and permissions
    - Stores configuration parameters
+   - Provides role-based access control for critical operations
+   - Supports upgradeable contracts through UUPS pattern
 
 2. **AssetsRegistry**
    - Manages asset registration and metadata
    - Handles access plans and pricing configurations
    - Supports different pricing models (fixed price, fiat price, smart contract price)
+   - Generates unique identifiers for assets and plans
+   - Validates and enforces fee structures
 
 3. **AgreementsStore**
    - Stores and tracks agreements between parties
    - Manages condition states and fulfillment
    - Provides agreement verification
+   - Tracks dependencies between conditions
+   - Ensures proper sequencing of condition fulfillment
 
 4. **PaymentsVault**
    - Escrow for holding and releasing payments
    - Supports both native tokens and ERC20 tokens
    - Manages deposit and withdrawal permissions
+   - Implements secure withdrawal patterns
+   - Provides balance tracking for different token types
 
 5. **NFT1155Credits**
    - ERC1155-based NFT implementation for access rights
    - Supports different credit types (expirable, fixed, dynamic)
    - Manages minting and burning of access tokens
+   - Implements time-based expiration for credits
+   - Controls redemption based on configurable rules
 
 ### Conditions System
 
@@ -55,10 +74,33 @@ The protocol uses a condition-based agreement system where specific conditions m
 - **LockPaymentCondition**: Handles locking payments in escrow
 - **TransferCreditsCondition**: Manages the transfer of access credits
 - **DistributePaymentsCondition**: Controls payment distribution to receivers
+- **FiatSettlementCondition**: Manages off-chain fiat payment verification
 
 ### Agreement Templates
 
 - **FixedPaymentTemplate**: Template for agreements with fixed payment terms
+- **FiatPaymentTemplate**: Template for agreements with fiat payment terms
+
+### Contract Inheritance and Relationships
+
+The contracts follow a modular design with clear separation of concerns:
+
+- Core contracts manage configuration, assets, agreements, and payments
+- Template contracts orchestrate the agreement creation and condition fulfillment
+- Condition contracts implement specific business logic for different agreement types
+- Token contracts handle the minting, burning, and tracking of access rights
+
+### Access Control System
+
+The protocol implements a comprehensive role-based access control system:
+
+- **OWNER_ROLE**: Full administrative control
+- **GOVERNOR_ROLE**: Configuration management
+- **CREDITS_MINTER_ROLE**: Ability to mint access credits
+- **CREDITS_BURNER_ROLE**: Ability to burn access credits
+- **DEPOSITOR_ROLE**: Ability to deposit funds into the vault
+- **WITHDRAW_ROLE**: Ability to withdraw funds from the vault
+- **FIAT_SETTLEMENT_ROLE**: Ability to verify fiat payments
 
 ## Setup and Installation
 
@@ -164,6 +206,41 @@ A typical interaction flow in the Nevermined protocol:
 3. Payment is locked in the PaymentsVault (LockPaymentCondition)
 4. Access credits are transferred to the consumer (TransferCreditsCondition)
 5. Payments are distributed to receivers (DistributePaymentsCondition)
+
+## Detailed Function Reference
+
+### Asset Management
+
+- `AssetsRegistry.register(bytes32 _didSeed, string memory _url, uint256[] memory _plans)`: Registers a new asset with associated plans
+- `AssetsRegistry.createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)`: Creates a new pricing plan
+- `AssetsRegistry.registerAssetAndPlan(...)`: Registers an asset and creates a plan in a single transaction
+
+### Agreement Management
+
+- `AgreementsStore.register(bytes32 _agreementId, address _agreementCreator, uint256 _planId, bytes32[] memory _conditionIds, ConditionState[] memory _conditionStates, bytes[] memory _params)`: Registers a new agreement
+- `AgreementsStore.updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state)`: Updates the status of a condition
+- `AgreementsStore.areConditionsFulfilled(bytes32 _agreementId, bytes32 _conditionId, bytes32[] memory _dependantConditions)`: Checks if required conditions are fulfilled
+
+### Payment Management
+
+- `PaymentsVault.depositNativeToken()`: Deposits native tokens (ETH) to the vault
+- `PaymentsVault.withdrawNativeToken(uint256 _amount, address _receiver)`: Withdraws native tokens from the vault
+- `PaymentsVault.depositERC20(address _erc20TokenAddress, uint256 _amount, address _from)`: Records ERC20 token deposits
+- `PaymentsVault.withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver)`: Withdraws ERC20 tokens from the vault
+
+### Credits Management
+
+- `NFT1155Credits.mint(address _to, uint256 _planId, uint256 _value, bytes memory _data)`: Mints credits for a plan
+- `NFT1155ExpirableCredits.mint(address _to, uint256 _planId, uint256 _value, uint256 _secsDuration, bytes memory _data)`: Mints expirable credits
+- `NFT1155Base.burn(address _from, uint256 _planId, uint256 _amount)`: Burns/redeems credits for a plan
+
+## Upgradeability Pattern
+
+The Nevermined contracts implement the UUPS (Universal Upgradeable Proxy Standard) pattern:
+
+- All storage is isolated using ERC-7201 namespaced storage pattern
+- Contracts inherit from AccessManagedUUPSUpgradeable for secure upgrades
+- Initialization functions replace constructors for proper proxy initialization
 
 ## License
 

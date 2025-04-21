@@ -28,6 +28,15 @@ contract FiatPaymentTemplate is BaseTemplate {
         TransferCreditsCondition transferCondition;
     }
 
+    /**
+     * @notice Initializes the FiatPaymentTemplate contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _fiatSettlementConditionAddress Address of the FiatSettlementCondition contract
+     * @param _transferCondtionAddress Address of the TransferCreditsCondition contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -46,6 +55,15 @@ contract FiatPaymentTemplate is BaseTemplate {
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Creates a new fiat payment agreement
+     * @param _seed Unique seed for generating the agreement ID
+     * @param _planId Identifier of the pricing plan to use
+     * @param _creditsReceiver Address that will receive the credits
+     * @param _params Additional parameters for the agreement
+     * @dev Validates inputs, checks plan existence, and registers the agreement
+     * @dev Sets up and fulfills the required conditions: fiat settlement and transfer credits
+     */
     function createAgreement(bytes32 _seed, uint256 _planId, address _creditsReceiver, bytes[] memory _params)
         external
     {
@@ -85,6 +103,15 @@ contract FiatPaymentTemplate is BaseTemplate {
         _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], _creditsReceiver);
     }
 
+    /**
+     * @notice Internal function to fulfill the fiat settlement condition
+     * @param _conditionId Identifier of the fiat settlement condition
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _senderAddress Address of the payment sender
+     * @param _params Additional parameters for the settlement
+     * @dev Calls the fiat settlement condition's fulfill function
+     */
     function _fiatSettlement(
         bytes32 _conditionId,
         bytes32 _agreementId,
@@ -97,6 +124,15 @@ contract FiatPaymentTemplate is BaseTemplate {
         $.fiatSettlementCondition.fulfill(_conditionId, _agreementId, _planId, _senderAddress, _params);
     }
 
+    /**
+     * @notice Internal function to transfer credits for a plan
+     * @param _conditionId Identifier of the transfer credits condition
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _fiatSettlementCondition Identifier of the fiat settlement condition that must be fulfilled first
+     * @param _receiverAddress Address of the credits receiver
+     * @dev Requires the fiat settlement condition to be fulfilled first
+     */
     function _transferPlan(
         bytes32 _conditionId,
         bytes32 _agreementId,
