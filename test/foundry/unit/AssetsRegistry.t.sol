@@ -133,7 +133,8 @@ contract AssetsRegistryTest is BaseTest {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 1
+            maxAmount: 1,
+            proofRequired: false
         });
 
         uint256 planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), owner);

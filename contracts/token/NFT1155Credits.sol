@@ -40,12 +40,22 @@ contract NFT1155Credits is NFT1155Base {
         super.mintBatch(_to, _ids, _values, _data);
     }
 
-    function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
-        super.burn(_from, _planId, _value);
+    function burn(address _from, uint256 _planId, uint256 _value, uint256 _keyspace, bytes calldata _signature)
+        public
+        virtual
+        override
+    {
+        super.burn(_from, _planId, _value, _keyspace, _signature);
     }
 
-    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
-        super.burnBatch(_from, _ids, _values);
+    function burnBatch(
+        address _from,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        uint256 _keyspace,
+        bytes calldata _signature
+    ) public virtual override {
+        super.burnBatch(_from, _ids, _values, _keyspace, _signature);
     }
 
     // solhint-disable-next-line func-name-mixedcase

@@ -189,7 +189,37 @@ abstract contract BaseTest is Test, ToArrayUtils {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 1
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0), nonce);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this), nonce);
+    }
+
+    function _createPlanWithProofRequired(uint256 nonce) internal returns (uint256) {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = address(this);
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: true
         });
 
         assetsRegistry.createPlan(priceConfig, creditsConfig, address(0), nonce);
@@ -234,7 +264,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
             durationSecs: durationSecs,
             amount: amount,
             minAmount: 1,
-            maxAmount: amount
+            maxAmount: amount,
+            proofRequired: false
         });
 
         vm.prank(owner);

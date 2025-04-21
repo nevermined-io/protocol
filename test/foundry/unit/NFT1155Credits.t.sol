@@ -99,10 +99,11 @@ contract NFT1155CreditsTest is BaseTest {
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
             redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            proofRequired: false,
             durationSecs: 0,
             amount: amount,
             minAmount: 1,
-            maxAmount: 1
+            maxAmount: 100
         });
 
         vm.prank(owner);
@@ -130,7 +131,7 @@ contract NFT1155CreditsTest is BaseTest {
 
     function test_burn_noPlanRevert() public {
         vm.expectPartialRevert(IAsset.PlanNotFound.selector);
-        nftCredits.burn(owner, 1, 1);
+        nftCredits.burn(owner, 1, 1, 0, '');
     }
 
     function test_burn_correct() public {
@@ -142,7 +143,7 @@ contract NFT1155CreditsTest is BaseTest {
         uint256 planId = _createPlan();
 
         nftCredits.mint(receiver, planId, 5, '');
-        nftCredits.burn(receiver, planId, 1);
+        nftCredits.burn(receiver, planId, 1, 0, '');
         uint256 balance = nftCredits.balanceOf(receiver, planId);
         assertEq(balance, 4);
     }
@@ -156,7 +157,7 @@ contract NFT1155CreditsTest is BaseTest {
 
         vm.prank(unauthorized);
         vm.expectPartialRevert(INFT1155.InvalidRedemptionPermission.selector);
-        nftCredits.burn(receiver, planId, 1);
+        nftCredits.burn(receiver, planId, 1, 0, '');
     }
 
     function test_burnBatch_correct() public {
@@ -186,7 +187,7 @@ contract NFT1155CreditsTest is BaseTest {
         burnAmounts[1] = 75;
 
         nftCredits.mintBatch(receiver, ids, mintAmounts, '');
-        nftCredits.burnBatch(receiver, ids, burnAmounts);
+        nftCredits.burnBatch(receiver, ids, burnAmounts, 0, '');
 
         uint256 balance1 = nftCredits.balanceOf(receiver, planId1);
         uint256 balance2 = nftCredits.balanceOf(receiver, planId2);
@@ -221,7 +222,7 @@ contract NFT1155CreditsTest is BaseTest {
         // bytes32 burnerRole = nftCredits.CREDITS_BURNER_ROLE();
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
-        nftCredits.burnBatch(receiver, ids, burnAmounts);
+        nftCredits.burnBatch(receiver, ids, burnAmounts, 0, '');
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {

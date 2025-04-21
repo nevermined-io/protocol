@@ -90,6 +90,10 @@ interface IAsset {
          */
         RedemptionType redemptionType;
         /**
+         * Whether the credits burn proof signed by the user is required
+         */
+        bool proofRequired;
+        /**
          * The duration of the credits in seconds
          * @notice only if creditsType == EXPIRABLE
          */

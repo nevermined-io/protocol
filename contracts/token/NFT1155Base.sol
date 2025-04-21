@@ -4,15 +4,18 @@
 pragma solidity ^0.8.28;
 
 import {IAsset} from '../interfaces/IAsset.sol';
-import {INFT1155} from '../interfaces/INFT1155.sol';
+import {CREDITS_BURN_PROOF_TYPEHASH, INFT1155} from '../interfaces/INFT1155.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
+import {EIP712Upgradeable} from '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
 
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 
-abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPSUpgradeable {
+import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
+
+abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to mint credits
      */
@@ -37,6 +40,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
     struct NFT1155BaseStorage {
         INVMConfig nvmConfig;
         IAsset assetsRegistry;
+        mapping(address sender => mapping(uint256 keyspace => uint256 nonce)) nonces;
     }
 
     // solhint-disable-next-line func-name-mixedcase
@@ -54,6 +58,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
         __AccessManagedUUPSUpgradeable_init(address(_authority));
+        __EIP712_init(type(NFT1155Base).name, '1');
 
         $.nvmConfig = _nvmConfigAddress;
         $.assetsRegistry = _assetsRegistryAddress;
@@ -110,19 +115,36 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
      * @param _from The address of the account that is getting the credits burned
      * @param _planId the plan id
      * @param _amount the number of credits to burn/redeem
+     * @param _keyspace the keyspace of the nonce
+     * @param _signature the signature of the credits burn proof
      */
-    function burn(address _from, uint256 _planId, uint256 _amount) public virtual {
+    function burn(address _from, uint256 _planId, uint256 _amount, uint256 _keyspace, bytes calldata _signature)
+        public
+        virtual
+    {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
         IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
-        if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
-
-        if (!_canRedeemCredits(_planId, plan.owner, plan.credits.redemptionType, msg.sender)) {
-            revert InvalidRedemptionPermission(_planId, plan.credits.redemptionType, msg.sender);
-        }
+        require(plan.lastUpdated != 0, IAsset.PlanNotFound(_planId));
+        require(
+            _canRedeemCredits(_planId, plan.owner, plan.credits.redemptionType, msg.sender),
+            InvalidRedemptionPermission(_planId, plan.credits.redemptionType, msg.sender)
+        );
 
         uint256 creditsToRedeem =
             _creditsToRedeem(_planId, plan.credits.creditsType, _amount, plan.credits.minAmount, plan.credits.maxAmount);
+
+        if (plan.credits.proofRequired) {
+            uint256[] memory planIds = new uint256[](1);
+            planIds[0] = _planId;
+
+            CreditsBurnProofData memory proof =
+                CreditsBurnProofData({keyspace: _keyspace, nonce: $.nonces[_from][_keyspace]++, planIds: planIds});
+
+            bytes32 digest = _hashCreditsBurnProof(proof);
+            address signer = ECDSA.recover(digest, _signature);
+            require(signer == _from, InvalidCreditsBurnProof(signer, _from));
+        }
 
         _burn(_from, _planId, creditsToRedeem);
     }
@@ -132,19 +154,87 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
      * @param _from the address of the account that is getting the credits burned
      * @param _ids the array of plan ids
      * @param _amounts the array of number of credits to burn/redeem
+     * @param _keyspace the keyspace of the nonce
+     * @param _signature the signature of the credits burn proof
      */
-    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _amounts) public virtual {
+    function burnBatch(
+        address _from,
+        uint256[] memory _ids,
+        uint256[] memory _amounts,
+        uint256 _keyspace,
+        bytes calldata _signature
+    ) public virtual {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
-        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+        require(
+            $.nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
+            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
+        );
+
+        uint256[] memory planIdsToVerify = new uint256[](_ids.length);
+        uint256 counter;
+        for (uint256 i = 0; i < _ids.length; i++) {
+            uint256 planId = _ids[i];
+
+            IAsset.Plan memory plan = $.assetsRegistry.getPlan(planId);
+
+            _amounts[i] = _creditsToRedeem(
+                planId, plan.credits.creditsType, _amounts[i], plan.credits.minAmount, plan.credits.maxAmount
+            );
+
+            if (plan.credits.proofRequired) {
+                planIdsToVerify[counter++] = planId;
+            }
+        }
+
+        // Set the array length
+        // solhint-disable-next-line no-inline-assembly
+        assembly ("memory-safe") {
+            mstore(planIdsToVerify, counter)
+        }
+
+        if (planIdsToVerify.length > 0) {
+            CreditsBurnProofData memory proof = CreditsBurnProofData({
+                keyspace: _keyspace,
+                nonce: $.nonces[_from][_keyspace]++,
+                planIds: planIdsToVerify
+            });
+            bytes32 digest = _hashCreditsBurnProof(proof);
+            address signer = ECDSA.recover(digest, _signature);
+            require(signer == _from, InvalidCreditsBurnProof(signer, _from));
         }
 
         _burnBatch(_from, _ids, _amounts);
     }
 
     /**
-     * It calculates the number of credits to redeme based on the plan and the credits type
+     * @notice Returns the next nonce for the given sender and keyspace
+     * @param _sender The address of the account
+     * @param _keyspaces The keyspaces for which to generate the nonce
+     * @return nonces The next nonce values
+     */
+    function nextNonce(address _sender, uint256[] calldata _keyspaces)
+        external
+        view
+        override
+        returns (uint256[] memory nonces)
+    {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+        nonces = new uint256[](_keyspaces.length);
+        for (uint256 i = 0; i < _keyspaces.length; i++) {
+            nonces[i] = $.nonces[_sender][_keyspaces[i]];
+        }
+        return nonces;
+    }
+
+    function _hashCreditsBurnProof(CreditsBurnProofData memory _proof) internal view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(abi.encode(CREDITS_BURN_PROOF_TYPEHASH, _proof.keyspace, _proof.nonce, _proof.planIds))
+        );
+    }
+
+    /**
+     * It calculates the number of credits to redeem based on the plan and the credits type
      * @notice The credits to redeem depend on the plan.credits.creditsType
      * @param _planId the identifier of the plan
      * @param _creditsType the type of credits

@@ -2,9 +2,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-toolbox-viem/network-helpe
 import { expect } from 'chai'
 import { FoundryTools } from '../common/FoundryTools'
 import hre from 'hardhat'
-import {
-  generateId
-} from '../common/utils'
+import { generateId } from '../common/utils'
 import { zeroAddress } from 'viem'
 
 var chai = require('chai')
@@ -45,6 +43,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     amount: 900,
     minAmount: 1,
     maxAmount: 1,
+    proofRequired: false,
   }
   let nftAddress: string
   const url = 'https://nevermined.io'
@@ -55,7 +54,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     bob = wallets[4]
 
     foundryTools = new FoundryTools(wallets)
-    
+
     const _deployment = await foundryTools.connectToInstance(process.env.DEPLOYMENT_ADDRESSES_JSON)
 
     expect(_deployment.nvmConfig.address).to.be.a('string').to.startWith('0x')
@@ -71,8 +70,6 @@ describe('IT: Expirable Credits e2e flow', function () {
 
     publicClient = foundryTools.getPublicClient()
   })
-
-
 
   it('Alice can define the fees of the plan', async () => {
     priceConfig.receivers = [alice.account.address]
@@ -155,10 +152,10 @@ describe('IT: Expirable Credits e2e flow', function () {
     )
 
     const agreementIdSeed = generateId()
-    const txHash = await fixedPaymentTemplate.write.createAgreement(
-      [agreementIdSeed, planId, []],
-      { account: bob.account, value: totalAmount },
-    )
+    const txHash = await fixedPaymentTemplate.write.createAgreement([agreementIdSeed, planId, []], {
+      account: bob.account,
+      value: totalAmount,
+    })
     expect(txHash).to.be.a('string').to.startWith('0x')
     console.log('txHash:', txHash)
   })
@@ -166,10 +163,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   it('We can check the credits of Bob', async () => {
     await foundryTools.getTestClient().mine({ blocks: 1 })
 
-    const balance = await nftExpirableCredits.read.balanceOf([
-      bob.account.address,
-      planId,
-    ])
+    const balance = await nftExpirableCredits.read.balanceOf([bob.account.address, planId])
     console.log('Credits Balance:', balance)
     expect(balance > 0n).to.be.true
   })
@@ -196,10 +190,7 @@ describe('IT: Expirable Credits e2e flow', function () {
 
   it('Credits expire after their duration', async () => {
     // First verify Bob has credits
-    const balanceBefore = await nftExpirableCredits.read.balanceOf([
-      bob.account.address,
-      planId,
-    ])
+    const balanceBefore = await nftExpirableCredits.read.balanceOf([bob.account.address, planId])
     expect(balanceBefore > 0n).to.be.true
     console.log('Credits Balance Before Time Advance:', balanceBefore)
 
@@ -212,10 +203,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log('Credits should now be expired')
 
     // Check if credits are expired by checking balance after expiration
-    const balanceAfter = await nftExpirableCredits.read.balanceOf([
-      bob.account.address,
-      planId,
-    ])
+    const balanceAfter = await nftExpirableCredits.read.balanceOf([bob.account.address, planId])
     expect(balanceAfter).to.equal(0n) // Balance should be 0 after expiration
   })
 })

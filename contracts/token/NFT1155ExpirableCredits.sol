@@ -105,12 +105,47 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         }
     }
 
-    function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
+    function burn(address _from, uint256 _planId, uint256 _value, uint256 _keyspace, bytes calldata _signature)
+        public
+        virtual
+        override
+    {
         NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
-        if (!_getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+        require(
+            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
+            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
+        );
+
+        _processPreCreditBurn(_from, _planId, _value);
+
+        super.burn(_from, _planId, _value, _keyspace, _signature);
+    }
+
+    function burnBatch(
+        address _from,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        uint256 _keyspace,
+        bytes calldata _signature
+    ) public virtual override {
+        uint256 _length = _ids.length;
+        if (_length != _values.length) revert InvalidLength(_length, _values.length);
+
+        require(
+            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
+            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
+        );
+
+        for (uint256 i = 0; i < _length; i++) {
+            _processPreCreditBurn(_from, _ids[i], _values[i]);
         }
+
+        super.burnBatch(_from, _ids, _values, _keyspace, _signature);
+    }
+
+    function _processPreCreditBurn(address _from, uint256 _planId, uint256 _value) internal {
+        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
         bytes32 _key = _getTokenKey(_from, _planId);
         uint256 _pendingToBurn = _value;
@@ -130,17 +165,6 @@ contract NFT1155ExpirableCredits is NFT1155Base {
                     );
                 }
             }
-        }
-
-        super.burn(_from, _planId, _value);
-    }
-
-    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
-        uint256 _length = _ids.length;
-        if (_length != _values.length) revert InvalidLength(_length, _values.length);
-
-        for (uint256 i = 0; i < _length; i++) {
-            burn(_from, _ids[i], _values[i]);
         }
     }
 
