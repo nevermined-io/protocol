@@ -38,6 +38,14 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
     /// @param receivers The distribution of the payment amounts receivers
     error IncorrectPaymentDistribution(uint256[] amounts, address[] receivers);
 
+    /**
+     * @notice Initializes the LockPaymentCondition contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _vaultAddress Address of the PaymentsVault contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -55,6 +63,17 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Fulfills the lock payment condition for an agreement
+     * @param _conditionId Identifier of the condition to fulfill
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _senderAddress Address of the payment sender
+     * @dev Only registered templates can call this function
+     * @dev Supports native token and ERC20 token payments
+     * @dev Locks the payment in the vault until other conditions are fulfilled
+     * @dev Reverts for unsupported price types (fiat or smart contract)
+     */
     function fulfill(bytes32 _conditionId, bytes32 _agreementId, uint256 _planId, address _senderAddress)
         external
         payable

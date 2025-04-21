@@ -256,10 +256,21 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
         return _getNVMConfigStorage().feeReceiver;
     }
 
+    /**
+     * @notice Returns the denominator used for fee calculations
+     * @return The fee denominator constant (1,000,000 representing 100% with 4 decimal places)
+     */
     function getFeeDenominator() external pure returns (uint256) {
         return FEE_DENOMINATOR;
     }
 
+    /**
+     * @notice Sets a parameter in the Nevermined configuration
+     * @param _paramName The name/key of the parameter to set
+     * @param _value The value to set for the parameter
+     * @dev Only an account with GOVERNOR_ROLE can call this function
+     * @dev Emits NeverminedConfigChange event on parameter update
+     */
     function setParameter(bytes32 _paramName, bytes memory _value) external virtual onlyGovernor(msg.sender) {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
@@ -269,6 +280,13 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
         emit NeverminedConfigChange(msg.sender, _paramName, _value);
     }
 
+    /**
+     * @notice Retrieves a parameter from the Nevermined configuration
+     * @param _paramName The name/key of the parameter to retrieve
+     * @return value The parameter value
+     * @return isActive Whether the parameter is active
+     * @return lastUpdated Timestamp of when the parameter was last updated
+     */
     function getParameter(bytes32 _paramName)
         external
         view
@@ -283,6 +301,12 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
         );
     }
 
+    /**
+     * @notice Disables a parameter in the Nevermined configuration
+     * @param _paramName The name/key of the parameter to disable
+     * @dev Only an account with GOVERNOR_ROLE can call this function
+     * @dev Emits NeverminedConfigChange event on parameter update
+     */
     function disableParameter(bytes32 _paramName) external virtual onlyGovernor(msg.sender) {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
@@ -293,6 +317,11 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
         }
     }
 
+    /**
+     * @notice Checks if a parameter exists and is active in the Nevermined configuration
+     * @param _paramName The name/key of the parameter to check
+     * @return Boolean indicating whether the parameter exists and is active
+     */
     function parameterExists(bytes32 _paramName) external view returns (bool) {
         return _getNVMConfigStorage().configParams[_paramName].isActive;
     }

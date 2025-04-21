@@ -29,6 +29,14 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         IVault vault;
     }
 
+    /**
+     * @notice Initializes the DistributePaymentsCondition contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _vaultAddress Address of the PaymentsVault contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -46,6 +54,18 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Fulfills the distribute payments condition for an agreement
+     * @param _conditionId Identifier of the condition to fulfill
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _lockCondition Identifier of the lock payment condition
+     * @param _releaseCondition Identifier of the release condition (transfer credits)
+     * @dev Only registered templates can call this function
+     * @dev Checks if lock payment condition is fulfilled before proceeding
+     * @dev If release condition is fulfilled, distributes payments to receivers
+     * @dev If release condition is not fulfilled, refunds payment to the agreement creator
+     */
     function fulfill(
         bytes32 _conditionId,
         bytes32 _agreementId,
@@ -96,6 +116,12 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         }
     }
 
+    /**
+     * @notice Internal function to distribute native token payments to multiple receivers
+     * @param _amounts Array of payment amounts for each receiver
+     * @param _receivers Array of payment receiver addresses
+     * @dev Withdraws native tokens from the vault to each receiver
+     */
     function _distributeNativeTokenPayments(uint256[] memory _amounts, address[] memory _receivers) internal {
         DistributePaymentsConditionStorage storage $ = _getDistributePaymentsConditionStorage();
 
@@ -105,6 +131,13 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         }
     }
 
+    /**
+     * @notice Internal function to distribute ERC20 token payments to multiple receivers
+     * @param _erc20TokenAddress Address of the ERC20 token contract
+     * @param _amounts Array of payment amounts for each receiver
+     * @param _receivers Array of payment receiver addresses
+     * @dev Withdraws ERC20 tokens from the vault to each receiver
+     */
     function _distributeERC20Payments(
         address _erc20TokenAddress,
         uint256[] memory _amounts,

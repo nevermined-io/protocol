@@ -32,6 +32,13 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
         IAgreement agreementStore;
     }
 
+    /**
+     * @notice Initializes the FiatSettlementCondition contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -47,6 +54,18 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Fulfills the fiat settlement condition for an agreement
+     * @param _conditionId Identifier of the condition to fulfill
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _senderAddress Address of the account that verified the fiat payment
+     * @param _params Additional parameters for the settlement
+     * @dev Only registered templates can call this function
+     * @dev Only accounts with FIAT_SETTLEMENT_ROLE can fulfill this condition
+     * @dev Verifies that the plan has a fiat price type
+     * @dev Validates settlement parameters before fulfilling the condition
+     */
     function fulfill(
         bytes32 _conditionId,
         bytes32 _agreementId,
@@ -83,6 +102,12 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
         $.agreementStore.updateConditionStatus(_agreementId, _conditionId, IAgreement.ConditionState.Fulfilled);
     }
 
+    /**
+     * @notice Internal function to validate settlement parameters
+     * @param _params Parameters to validate
+     * @return Boolean indicating whether the parameters are valid
+     * @dev Currently returns true by default, validation to be implemented
+     */
     function _areSettlementParamsValid(bytes[] memory /*_params*/ ) internal pure returns (bool) {
         // TODO: Implemment some level of params validation
         return true;

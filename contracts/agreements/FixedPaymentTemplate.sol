@@ -31,6 +31,16 @@ contract FixedPaymentTemplate is BaseTemplate {
         DistributePaymentsCondition distributePaymentsCondition;
     }
 
+    /**
+     * @notice Initializes the FixedPaymentTemplate contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _lockPaymentConditionAddress Address of the LockPaymentCondition contract
+     * @param _transferCondtionAddress Address of the TransferCreditsCondition contract
+     * @param _distributePaymentsCondition Address of the DistributePaymentsCondition contract
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -51,6 +61,15 @@ contract FixedPaymentTemplate is BaseTemplate {
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
+    /**
+     * @notice Creates a new fixed payment agreement
+     * @param _seed Unique seed for generating the agreement ID
+     * @param _planId Identifier of the pricing plan to use
+     * @param _params Additional parameters for the agreement
+     * @dev Validates inputs, checks plan existence, and registers the agreement
+     * @dev Sets up and fulfills the required conditions: lock payment, transfer credits, and distribute payments
+     * @dev Payable function that accepts the payment amount for the plan
+     */
     function createAgreement(bytes32 _seed, uint256 _planId, bytes[] memory _params) external payable {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
         BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
@@ -98,6 +117,14 @@ contract FixedPaymentTemplate is BaseTemplate {
         );
     }
 
+    /**
+     * @notice Internal function to lock payment for an agreement
+     * @param _conditionId Identifier of the lock payment condition
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _senderAddress Address of the payment sender
+     * @dev Forwards the message value to the lock payment condition
+     */
     function _lockPayment(
         bytes32 _conditionId,
         bytes32 _agreementId,
@@ -110,6 +137,15 @@ contract FixedPaymentTemplate is BaseTemplate {
         $.lockPaymentCondition.fulfill{value: msg.value}(_conditionId, _agreementId, _planId, _senderAddress);
     }
 
+    /**
+     * @notice Internal function to transfer credits for a plan
+     * @param _conditionId Identifier of the transfer credits condition
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _lockPaymentCondition Identifier of the lock payment condition that must be fulfilled first
+     * @param _receiverAddress Address of the credits receiver
+     * @dev Requires the lock payment condition to be fulfilled first
+     */
     function _transferPlan(
         bytes32 _conditionId,
         bytes32 _agreementId,
@@ -124,6 +160,15 @@ contract FixedPaymentTemplate is BaseTemplate {
         $.transferCondition.fulfill(_conditionId, _agreementId, _planId, _requiredConditons, _receiverAddress);
     }
 
+    /**
+     * @notice Internal function to distribute locked payments
+     * @param _conditionId Identifier of the distribute payments condition
+     * @param _agreementId Identifier of the agreement
+     * @param _planId Identifier of the pricing plan
+     * @param _lockPaymentCondition Identifier of the lock payment condition
+     * @param _releaseCondition Identifier of the release condition (transfer credits)
+     * @dev Requires both lock payment and transfer credits conditions to be fulfilled first
+     */
     function _distributePayments(
         bytes32 _conditionId,
         bytes32 _agreementId,

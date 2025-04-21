@@ -10,6 +10,14 @@ import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 contract NFT1155Credits is NFT1155Base {
+    /**
+     * @notice Initializes the NFT1155Credits contract with required dependencies
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @param Unused name parameter (maintained for compatibility)
+     * @param Unused symbol parameter (maintained for compatibility)
+     */
     function initialize(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
@@ -42,6 +50,13 @@ contract NFT1155Credits is NFT1155Base {
     }
 
     // solhint-disable-next-line func-name-mixedcase
+    /**
+     * @notice Internal initialization function for NFT1155Credits
+     * @param _nvmConfigAddress Address of the NVMConfig contract
+     * @param _authority Address of the AccessManager contract
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
+     * @dev Called by the initialize function
+     */
     function __NFT1155Credits_init(
         INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
