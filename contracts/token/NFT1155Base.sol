@@ -141,7 +141,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
             CreditsBurnProofData memory proof =
                 CreditsBurnProofData({keyspace: _keyspace, nonce: $.nonces[_from][_keyspace]++, planIds: planIds});
 
-            bytes32 digest = _hashCreditsBurnProof(proof);
+            bytes32 digest = hashCreditsBurnProof(proof);
             address signer = ECDSA.recover(digest, _signature);
             require(signer == _from, InvalidCreditsBurnProof(signer, _from));
         }
@@ -199,7 +199,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
                 nonce: $.nonces[_from][_keyspace]++,
                 planIds: planIdsToVerify
             });
-            bytes32 digest = _hashCreditsBurnProof(proof);
+            bytes32 digest = hashCreditsBurnProof(proof);
             address signer = ECDSA.recover(digest, _signature);
             require(signer == _from, InvalidCreditsBurnProof(signer, _from));
         }
@@ -227,7 +227,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         return nonces;
     }
 
-    function _hashCreditsBurnProof(CreditsBurnProofData memory _proof) internal view returns (bytes32) {
+    function hashCreditsBurnProof(CreditsBurnProofData memory _proof) public view returns (bytes32) {
         return _hashTypedDataV4(
             keccak256(abi.encode(CREDITS_BURN_PROOF_TYPEHASH, _proof.keyspace, _proof.nonce, _proof.planIds))
         );

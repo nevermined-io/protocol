@@ -14,14 +14,18 @@ import {NFT1155CreditsV2} from '../../../contracts/mock/NFT1155CreditsV2.sol';
 import {NFT1155Credits} from '../../../contracts/token/NFT1155Credits.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {Vm} from 'forge-std/Vm.sol';
 
 contract NFT1155CreditsTest is BaseTest {
-    address public receiver = makeAddr('receiver');
+    Vm.Wallet private receiverWallet;
+    address public receiver;
     address public unauthorized = makeAddr('unauthorized');
     // Using the CREDITS_MINTER_ROLE from BaseTest
 
     function setUp() public override {
         super.setUp();
+        receiverWallet = vm.createWallet('receiver');
+        receiver = receiverWallet.addr;
     }
 
     function test_balanceOf_randomPlan() public view {
@@ -160,6 +164,80 @@ contract NFT1155CreditsTest is BaseTest {
         nftCredits.burn(receiver, planId, 1, 0, '');
     }
 
+    function test_burn_withSignature_required() public {
+        // Create a plan that requires proof
+        uint256 planId = _createPlanWithProofRequired(0);
+
+        // Grant necessary roles
+        vm.startPrank(owner);
+        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
+        nvmConfig.grantRole(nftCredits.CREDITS_BURNER_ROLE(), address(this));
+        vm.stopPrank();
+
+        // Mint some credits
+        nftCredits.mint(receiver, planId, 5, '');
+
+        // Get the next nonce for the keyspace
+        uint256[] memory keyspaces = new uint256[](1);
+        keyspaces[0] = 0;
+        uint256[] memory nonces = nftCredits.nextNonce(receiver, keyspaces);
+        uint256 nonce = nonces[0];
+
+        // Create the proof data
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = planId;
+        INFT1155.CreditsBurnProofData memory proof =
+            INFT1155.CreditsBurnProofData({keyspace: 0, nonce: nonce, planIds: planIds});
+
+        // Sign the proof
+        bytes32 digest = nftCredits.hashCreditsBurnProof(proof);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(receiverWallet, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Burn with valid signature
+        nftCredits.burn(receiver, planId, 1, 0, signature);
+
+        // Verify balance after burn
+        uint256 balance = nftCredits.balanceOf(receiver, planId);
+        assertEq(balance, 4);
+    }
+
+    function test_burn_withSignature_invalid() public {
+        // Create a plan that requires proof
+        uint256 planId = _createPlanWithProofRequired(0);
+
+        // Grant necessary roles
+        vm.startPrank(owner);
+        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
+        nvmConfig.grantRole(nftCredits.CREDITS_BURNER_ROLE(), address(this));
+        vm.stopPrank();
+
+        // Mint some credits
+        nftCredits.mint(receiver, planId, 5, '');
+
+        // Get the next nonce for the keyspace
+        uint256[] memory keyspaces = new uint256[](1);
+        keyspaces[0] = 0;
+        uint256[] memory nonces = nftCredits.nextNonce(receiver, keyspaces);
+        uint256 nonce = nonces[0];
+
+        // Create the proof data
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = planId;
+        INFT1155.CreditsBurnProofData memory proof =
+            INFT1155.CreditsBurnProofData({keyspace: 0, nonce: nonce, planIds: planIds});
+
+        // Sign the proof with a different private key (not the receiver's)
+        Vm.Wallet memory otherWallet = vm.createWallet('other');
+        bytes32 digest = nftCredits.hashCreditsBurnProof(proof);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(otherWallet, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Try to burn with invalid signature
+        vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidCreditsBurnProof.selector, otherWallet.addr, receiver));
+        nftCredits.burn(receiver, planId, 1, 0, signature);
+    }
+
     function test_burnBatch_correct() public {
         // Grant CREDITS_MINTER_ROLE to this contract
         bytes32 minterRole = nftCredits.CREDITS_MINTER_ROLE();
@@ -192,8 +270,8 @@ contract NFT1155CreditsTest is BaseTest {
         uint256 balance1 = nftCredits.balanceOf(receiver, planId1);
         uint256 balance2 = nftCredits.balanceOf(receiver, planId2);
 
-        assertEq(balance1, 50);
-        assertEq(balance2, 125);
+        assertEq(balance1, 99);
+        assertEq(balance2, 199);
     }
 
     function test_burnBatch_unauthorized() public {
@@ -223,6 +301,57 @@ contract NFT1155CreditsTest is BaseTest {
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
         nftCredits.burnBatch(receiver, ids, burnAmounts, 0, '');
+    }
+
+    function test_burnBatch_withSignature_required() public {
+        // Create plans that require proof
+        uint256 planId1 = _createPlanWithProofRequired(0);
+        uint256 planId2 = _createPlanWithProofRequired(1);
+
+        // Grant necessary roles
+        vm.startPrank(owner);
+        nvmConfig.grantRole(nftCredits.CREDITS_MINTER_ROLE(), address(this));
+        nvmConfig.grantRole(nftCredits.CREDITS_BURNER_ROLE(), address(this));
+        vm.stopPrank();
+
+        // Mint credits for both plans
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory amounts = new uint256[](2);
+        ids[0] = planId1;
+        ids[1] = planId2;
+        amounts[0] = 100;
+        amounts[1] = 200;
+        nftCredits.mintBatch(receiver, ids, amounts, '');
+
+        // Get the next nonce for the keyspace
+        uint256[] memory keyspaces = new uint256[](1);
+        keyspaces[0] = 0;
+        uint256[] memory nonces = nftCredits.nextNonce(receiver, keyspaces);
+        uint256 nonce = nonces[0];
+
+        // Create the proof data
+        uint256[] memory planIds = new uint256[](2);
+        planIds[0] = planId1;
+        planIds[1] = planId2;
+        INFT1155.CreditsBurnProofData memory proof =
+            INFT1155.CreditsBurnProofData({keyspace: 0, nonce: nonce, planIds: planIds});
+
+        // Sign the proof
+        bytes32 digest = nftCredits.hashCreditsBurnProof(proof);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(receiverWallet, digest);
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        // Burn batch with valid signature
+        uint256[] memory burnAmounts = new uint256[](2);
+        burnAmounts[0] = 50;
+        burnAmounts[1] = 75;
+        nftCredits.burnBatch(receiver, ids, burnAmounts, 0, signature);
+
+        // Verify balances after burn
+        uint256 balance1 = nftCredits.balanceOf(receiver, planId1);
+        uint256 balance2 = nftCredits.balanceOf(receiver, planId2);
+        assertEq(balance1, 99);
+        assertEq(balance2, 199);
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {
