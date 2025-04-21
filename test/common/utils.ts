@@ -44,6 +44,7 @@ export function createCreditsConfig(): any {
   return {
     creditsType: 1, // FIXED
     redemptionType: 0, // ONLY_GLOBAL_ROLE
+    proofRequired: false,
     durationSecs: 0n,
     amount: 100n,
     minAmount: 1n,
@@ -102,16 +103,19 @@ export async function registerAssetAndPlan(
   const did = await assetsRegistry.read.hashDID([didSeed, creator.account.address])
 
   const nonce = getRandomBigInt()
-  const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([priceConfig.amounts, priceConfig.receivers])
+  const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([
+    priceConfig.amounts,
+    priceConfig.receivers,
+  ])
   if (!areFeesIncluded) {
     const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
       priceConfig.amounts,
       priceConfig.receivers,
     ])
     priceConfig.amounts = [...result[0]]
-    priceConfig.receivers = [...result[1]]  
+    priceConfig.receivers = [...result[1]]
   }
-  
+
   // const creditsConfig = createCreditsConfig()
 
   // Use provided NFT address or default to zero address
@@ -122,16 +126,15 @@ export async function registerAssetAndPlan(
     creditsConfig,
     nftAddressToUse,
     creator.account.address,
-    nonce
+    nonce,
   ])
   await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftAddressToUse, nonce], {
     account: creator.account,
   })
 
-  await assetsRegistry.write.register(
-    [didSeed, 'https://nevermined.io', [planId]],
-    { account: creator.account },
-  )
+  await assetsRegistry.write.register([didSeed, 'https://nevermined.io', [planId]], {
+    account: creator.account,
+  })
 
   return { did, planId }
 }
