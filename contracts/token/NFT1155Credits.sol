@@ -15,8 +15,7 @@ contract NFT1155Credits is NFT1155Base {
      * @param _nvmConfigAddress Address of the NVMConfig contract
      * @param _authority Address of the AccessManager contract
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
-     * @param Unused name parameter (maintained for compatibility)
-     * @param Unused symbol parameter (maintained for compatibility)
+     * @dev Also accepts unused name and symbol parameters for compatibility
      */
     function initialize(
         INVMConfig _nvmConfigAddress,

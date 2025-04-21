@@ -104,7 +104,6 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
 
     /**
      * @notice Internal function to validate settlement parameters
-     * @param _params Parameters to validate
      * @return Boolean indicating whether the parameters are valid
      * @dev Currently returns true by default, validation to be implemented
      */
