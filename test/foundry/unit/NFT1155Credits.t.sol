@@ -106,8 +106,8 @@ contract NFT1155CreditsTest is BaseTest {
         });
 
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
     }
 
     function test_mintBatch_unauthorized() public {

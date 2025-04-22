@@ -46,10 +46,12 @@ export class FoundryTools {
     })
       .extend(publicActions)
       .extend(walletActions)
-    
   }
 
-  async connectToInstance(deploymentJsonPath = 'deployments/latest-hardhat.json', backToDeploymentBlock = true) {
+  async connectToInstance(
+    deploymentJsonPath = 'deployments/latest-hardhat.json',
+    backToDeploymentBlock = true,
+  ) {
     console.log('Connect to contracts instance...')
     console.log('RPC:', this.rpc)
     const deploymentJson = this.parseDeploymentJson(deploymentJsonPath)
@@ -172,7 +174,7 @@ export class FoundryTools {
       abi: artifact.abi,
       args,
       name: contractName,
-      account: this.wallets[0].account?.address ,
+      account: this.wallets[0].account?.address,
       bytecode: artifact.bytecode,
       chain: foundry,
     })
