@@ -46,7 +46,6 @@ contract NFT1155CreditsTest is BaseTest {
     }
 
     function test_plan_owner_can_mint() public {
-
         uint256 planId = _createPlan();
 
         nftCredits.mint(receiver, planId, 2, '');

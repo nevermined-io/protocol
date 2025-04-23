@@ -107,6 +107,14 @@ contract AssetsRegistryTest is BaseTest {
         assertTrue(asset.lastUpdated > 0);
     }
 
+    function test_cannotRegisterIfPlanDoesntExist() public {
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = 999;
+
+        vm.expectPartialRevert(IAsset.PlanNotFound.selector);
+        assetsRegistry.register('test-did', 'https://example.com', planIds);
+    }
+
     function test_cannotCreatePlanIfWrongNFTAddress() public {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 999;
