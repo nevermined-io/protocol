@@ -14,6 +14,23 @@ import {AgreementsStore} from './AgreementsStore.sol';
 import {BaseTemplate} from './BaseTemplate.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title FixedPaymentTemplate
+ * @author Nevermined
+ * @notice Agreement template that facilitates on-chain cryptocurrency payments for assets
+ * @dev The FixedPaymentTemplate enables users to purchase assets/plans using cryptocurrency,
+ *      with the payment flow handled entirely on-chain. This template orchestrates the
+ *      three-step payment and asset transfer workflow through conditions:
+ *
+ *      1. LockPaymentCondition - Locks the buyer's payment in a vault
+ *      2. TransferCreditsCondition - Transfers the asset credits to the buyer
+ *      3. DistributePaymentsCondition - Distributes the locked payment to the asset owner
+ *
+ *      This creates an atomic swap between payment and asset access rights, ensuring
+ *      that both parties (buyer and seller) are protected throughout the transaction.
+ *      Unlike the FiatPaymentTemplate, all steps happen on-chain without requiring
+ *      off-chain verification by oracles.
+ */
 contract FixedPaymentTemplate is BaseTemplate {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FixedPaymentTemplate');
 
@@ -23,11 +40,16 @@ contract FixedPaymentTemplate is BaseTemplate {
 
     /// @custom:storage-location erc7201:nevermined.fixedpaymenttemplate.storage
     struct FixedPaymentTemplateStorage {
+        /// @notice Reference to the NVMConfig contract for system configuration
         INVMConfig nvmConfig;
+        /// @notice Reference to the AssetsRegistry contract for plan information
         IAsset assetsRegistry;
         // Conditions required to execute this template
+        /// @notice Condition that locks the payment in a secure vault
         LockPaymentCondition lockPaymentCondition;
+        /// @notice Condition that transfers the asset credits to the buyer
         TransferCreditsCondition transferCondition;
+        /// @notice Condition that distributes the locked payment to the asset owner
         DistributePaymentsCondition distributePaymentsCondition;
     }
 
@@ -40,6 +62,7 @@ contract FixedPaymentTemplate is BaseTemplate {
      * @param _lockPaymentConditionAddress Address of the LockPaymentCondition contract
      * @param _transferCondtionAddress Address of the TransferCreditsCondition contract
      * @param _distributePaymentsCondition Address of the DistributePaymentsCondition contract
+     * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
         INVMConfig _nvmConfigAddress,
@@ -68,7 +91,8 @@ contract FixedPaymentTemplate is BaseTemplate {
      * @param _params Additional parameters for the agreement
      * @dev Validates inputs, checks plan existence, and registers the agreement
      * @dev Sets up and fulfills the required conditions: lock payment, transfer credits, and distribute payments
-     * @dev Payable function that accepts the payment amount for the plan
+     * @dev The agreement ID is computed from multiple parameters to ensure uniqueness
+     * @dev Payable function that accepts the payment amount for the plan in native cryptocurrency
      */
     function createAgreement(bytes32 _seed, uint256 _planId, bytes[] memory _params) external payable {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
@@ -107,14 +131,7 @@ contract FixedPaymentTemplate is BaseTemplate {
         // Lock the payment
         _lockPayment(conditionIds[0], agreementId, _planId, msg.sender);
         _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], msg.sender);
-        _distributePayments(
-            conditionIds[2],
-            agreementId,
-            // _did,
-            _planId,
-            conditionIds[0],
-            conditionIds[1]
-        );
+        _distributePayments(conditionIds[2], agreementId, _planId, conditionIds[0], conditionIds[1]);
     }
 
     /**
@@ -124,14 +141,11 @@ contract FixedPaymentTemplate is BaseTemplate {
      * @param _planId Identifier of the pricing plan
      * @param _senderAddress Address of the payment sender
      * @dev Forwards the message value to the lock payment condition
+     * @dev The payment remains locked until the transfer condition is fulfilled
      */
-    function _lockPayment(
-        bytes32 _conditionId,
-        bytes32 _agreementId,
-        // bytes32 _did,
-        uint256 _planId,
-        address _senderAddress
-    ) internal {
+    function _lockPayment(bytes32 _conditionId, bytes32 _agreementId, uint256 _planId, address _senderAddress)
+        internal
+    {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
 
         $.lockPaymentCondition.fulfill{value: msg.value}(_conditionId, _agreementId, _planId, _senderAddress);
@@ -145,6 +159,7 @@ contract FixedPaymentTemplate is BaseTemplate {
      * @param _lockPaymentCondition Identifier of the lock payment condition that must be fulfilled first
      * @param _receiverAddress Address of the credits receiver
      * @dev Requires the lock payment condition to be fulfilled first
+     * @dev Transfers the token representing rights to the digital asset (credits)
      */
     function _transferPlan(
         bytes32 _conditionId,
@@ -168,6 +183,7 @@ contract FixedPaymentTemplate is BaseTemplate {
      * @param _lockPaymentCondition Identifier of the lock payment condition
      * @param _releaseCondition Identifier of the release condition (transfer credits)
      * @dev Requires both lock payment and transfer credits conditions to be fulfilled first
+     * @dev Releases the locked payment to the asset owner, completing the transaction
      */
     function _distributePayments(
         bytes32 _conditionId,
@@ -183,6 +199,11 @@ contract FixedPaymentTemplate is BaseTemplate {
         );
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the FixedPaymentTemplateStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getFixedPaymentTemplateStorage() internal pure returns (FixedPaymentTemplateStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {

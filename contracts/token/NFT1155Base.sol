@@ -12,6 +12,19 @@ import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 
+/**
+ * @title NFT1155Base
+ * @author Nevermined
+ * @notice Abstract base contract for implementing ERC1155-based credit tokens in the Nevermined ecosystem
+ * @dev This contract extends ERC1155Upgradeable to implement credit tokens with role-based permissions for minting,
+ * burning, and transferring. It uses OpenZeppelin's AccessManagedUUPSUpgradeable for permissions management and
+ * implements custom redemption rules based on plan configurations.
+ *
+ * Credits are linked to specific plans defined in the AssetsRegistry contract. Each plan has its own configuration
+ * regarding how credits can be minted, redeemed, and by whom.
+ *
+ * This contract prevents credit transfers by default, as credits are designed to be non-transferable.
+ */
 abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to mint credits

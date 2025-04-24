@@ -8,7 +8,7 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined Agreements Store V2 contract
- * @author @aaitor
+ * @author Nevermined AG
  * @notice This contract extends AgreementsStore with new functionality for testing upgrades
  */
 contract AgreementsStoreV2 is AgreementsStore {

@@ -13,6 +13,25 @@ import {ReentrancyGuardTransientUpgradeable} from
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
+/**
+ * @title PaymentsVault
+ * @author Nevermined AG
+ * @notice This contract serves as a secure vault for holding and managing native tokens (ETH) and ERC20 tokens
+ * in the Nevermined ecosystem.
+ * @dev The contract implements:
+ * - Role-based access control via OpenZeppelin's AccessManager integration
+ * - Security against reentrancy attacks via ReentrancyGuardTransientUpgradeable
+ * - Upgradeability using UUPS (Universal Upgradeable Proxy Standard) pattern
+ * - ERC-7201 namespaced storage pattern to prevent storage collisions during upgrades
+ *
+ * The contract handles two main token types:
+ * 1. Native tokens (ETH)
+ * 2. ERC20 tokens
+ *
+ * Access is controlled via two primary roles:
+ * - DEPOSITOR_ROLE: Allows depositing tokens into the vault
+ * - WITHDRAW_ROLE: Allows withdrawing tokens from the vault
+ */
 contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to deposit assets into the Vault
@@ -24,11 +43,18 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
      */
     bytes32 public constant WITHDRAW_ROLE = keccak256('VAULT_WITHDRAW_ROLE');
 
-    // keccak256(abi.encode(uint256(keccak256("nevermined.paymentsvault.storage")) - 1)) & ~bytes32(uint256(0xff))
+    /**
+     * @dev Storage slot for PaymentsVaultStorage using ERC-7201 namespaced storage pattern
+     * @dev Calculated as: keccak256(abi.encode(uint256(keccak256("nevermined.paymentsvault.storage")) - 1)) & ~bytes32(uint256(0xff))
+     * @dev This pattern ensures storage safety during upgrades by using a unique storage location
+     */
     bytes32 private constant PAYMENTS_VAULT_STORAGE_LOCATION =
         0x80a73158257d9dc2a97871b2d2c51b86390aa280667a4b04612145b2777aba00;
 
-    /// @custom:storage-location erc7201:nevermined.paymentsvault.storage
+    /**
+     * @dev Contract storage structure following ERC-7201 namespaced storage pattern
+     * @custom:storage-location erc7201:nevermined.paymentsvault.storage
+     */
     struct PaymentsVaultStorage {
         INVMConfig nvmConfig;
     }
@@ -37,6 +63,9 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
      * @notice Initializes the PaymentsVault contract
      * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
      * @param _authority Address of the AccessManager contract handling permissions
+     * @dev This function can only be called once due to the initializer modifier
+     * @dev Sets up the access control system and initializes the reentrancy guard
+     * @dev This replaces the constructor for upgradeable contracts
      */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
@@ -46,6 +75,12 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
     }
 
     // solhint-disable-next-line no-complex-fallback
+    /**
+     * @notice Fallback function to receive native tokens (ETH) sent directly to the contract
+     * @dev Only addresses with DEPOSITOR_ROLE can send native tokens directly to the contract
+     * @dev Emits ReceivedNativeToken event on successful deposit
+     * @dev This function enables the contract to receive ETH transfers
+     */
     receive() external payable {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
             revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
@@ -56,7 +91,9 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
     /**
      * @notice Deposits native tokens (ETH) to the vault
      * @dev Caller must have DEPOSITOR_ROLE to call this function
+     * @dev Protected against reentrancy attacks with nonReentrant modifier
      * @dev Emits ReceivedNativeToken event on successful deposit
+     * @dev This function provides an explicit method to deposit ETH as an alternative to using the receive() function
      */
     function depositNativeToken() external payable nonReentrant {
         if (!_getPaymentsVaultStorage().nvmConfig.hasRole(msg.sender, DEPOSITOR_ROLE)) {
@@ -147,6 +184,12 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         return token.balanceOf(address(this));
     }
 
+    /**
+     * @dev Internal helper function to access the contract's namespaced storage
+     * @return $ Reference to the contract's PaymentsVaultStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern to safely access storage
+     * @dev Uses inline assembly with memory-safe tag to directly access the storage slot
+     */
     function _getPaymentsVaultStorage() internal pure returns (PaymentsVaultStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {

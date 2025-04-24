@@ -14,7 +14,23 @@ import {ReentrancyGuardTransientUpgradeable} from
     '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title DistributePaymentsCondition
+ * @author Nevermined
+ * @notice Condition for distributing previously locked payments based on agreement outcomes
+ * @dev This contract handles the final distribution of funds that were previously locked
+ * by the LockPaymentCondition. The distribution can result in either:
+ * 1. Successful execution: Payments are distributed to the intended receivers according to the plan
+ * 2. Failed execution: Payments are refunded to the original sender (agreement creator)
+ *
+ * The condition works in tandem with LockPaymentCondition (prerequisite) and typically checks
+ * if a release condition (e.g., TransferCreditsCondition) has been fulfilled before distributing
+ * payments. This ensures the payment workflow maintains atomicity in the Nevermined protocol.
+ */
 contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition {
+    /**
+     * @notice Contract name identifier used in the Nevermined ecosystem
+     */
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('DistributePaymentsCondition');
 
     // keccak256(abi.encode(uint256(keccak256("nevermined.distributepaymentscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -31,11 +47,12 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
 
     /**
      * @notice Initializes the DistributePaymentsCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
-     * @param _authority Address of the AccessManager contract
-     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
-     * @param _agreementStoreAddress Address of the AgreementsStore contract
-     * @param _vaultAddress Address of the PaymentsVault contract
+     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
+     * @param _authority Address of the AccessManager contract for role-based access control
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
+     * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
+     * @param _vaultAddress Address of the PaymentsVault contract where funds are stored
+     * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
         INVMConfig _nvmConfigAddress,
@@ -59,12 +76,14 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
      * @param _conditionId Identifier of the condition to fulfill
      * @param _agreementId Identifier of the agreement
      * @param _planId Identifier of the pricing plan
-     * @param _lockCondition Identifier of the lock payment condition
-     * @param _releaseCondition Identifier of the release condition (transfer credits)
+     * @param _lockCondition Identifier of the lock payment condition that must be fulfilled first
+     * @param _releaseCondition Identifier of the release condition (typically transfer credits)
      * @dev Only registered templates can call this function
-     * @dev Checks if lock payment condition is fulfilled before proceeding
-     * @dev If release condition is fulfilled, distributes payments to receivers
-     * @dev If release condition is not fulfilled, refunds payment to the agreement creator
+     * @dev Checks if the lock payment condition is fulfilled before proceeding
+     * @dev The condition is marked as fulfilled before any external calls (security best practice)
+     * @dev If the release condition is fulfilled, distributes payments according to the plan
+     * @dev If the release condition is not fulfilled, refunds the payment to the agreement creator
+     * @dev Supports both native token and ERC20 token distributions
      */
     function fulfill(
         bytes32 _conditionId,
@@ -121,6 +140,7 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
      * @param _amounts Array of payment amounts for each receiver
      * @param _receivers Array of payment receiver addresses
      * @dev Withdraws native tokens from the vault to each receiver
+     * @dev Iterates through each receiver and transfers their respective amount
      */
     function _distributeNativeTokenPayments(uint256[] memory _amounts, address[] memory _receivers) internal {
         DistributePaymentsConditionStorage storage $ = _getDistributePaymentsConditionStorage();
@@ -137,6 +157,7 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
      * @param _amounts Array of payment amounts for each receiver
      * @param _receivers Array of payment receiver addresses
      * @dev Withdraws ERC20 tokens from the vault to each receiver
+     * @dev Iterates through each receiver and transfers their respective amount
      */
     function _distributeERC20Payments(
         address _erc20TokenAddress,
@@ -151,6 +172,11 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         }
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the DistributePaymentsConditionStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getDistributePaymentsConditionStorage()
         internal
         pure

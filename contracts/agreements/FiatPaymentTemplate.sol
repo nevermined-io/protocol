@@ -12,6 +12,22 @@ import {AgreementsStore} from './AgreementsStore.sol';
 import {BaseTemplate} from './BaseTemplate.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title FiatPaymentTemplate
+ * @author Nevermined
+ * @notice Agreement template that facilitates fiat payments for assets in the Nevermined protocol
+ * @dev The FiatPaymentTemplate enables users to purchase assets/plans using traditional fiat
+ *      currencies (USD, EUR, etc.) rather than cryptocurrencies. This template orchestrates
+ *      the workflow between off-chain fiat payments and on-chain fulfillment.
+ *
+ *      The template follows a two-step execution flow:
+ *      1. FiatSettlementCondition - Verified by authorized oracles after off-chain payment is confirmed
+ *      2. TransferCreditsCondition - Transfers the asset credits to the buyer once settlement is verified
+ *
+ *      This template is particularly useful for integrating traditional payment systems like
+ *      credit cards, bank transfers, or payment processors (e.g., Stripe) with blockchain-based
+ *      asset management systems.
+ */
 contract FiatPaymentTemplate is BaseTemplate {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatPaymentTemplate');
 
@@ -21,10 +37,14 @@ contract FiatPaymentTemplate is BaseTemplate {
 
     /// @custom:storage-location erc7201:nevermined.fiatpaymenttemplate.storage
     struct FiatPaymentTemplateStorage {
+        /// @notice Reference to the NVMConfig contract for system configuration
         INVMConfig nvmConfig;
+        /// @notice Reference to the AssetsRegistry contract for plan information
         IAsset assetsRegistry;
         // Conditions required to execute this template
+        /// @notice Condition that handles fiat settlement verification by authorized oracles
         FiatSettlementCondition fiatSettlementCondition;
+        /// @notice Condition that handles transferring credits after payment is settled
         TransferCreditsCondition transferCondition;
     }
 
@@ -36,6 +56,7 @@ contract FiatPaymentTemplate is BaseTemplate {
      * @param _agreementStoreAddress Address of the AgreementsStore contract
      * @param _fiatSettlementConditionAddress Address of the FiatSettlementCondition contract
      * @param _transferCondtionAddress Address of the TransferCreditsCondition contract
+     * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
         INVMConfig _nvmConfigAddress,
@@ -63,6 +84,8 @@ contract FiatPaymentTemplate is BaseTemplate {
      * @param _params Additional parameters for the agreement
      * @dev Validates inputs, checks plan existence, and registers the agreement
      * @dev Sets up and fulfills the required conditions: fiat settlement and transfer credits
+     * @dev The agreement ID is computed from multiple parameters to ensure uniqueness
+     * @dev Payment verification happens off-chain through authorized settlement agents
      */
     function createAgreement(bytes32 _seed, uint256 _planId, address _creditsReceiver, bytes[] memory _params)
         external
@@ -111,6 +134,7 @@ contract FiatPaymentTemplate is BaseTemplate {
      * @param _senderAddress Address of the payment sender
      * @param _params Additional parameters for the settlement
      * @dev Calls the fiat settlement condition's fulfill function
+     * @dev This condition will be fulfilled later by an authorized oracle confirming payment
      */
     function _fiatSettlement(
         bytes32 _conditionId,
@@ -132,6 +156,7 @@ contract FiatPaymentTemplate is BaseTemplate {
      * @param _fiatSettlementCondition Identifier of the fiat settlement condition that must be fulfilled first
      * @param _receiverAddress Address of the credits receiver
      * @dev Requires the fiat settlement condition to be fulfilled first
+     * @dev The transfer will execute automatically once the settlement condition is fulfilled
      */
     function _transferPlan(
         bytes32 _conditionId,
@@ -147,6 +172,11 @@ contract FiatPaymentTemplate is BaseTemplate {
         $.transferCondition.fulfill(_conditionId, _agreementId, _planId, _requiredConditons, _receiverAddress);
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the FiatPaymentTemplateStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getFiatPaymentTemplateStorage() internal pure returns (FiatPaymentTemplateStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {
