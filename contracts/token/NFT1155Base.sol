@@ -229,7 +229,14 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
 
     function hashCreditsBurnProof(CreditsBurnProofData memory _proof) public view returns (bytes32) {
         return _hashTypedDataV4(
-            keccak256(abi.encode(CREDITS_BURN_PROOF_TYPEHASH, _proof.keyspace, _proof.nonce, _proof.planIds))
+            keccak256(
+                abi.encode(
+                    CREDITS_BURN_PROOF_TYPEHASH,
+                    _proof.keyspace,
+                    _proof.nonce,
+                    keccak256(abi.encodePacked(_proof.planIds))
+                )
+            )
         );
     }
 

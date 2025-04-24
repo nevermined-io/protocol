@@ -1,4 +1,10 @@
-import { keccak256, parseEventLogs, toBytes } from 'viem'
+import { keccak256, parseEventLogs, toBytes, WalletClient } from 'viem'
+
+type CreditsBurnProofData = {
+  keyspace: bigint
+  nonce: bigint
+  planIds: bigint[]
+}
 
 export function generateId(): `0x${string}` {
   return keccak256(toBytes(Math.random().toString()))
@@ -51,6 +57,16 @@ export function createCreditsConfig(): any {
     maxAmount: 1n,
   }
 }
+
+export const createCreditsBurnProof = (
+  keyspace: bigint,
+  nonce: bigint,
+  planIds: bigint[],
+): CreditsBurnProofData => ({
+  keyspace,
+  nonce,
+  planIds,
+})
 
 export async function registerPlan(
   assetsRegistry: any,
@@ -184,4 +200,35 @@ export function getRandomBigInt(bits = 128): bigint {
   }
 
   return result
+}
+
+export async function signCreditsBurnProof(
+  walletClient: WalletClient,
+  nft1155Address: `0x${string}`,
+  proof: CreditsBurnProofData,
+): Promise<`0x${string}`> {
+  const domain = {
+    name: 'NFT1155Base',
+    version: '1',
+    chainId: await walletClient.getChainId(),
+    verifyingContract: nft1155Address,
+  }
+
+  const types = {
+    CreditsBurnProofData: [
+      { name: 'keyspace', type: 'uint256' },
+      { name: 'nonce', type: 'uint256' },
+      { name: 'planIds', type: 'uint256[]' },
+    ],
+  }
+
+  const signature = await walletClient.signTypedData({
+    account: walletClient.account!,
+    domain,
+    types,
+    primaryType: 'CreditsBurnProofData',
+    message: proof,
+  })
+
+  return signature
 }
