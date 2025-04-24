@@ -24,7 +24,7 @@ contract NVMConfigV2 is NVMConfig {
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
-    function initializeV2(string memory _version) external onlyGovernor(msg.sender) {
+    function initializeV2(string memory _version) external restricted {
         NVMConfigV2Storage storage $ = _getNVMConfigV2Storage();
         $.version = _version;
     }

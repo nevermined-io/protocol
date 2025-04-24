@@ -4,7 +4,6 @@
 pragma solidity ^0.8.28;
 
 import {IAsset} from '../interfaces/IAsset.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Base} from './NFT1155Base.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
@@ -23,20 +22,18 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 contract NFT1155Credits is NFT1155Base {
     /**
      * @notice Initializes the NFT1155Credits contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
      * @param _authority Address of the AccessManager contract
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Also accepts unused name and symbol parameters for compatibility with other token standards
      */
     function initialize(
-        INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         string memory, // name
         string memory // symbol
     ) external initializer {
         ERC1155Upgradeable.__ERC1155_init('');
-        __NFT1155Credits_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
+        __NFT1155Credits_init(_authority, _assetsRegistryAddress);
     }
 
     /**
@@ -105,17 +102,15 @@ contract NFT1155Credits is NFT1155Base {
 
     /**
      * @notice Internal initialization function for NFT1155Credits
-     * @param _nvmConfigAddress Address of the NVMConfig contract
      * @param _authority Address of the AccessManager contract
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Called by the initialize function
      */
     // solhint-disable-next-line func-name-mixedcase
-    function __NFT1155Credits_init(
-        INVMConfig _nvmConfigAddress,
-        IAccessManager _authority,
-        IAsset _assetsRegistryAddress
-    ) internal onlyInitializing {
-        __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
+    function __NFT1155Credits_init(IAccessManager _authority, IAsset _assetsRegistryAddress)
+        internal
+        onlyInitializing
+    {
+        __NFT1155Base_init(_authority, _assetsRegistryAddress);
     }
 }

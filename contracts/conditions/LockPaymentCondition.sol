@@ -63,7 +63,6 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
 
     /**
      * @notice Initializes the LockPaymentCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
      * @param _authority Address of the AccessManager contract for role-based access control
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
      * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
@@ -71,7 +70,6 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
      * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
-        INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress,
@@ -80,7 +78,6 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
         $.assetsRegistry = _assetsRegistryAddress;
         $.agreementStore = _agreementStoreAddress;
         $.vault = _vaultAddress;
@@ -103,12 +100,10 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
     function fulfill(bytes32 _conditionId, bytes32 _agreementId, uint256 _planId, address _senderAddress)
         external
         payable
+        restricted
         nonReentrant
     {
         LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
-
-        // Validate if the account calling this function is a registered template
-        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         // Check if the agreementId is registered in the AssetsRegistry
         if (!$.agreementStore.agreementExists(_agreementId)) {

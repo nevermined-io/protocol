@@ -50,7 +50,7 @@ interface IVault {
      * @param sender The address of the account calling this function
      * @param role The role required to call this function
      */
-    error InvalidRole(address sender, bytes32 role);
+    error InvalidRole(address sender, uint64 role);
 
     /**
      * @notice Error thrown when a native token transfer fails

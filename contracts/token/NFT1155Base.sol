@@ -13,6 +13,7 @@ import {EIP712Upgradeable} from '@openzeppelin/contracts-upgradeable/utils/crypt
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 
+import {CREDITS_BURNER_ROLE, CREDITS_MINTER_ROLE, CREDITS_TRANSFER_ROLE} from '../common/Roles.sol';
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
 /**
@@ -29,51 +30,29 @@ import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
  * This contract prevents credit transfers by default, as credits are designed to be non-transferable.
  */
 abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable, AccessManagedUUPSUpgradeable {
-    /**
-     * @notice Role allowing to mint credits
-     */
-    bytes32 public constant CREDITS_MINTER_ROLE = keccak256('CREDITS_MINTER_ROLE');
-
-    /**
-     * @notice Role allowing to burn credits
-     */
-    bytes32 public constant CREDITS_BURNER_ROLE = keccak256('CREDITS_BURNER_ROLE');
-
-    /**
-     * @notice Role allowing to transfer credits
-     * @dev This role is not used in the current implementation
-     */
-    bytes32 public constant CREDITS_TRANSFER_ROLE = keccak256('CREDITS_TRANSFER_ROLE');
-
     // keccak256(abi.encode(uint256(keccak256("nevermined.nft1155base.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant NFT1155_BASE_STORAGE_LOCATION =
         0x5dc28ad3de163acbf47a88082c92b50b1954ae8a6818aca0c0ef6cb317ac6500;
 
     /// @custom:storage-location erc7201:nevermined.nft1155base.storage
     struct NFT1155BaseStorage {
-        INVMConfig nvmConfig;
         IAsset assetsRegistry;
         mapping(address sender => mapping(uint256 keyspace => uint256 nonce)) nonces;
     }
 
     /**
      * @notice Initializes the NFT1155Base contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
      * @param _authority Address of the AccessManager contract
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Internal initialization function to be called by inheriting contracts
      */
     // solhint-disable-next-line func-name-mixedcase
-    function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
-        internal
-        onlyInitializing
-    {
+    function __NFT1155Base_init(IAccessManager _authority, IAsset _assetsRegistryAddress) internal onlyInitializing {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
         __AccessManagedUUPSUpgradeable_init(address(_authority));
         __EIP712_init(type(NFT1155Base).name, '1');
 
-        $.nvmConfig = _nvmConfigAddress;
         $.assetsRegistry = _assetsRegistryAddress;
     }
 
@@ -117,9 +96,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_planId);
 
         // Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
-        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE) && plan.owner != msg.sender) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
-        }
+        (bool hasRole,) = IAccessManager(authority()).hasRole(CREDITS_MINTER_ROLE, msg.sender);
+        require(hasRole || plan.owner == msg.sender, InvalidRole(msg.sender, CREDITS_MINTER_ROLE));
 
         _mint(_to, _planId, _amount, _data);
     }
@@ -136,13 +114,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data)
         public
         virtual
+        restricted
     {
-        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
-
-        if (!$.nvmConfig.hasRole(msg.sender, CREDITS_MINTER_ROLE)) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
-        }
-
         _mintBatch(_to, _ids, _values, _data);
     }
 
@@ -200,13 +173,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         uint256[] memory _amounts,
         uint256 _keyspace,
         bytes calldata _signature
-    ) public virtual {
+    ) public virtual restricted {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
-
-        require(
-            $.nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
-            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
-        );
 
         uint256[] memory planIdsToVerify = new uint256[](_ids.length);
         uint256 counter;
@@ -319,14 +287,15 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         view
         returns (bool)
     {
-        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
-
         if (_redemptionType == IAsset.RedemptionType.ONLY_GLOBAL_ROLE) {
-            return $.nvmConfig.hasRole(_sender, CREDITS_BURNER_ROLE);
+            (bool hasRole,) = IAccessManager(authority()).hasRole(CREDITS_BURNER_ROLE, _sender);
+            return hasRole;
         } else if (_redemptionType == IAsset.RedemptionType.ONLY_OWNER) {
             return _sender == _owner;
         } else if (_redemptionType == IAsset.RedemptionType.ONLY_PLAN_ROLE) {
-            return $.nvmConfig.hasRole(_sender, keccak256(abi.encode(_planId)));
+            (bool hasRole,) =
+                IAccessManager(authority()).hasRole(uint64(uint256(keccak256(abi.encode(_planId)))), _sender);
+            return hasRole;
         }
         return false;
     }
@@ -339,7 +308,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         uint256, /*value*/
         bytes memory /*data*/
     ) public virtual override {
-        revert INVMConfig.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+        revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
     }
 
     //@solhint-disable-next-line
@@ -350,7 +319,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         uint256[] memory, /*values*/
         bytes memory /*data*/
     ) public virtual override {
-        revert INVMConfig.InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
+        revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
     }
 
     /**

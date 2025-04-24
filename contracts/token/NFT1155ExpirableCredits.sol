@@ -3,6 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+import {CREDITS_BURNER_ROLE, CREDITS_MINTER_ROLE} from '../common/Roles.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Base} from './NFT1155Base.sol';
@@ -52,20 +53,18 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
     /**
      * @notice Initializes the NFT1155ExpirableCredits contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
      * @param _authority Address of the AccessManager contract
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Also accepts unused name and symbol parameters for compatibility with other token standards
      */
     function initialize(
-        INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         string memory, // name
         string memory // symbol
     ) external virtual initializer {
         ERC1155Upgradeable.__ERC1155_init('');
-        __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
+        __NFT1155Base_init(_authority, _assetsRegistryAddress);
     }
 
     /**
@@ -158,12 +157,8 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         public
         virtual
         override
+        restricted
     {
-        require(
-            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
-            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
-        );
-
         _processPreCreditBurn(_from, _planId, _value);
 
         super.burn(_from, _planId, _value, _keyspace, _signature);
@@ -182,14 +177,9 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         uint256[] memory _values,
         uint256 _keyspace,
         bytes calldata _signature
-    ) public virtual override {
+    ) public virtual override restricted {
         uint256 _length = _ids.length;
         if (_length != _values.length) revert InvalidLength(_length, _values.length);
-
-        require(
-            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
-            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
-        );
 
         for (uint256 i = 0; i < _length; i++) {
             _processPreCreditBurn(_from, _ids[i], _values[i]);

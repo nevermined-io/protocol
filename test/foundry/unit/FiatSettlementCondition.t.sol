@@ -6,12 +6,15 @@ pragma solidity ^0.8.28;
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
+
+import {CONTRACT_CONDITION_ROLE, FIAT_SETTLEMENT_ROLE} from '../../../contracts/common/Roles.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IFiatSettlement} from '../../../contracts/interfaces/IFiatSettlement.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract FiatSettlementConditionTest is BaseTest {
     address public receiver;
@@ -21,7 +24,7 @@ contract FiatSettlementConditionTest is BaseTest {
     }
 
     function test_fulfill_noTemplateRevert() public {
-        vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
 
         fiatSettlementCondition.fulfill(bytes32(0), bytes32(0), 1, address(this), new bytes[](0));
     }
@@ -37,13 +40,13 @@ contract FiatSettlementConditionTest is BaseTest {
         _grantTemplateRole(address(this));
 
         bytes32 agreementId = _createAgreement(address(this), 1);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         fiatSettlementCondition.fulfill(bytes32(0), agreementId, 1, address(this), new bytes[](0));
     }
 
     function test_fulfill_invalidPriceTypeRevert() public {
         _grantTemplateRole(address(this));
-        _grantNVMConfigRole(fiatSettlementCondition.FIAT_SETTLEMENT_ROLE(), address(this));
+        _grantRole(FIAT_SETTLEMENT_ROLE, address(this));
 
         bytes32 agreementId = _createAgreement(address(this), 1);
         vm.expectPartialRevert(IFiatSettlement.OnlyPlanWithFiatPrice.selector);
@@ -53,8 +56,8 @@ contract FiatSettlementConditionTest is BaseTest {
     function test_fulfill_okay() public {
         address caller = address(1);
         _grantTemplateRole(address(this));
-        _grantNVMConfigRole(fiatSettlementCondition.FIAT_SETTLEMENT_ROLE(), caller);
-        _grantNVMConfigRole(nvmConfig.CONTRACT_CONDITION_ROLE(), address(fiatSettlementCondition));
+        _grantRole(FIAT_SETTLEMENT_ROLE, caller);
+        _grantRole(CONTRACT_CONDITION_ROLE, address(fiatSettlementCondition));
 
         uint256 planId = _createPlan();
 

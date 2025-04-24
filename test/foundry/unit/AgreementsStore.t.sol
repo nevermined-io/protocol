@@ -10,6 +10,7 @@ import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {AgreementsStoreV2} from '../../../contracts/mock/AgreementsStoreV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 // import {console} from "forge-std/console.sol";
 
 contract AgreementsStoreTest is BaseTest {
@@ -33,7 +34,7 @@ contract AgreementsStoreTest is BaseTest {
         bytes32 agreementId = bytes32(uint256(1));
 
         // Should revert if not called by a template
-        vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         bytes32[] memory conditionIds = new bytes32[](1);
         IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
         bytes[] memory params = new bytes[](0);

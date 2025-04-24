@@ -4,7 +4,6 @@
 pragma solidity ^0.8.28;
 
 import {AgreementsStore} from '../agreements/AgreementsStore.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined Agreements Store V2 contract
@@ -25,11 +24,9 @@ contract AgreementsStoreV2 is AgreementsStore {
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
-    function initializeV2(string memory _version) external {
-        AgreementsStoreStorage storage $as = _getAgreementsStoreStorage();
+    function initializeV2(string memory _version) external restricted {
         AgreementsStoreV2Storage storage $asv2 = _getAgreementsStoreV2Storage();
 
-        if (!$as.nvmConfig.isGovernor(msg.sender)) revert INVMConfig.OnlyGovernor(msg.sender);
         $asv2.version = _version;
     }
 

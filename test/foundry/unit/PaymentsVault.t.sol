@@ -4,6 +4,8 @@
 pragma solidity ^0.8.28;
 
 import {PaymentsVault} from '../../../contracts/PaymentsVault.sol';
+
+import '../../../contracts/common/Roles.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {IVault} from '../../../contracts/interfaces/IVault.sol';
 import {MockERC20} from '../../../contracts/test/MockERC20.sol';
@@ -30,11 +32,8 @@ contract PaymentsVaultTest is BaseTest {
         mockERC20 = new MockERC20('Mock Token', 'MTK');
 
         // Grant roles
-        vm.prank(owner);
-        nvmConfig.grantRole(DEPOSITOR_ROLE, depositor);
-
-        vm.prank(owner);
-        nvmConfig.grantRole(WITHDRAW_ROLE, withdrawer);
+        _grantRole(DEPOSITOR_ROLE, depositor);
+        _grantRole(WITHDRAW_ROLE, withdrawer);
 
         // Mint some tokens to depositor
         mockERC20.mint(depositor, 1000 * 10 ** 18);

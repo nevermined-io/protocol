@@ -6,8 +6,8 @@ import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
     error NVMConfigDeployment_InvalidAuthority(address authority);
@@ -16,7 +16,6 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
 
     function run(
         address ownerAddress,
-        address governorAddress,
         IAccessManager accessManagerAddress,
         UpgradeableContractDeploySalt memory deploymentSalt,
         bool revertIfAlreadyDeployed
@@ -26,9 +25,8 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
 
         if (debug) {
             console2.log('Deploying NVMConfig with:');
-            console2.log('\tOwner:', ownerAddress);
-            console2.log('\tGovernor:', governorAddress);
             console2.log('\tAccessManager:', address(accessManagerAddress));
+            console2.log('\tOwner:', ownerAddress);
         }
 
         vm.startBroadcast(ownerAddress);
@@ -47,8 +45,7 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
 
         // Deploy NVMConfig Proxy
         if (debug) console2.log('Deploying NVMConfig Proxy');
-        bytes memory nvmConfigInitData =
-            abi.encodeCall(NVMConfig.initialize, (ownerAddress, accessManagerAddress, governorAddress));
+        bytes memory nvmConfigInitData = abi.encodeCall(NVMConfig.initialize, (accessManagerAddress));
         (address nvmConfigProxy,) = deployWithSanityChecks(
             deploymentSalt.proxySalt,
             getERC1967ProxyCreationCode(address(nvmConfigImpl), nvmConfigInitData),
@@ -66,7 +63,6 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
         if (debug) {
             console2.log('NVMConfig initialized with AccessManager:', address(accessManagerAddress));
             console2.log('NVMConfig initialized with Owner:', ownerAddress);
-            console2.log('NVMConfig initialized with Governor:', governorAddress);
         }
         vm.stopBroadcast();
 

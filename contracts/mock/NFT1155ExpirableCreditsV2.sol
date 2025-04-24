@@ -3,16 +3,12 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
 
 contract NFT1155ExpirableCreditsV2 is NFT1155ExpirableCredits {
     string private _version;
 
-    function initializeV2(string memory newVersion) external {
-        if (!_getNFT1155BaseStorage().nvmConfig.isGovernor(msg.sender)) {
-            revert INVMConfig.OnlyGovernor(msg.sender);
-        }
+    function initializeV2(string memory newVersion) external restricted {
         _version = newVersion;
     }
 

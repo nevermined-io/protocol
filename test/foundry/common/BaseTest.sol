@@ -6,17 +6,22 @@ pragma solidity ^0.8.28;
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+
 import {DeployAll, DeployedContracts} from '../../../scripts/deploy/DeployAll.sol';
+import {ManagePermissions} from '../../../scripts/deploy/ManagePermissions.sol';
 
 import {PaymentsVault} from '../../../contracts/PaymentsVault.sol';
 import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
 
 import {FiatPaymentTemplate} from '../../../contracts/agreements/FiatPaymentTemplate.sol';
 import {FixedPaymentTemplate} from '../../../contracts/agreements/FixedPaymentTemplate.sol';
+
+import '../../../contracts/common/Roles.sol';
 import {DistributePaymentsCondition} from '../../../contracts/conditions/DistributePaymentsCondition.sol';
 import {FiatSettlementCondition} from '../../../contracts/conditions/FiatSettlementCondition.sol';
 import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
+import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
@@ -29,12 +34,6 @@ import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Test} from 'forge-std/Test.sol';
 
 abstract contract BaseTest is Test, ToArrayUtils {
-    // Roles
-    uint64 constant UPGRADE_ROLE = uint64(uint256(keccak256(abi.encode('UPGRADE_ROLE'))));
-    bytes32 constant DEPOSITOR_ROLE = keccak256(abi.encode('DEPOSITOR_ROLE'));
-    bytes32 constant WITHDRAW_ROLE = keccak256(abi.encode('WITHDRAW_ROLE'));
-    bytes32 constant CREDITS_MINTER_ROLE = keccak256(abi.encode('CREDITS_MINTER_ROLE'));
-
     // Configuration
     uint32 constant UPGRADE_DELAY = 7 days;
 
@@ -61,62 +60,6 @@ abstract contract BaseTest is Test, ToArrayUtils {
 
     function setUp() public virtual {
         _deployContracts();
-
-        vm.startPrank(governor);
-
-        // Grant condition permissions
-        nvmConfig.grantCondition(address(lockPaymentCondition));
-        nvmConfig.grantCondition(address(transferCreditsCondition));
-        nvmConfig.grantCondition(address(distributePaymentsCondition));
-        nvmConfig.grantCondition(address(fiatSettlementCondition));
-
-        // Grant template permissions
-        nvmConfig.grantTemplate(address(fixedPaymentTemplate));
-        nvmConfig.grantTemplate(address(fiatPaymentTemplate));
-
-        vm.stopPrank();
-
-        vm.startPrank(owner);
-
-        // Grant Deposit and Withdrawal permissions to Payments Vault
-        nvmConfig.grantRole(DEPOSITOR_ROLE, address(lockPaymentCondition));
-        nvmConfig.grantRole(WITHDRAW_ROLE, address(distributePaymentsCondition));
-
-        // Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
-
-        // Grant Mint permissions to transferNFTCondition on NFT1155ExpirableCredits contracts
-        nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition));
-
-        // Grant Upgrade permissions to upgrader
-        accessManager.grantRole(UPGRADE_ROLE, address(upgrader), UPGRADE_DELAY);
-
-        // Grant Upgrade permissions to NVMConfig
-        accessManager.setTargetFunctionRole(
-            address(nvmConfig), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
-        );
-
-        // Grant Upgrade permissions to AgreementsStore
-        accessManager.setTargetFunctionRole(
-            address(agreementsStore), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
-        );
-
-        // Grant Upgrade permissions to AssetsRegistry
-        accessManager.setTargetFunctionRole(
-            address(assetsRegistry), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
-        );
-
-        // Grant Upgrade permissions to NFT1155Credits
-        accessManager.setTargetFunctionRole(
-            address(nftCredits), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
-        );
-
-        // Grant Upgrade permissions to PaymentsVault
-        accessManager.setTargetFunctionRole(
-            address(paymentsVault), toArray(UUPSUpgradeable.upgradeToAndCall.selector), UPGRADE_ROLE
-        );
-
-        vm.stopPrank();
     }
 
     function _deployContracts() internal virtual {
@@ -138,16 +81,36 @@ abstract contract BaseTest is Test, ToArrayUtils {
         transferCreditsCondition = deployed.transferCreditsCondition;
         distributePaymentsCondition = deployed.distributePaymentsCondition;
         fiatSettlementCondition = deployed.fiatSettlementCondition;
+
+        // Grant permissions
+        new ManagePermissions().run(
+            owner,
+            upgrader,
+            governor,
+            nvmConfig,
+            assetsRegistry,
+            agreementsStore,
+            paymentsVault,
+            nftCredits,
+            nftExpirableCredits,
+            lockPaymentCondition,
+            distributePaymentsCondition,
+            transferCreditsCondition,
+            fiatSettlementCondition,
+            fixedPaymentTemplate,
+            fiatPaymentTemplate,
+            accessManager
+        );
+    }
+
+    function _grantRole(uint64 role, address _caller) internal virtual {
+        vm.prank(owner);
+        accessManager.grantRole(role, _caller, 0);
     }
 
     function _grantTemplateRole(address _caller) internal virtual {
-        _grantNVMConfigRole(nvmConfig.CONTRACT_TEMPLATE_ROLE(), _caller);
-    }
-
-    function _grantNVMConfigRole(bytes32 _role, address _caller) internal virtual {
-        vm.startPrank(owner);
-        nvmConfig.grantRole(_role, _caller);
-        vm.stopPrank();
+        vm.prank(governor);
+        accessManager.grantRole(CONTRACT_TEMPLATE_ROLE, _caller, 0);
     }
 
     function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {

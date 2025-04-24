@@ -28,19 +28,16 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
 
     /// @custom:storage-location erc7201:nevermined.agreementsstore.storage
     struct AgreementsStoreStorage {
-        INVMConfig nvmConfig;
         /// The mapping of the agreements registered in the contract
         mapping(bytes32 => IAgreement.Agreement) agreements;
     }
 
     /**
      * @notice Initializes the AgreementsStore contract
-     * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
      * @param _authority Address of the AccessManager contract handling permissions
      * @dev Sets up the contract with the required configuration and access control settings
      */
-    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
-        _getAgreementsStoreStorage().nvmConfig = _nvmConfigAddress;
+    function initialize(IAccessManager _authority) external initializer {
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
@@ -63,10 +60,8 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         bytes32[] memory _conditionIds,
         ConditionState[] memory _conditionStates,
         bytes[] memory _params
-    ) external {
+    ) external restricted {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
-
-        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         if ($.agreements[_agreementId].lastUpdated != 0) {
             revert AgreementAlreadyRegistered(_agreementId);
@@ -91,12 +86,11 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @dev Emits ConditionUpdated event on successful update
      * @dev The agreement must exist and contain the specified condition
      */
-    function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state) external {
+    function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state)
+        external
+        restricted
+    {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
-
-        if (!$.nvmConfig.isTemplate(msg.sender) && !$.nvmConfig.isCondition(msg.sender)) {
-            revert INVMConfig.OnlyTemplateOrCondition(msg.sender);
-        }
 
         IAgreement.Agreement storage agreement = $.agreements[_agreementId];
         if (agreement.lastUpdated == 0) {

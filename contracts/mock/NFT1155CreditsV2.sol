@@ -3,7 +3,6 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 
 /**
@@ -25,11 +24,8 @@ contract NFT1155CreditsV2 is NFT1155Credits {
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
-    function initializeV2(string memory _version) external {
+    function initializeV2(string memory _version) external restricted {
         NFT1155CreditsV2Storage storage $ = _getNFT1155CreditsV2Storage();
-        if (!_getNFT1155BaseStorage().nvmConfig.isGovernor(msg.sender)) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_MINTER_ROLE);
-        }
         $.version = _version;
     }
 

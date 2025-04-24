@@ -4,7 +4,6 @@
 pragma solidity ^0.8.28;
 
 import {AssetsRegistry} from '../AssetsRegistry.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined Assets Registry V2 contract
@@ -25,11 +24,8 @@ contract AssetsRegistryV2 is AssetsRegistry {
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
-    function initializeV2(string memory _version) external {
+    function initializeV2(string memory _version) external restricted {
         AssetsRegistryV2Storage storage $ = _getAssetsRegistryV2Storage();
-        if (!_getAssetsRegistryStorage().nvmConfig.isGovernor(msg.sender)) {
-            revert INVMConfig.OnlyGovernor(msg.sender);
-        }
         $.version = _version;
     }
 

@@ -7,6 +7,7 @@ import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCon
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 import {MockERC20} from '../../../contracts/test/MockERC20.sol';
 import {TokenUtils} from '../../../contracts/utils/TokenUtils.sol';
@@ -35,9 +36,7 @@ contract LockPaymentConditionTest is BaseTest {
         mockERC20 = new MockERC20('Test Token', 'TST');
 
         // Grant template role
-        vm.startPrank(governor);
-        nvmConfig.grantTemplate(template);
-        vm.stopPrank();
+        _grantTemplateRole(template);
 
         // Create a plan with native token
         uint256[] memory amounts = new uint256[](1);
@@ -209,7 +208,7 @@ contract LockPaymentConditionTest is BaseTest {
         // Try to fulfill condition from non-template account
         // bytes memory revertData = abi.encodeWithSelector(INVMConfig.OnlyTemplate.selector, user);
 
-        vm.expectPartialRevert(INVMConfig.OnlyTemplate.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
 
         lockPaymentCondition.fulfill{value: 100}(conditionId, agreementId, planId, user);
     }

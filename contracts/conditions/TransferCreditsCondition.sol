@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../token/NFT1155ExpirableCredits.sol';
@@ -39,29 +38,24 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
 
     /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
     struct TransferCreditsConditionStorage {
-        INVMConfig nvmConfig;
         IAsset assetsRegistry;
         IAgreement agreementStore;
     }
 
     /**
      * @notice Initializes the TransferCreditsCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
      * @param _authority Address of the AccessManager contract for role-based access control
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
      * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
      * @dev Sets up storage references and initializes the access management system
      */
-    function initialize(
-        INVMConfig _nvmConfigAddress,
-        IAccessManager _authority,
-        IAsset _assetsRegistryAddress,
-        IAgreement _agreementStoreAddress
-    ) external initializer {
+    function initialize(IAccessManager _authority, IAsset _assetsRegistryAddress, IAgreement _agreementStoreAddress)
+        external
+        initializer
+    {
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 
-        $.nvmConfig = INVMConfig(_nvmConfigAddress);
         $.assetsRegistry = IAsset(_assetsRegistryAddress);
         $.agreementStore = IAgreement(_agreementStoreAddress);
         __AccessManagedUUPSUpgradeable_init(address(_authority));
@@ -86,11 +80,8 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         uint256 _planId,
         bytes32[] memory _requiredConditions,
         address _receiverAddress
-    ) external payable nonReentrant {
+    ) external payable nonReentrant restricted {
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
-
-        // Validate if the account calling this function is a registered template
-        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         // Check if the required conditions (LockPayment) are already fulfilled
         if (!$.agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions)) {

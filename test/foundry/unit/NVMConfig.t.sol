@@ -9,7 +9,7 @@ import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {NVMConfigV2} from '../../../contracts/mock/NVMConfigV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
-import {IAccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract NVMConfigTest is BaseTest {
     address public newGovernor;
@@ -43,7 +43,7 @@ contract NVMConfigTest is BaseTest {
         address nonGovernor = makeAddr('nonGovernor');
 
         vm.prank(nonGovernor);
-        vm.expectPartialRevert(INVMConfig.OnlyGovernor.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         nvmConfig.setNetworkFees(200, governor);
     }
 
@@ -80,48 +80,8 @@ contract NVMConfigTest is BaseTest {
         address nonGovernor = makeAddr('nonGovernor');
 
         vm.prank(nonGovernor);
-        vm.expectPartialRevert(INVMConfig.OnlyGovernor.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         nvmConfig.setParameter(paramName, paramValue);
-    }
-
-    function test_grantGovernor() public {
-        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
-
-        vm.prank(owner);
-        vm.expectEmit(true, true, true, true);
-        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, true);
-        nvmConfig.grantGovernor(newGovernor);
-
-        assertTrue(nvmConfig.isGovernor(newGovernor));
-    }
-
-    function test_grantGovernor_onlyOwner() public {
-        vm.prank(governor);
-        vm.expectPartialRevert(INVMConfig.OnlyOwner.selector);
-        nvmConfig.grantGovernor(newGovernor);
-    }
-
-    function test_revokeGovernor() public {
-        bytes32 governorRole = nvmConfig.GOVERNOR_ROLE();
-
-        // First grant governor role
-        vm.prank(owner);
-        nvmConfig.grantGovernor(newGovernor);
-        assertTrue(nvmConfig.isGovernor(newGovernor));
-
-        // Then revoke it
-        vm.prank(owner);
-        vm.expectEmit(true, true, true, true);
-        emit INVMConfig.ConfigPermissionsChange(newGovernor, governorRole, false);
-        nvmConfig.revokeGovernor(newGovernor);
-
-        assertFalse(nvmConfig.isGovernor(newGovernor));
-    }
-
-    function test_revokeGovernor_onlyOwner() public {
-        vm.prank(governor);
-        vm.expectPartialRevert(INVMConfig.OnlyOwner.selector);
-        nvmConfig.revokeGovernor(newGovernor);
     }
 
     function test_upgraderShouldBeAbleToUpgradeAfterDelay() public {

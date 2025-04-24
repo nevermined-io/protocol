@@ -27,12 +27,11 @@ import {DeployNVMConfig} from './DeployNVMConfig.sol';
 
 import {DeployTemplates} from './DeployTemplates.sol';
 
-import {OwnerGrantRoles} from './OwnerGrantRoles.sol';
-
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 struct DeployedContracts {
     AccessManager accessManager;
@@ -155,7 +154,7 @@ contract DeployAll is Script, DeployConfig {
             console2.log('\tGovernor:', governorAddress);
             console2.log('Version: ', version);
         }
-        
+
         // Load the deployment scripts
         DeployAccessManager deployAccessManager = new DeployAccessManager();
         DeployNVMConfig deployNVMConfig = new DeployNVMConfig();
@@ -164,7 +163,6 @@ contract DeployAll is Script, DeployConfig {
         DeployNFTContracts deployNFTContracts = new DeployNFTContracts();
         DeployConditions deployConditions = new DeployConditions();
         DeployTemplates deployTemplates = new DeployTemplates();
-        OwnerGrantRoles ownerGrantRoles = new OwnerGrantRoles();
 
         // Execute the deployments in order
         // 1. Deploy AccessManager
@@ -174,11 +172,7 @@ contract DeployAll is Script, DeployConfig {
 
         // 2. Deploy NVMConfig
         deployed.nvmConfig = deployNVMConfig.run(
-            ownerAddress,
-            governorAddress,
-            deployed.accessManager,
-            deploymentSalt[type(NVMConfig).name],
-            revertIfAlreadyDeployed
+            ownerAddress, deployed.accessManager, deploymentSalt[type(NVMConfig).name], revertIfAlreadyDeployed
         );
         if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
 
@@ -204,7 +198,6 @@ contract DeployAll is Script, DeployConfig {
         }
         // 5. Deploy NFT Contracts
         (deployed.nftCredits, deployed.nftExpirableCredits) = deployNFTContracts.run(
-            deployed.nvmConfig,
             deployed.accessManager,
             ownerAddress,
             deployed.assetsRegistry,
@@ -223,7 +216,6 @@ contract DeployAll is Script, DeployConfig {
             deployed.fiatSettlementCondition
         ) = deployConditions.run(
             ownerAddress,
-            deployed.nvmConfig,
             deployed.assetsRegistry,
             deployed.agreementsStore,
             deployed.paymentsVault,
@@ -258,19 +250,6 @@ contract DeployAll is Script, DeployConfig {
         );
         if (debug) console2.log('FixedPaymentTemplate deployed at:', address(deployed.fixedPaymentTemplate));
         if (debug) console2.log('FiatPaymentTemplate deployed at:', address(deployed.fiatPaymentTemplate));
-
-        // 8. Grant roles by Owner
-        ownerGrantRoles.run(
-            deployed.nvmConfig,
-            ownerAddress,
-            deployed.paymentsVault,
-            deployed.nftCredits,
-            deployed.lockPaymentCondition,
-            deployed.transferCreditsCondition,
-            deployed.distributePaymentsCondition,
-            deployed.accessManager
-        );
-        if (debug) console2.log('Roles granted successfully by Owner');
 
         // Build JSON with the deployment information
         string memory rootJsonKey = 'root';

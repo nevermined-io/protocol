@@ -6,7 +6,6 @@ pragma solidity ^0.8.28;
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
-import {AccessControlUpgradeable} from '@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
 /**
@@ -22,30 +21,7 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
  * The contract uses OpenZeppelin's AccessControl for role management and
  * implements UUPS (Universal Upgradeable Proxy Standard) pattern for upgradeability.
  */
-contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpgradeable {
-    /**
-     * @notice Role Owning the Nevermined Config contract
-     * @dev Addresses with this role have full control over the contract, including
-     * assigning other roles and performing administrative operations
-     */
-    bytes32 public constant OWNER_ROLE = keccak256('NVM_CONFIG_OWNER');
-    /**
-     * @notice Role that can change the parameters of the Nevermined Config contract
-     * @dev Addresses with this role can modify configuration parameters but have
-     * fewer privileges than owners
-     */
-    bytes32 public constant GOVERNOR_ROLE = keccak256('NVM_GOVERNOR');
-    /**
-     * @notice Role granted to Smart Contracts registered as Templates (they can execute the template)
-     * @dev Used to restrict which contracts can function as agreement templates in the protocol
-     */
-    bytes32 public constant CONTRACT_TEMPLATE_ROLE = keccak256('NVM_CONTRACT_TEMPLATE');
-    /**
-     * @notice Role granted to Smart Contracts registered as NVM Conditions (they can fulfill conditions)
-     * @dev Used to restrict which contracts can function as conditions within agreement templates
-     */
-    bytes32 public constant CONTRACT_CONDITION_ROLE = keccak256('NVM_CONTRACT_CONDITION');
-
+contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     // Storage slot for the NVM configuration namespace following ERC-7201 standard
     // keccak256(abi.encode(uint256(keccak256("nevermined.nvmconfig.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant NVM_CONFIG_STORAGE_LOCATION =
@@ -111,173 +87,10 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
     /**
      * @notice Initialization function. Sets up the contract with initial roles and permissions
      * @dev This function can only be called once when the proxy contract is initialized
-     * @param _owner The address that will have full administrative control over the contract
      * @param _authority The access manager contract that will control upgrade permissions
-     * @param _governor The address that will have permission to update configuration parameters
      */
-    function initialize(address _owner, IAccessManager _authority, address _governor) external initializer {
-        AccessControlUpgradeable.__AccessControl_init();
-        AccessControlUpgradeable._grantRole(DEFAULT_ADMIN_ROLE, _owner);
-        AccessControlUpgradeable._grantRole(OWNER_ROLE, _owner);
-        AccessControlUpgradeable._grantRole(GOVERNOR_ROLE, _governor);
+    function initialize(IAccessManager _authority) external initializer {
         __AccessManagedUUPSUpgradeable_init(address(_authority));
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////////////
-    /////// ACCESS CONTROL ////////////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Modifier restricting access to addresses with either owner or governor roles
-     * @dev Reverts with OnlyOwnerOrGovernor error if the address lacks both roles
-     * @param _address The address to check for owner or governor role permissions
-     */
-    modifier onlyOwnerOrGovernor(address _address) {
-        if (!hasRole(GOVERNOR_ROLE, _address) && !hasRole(OWNER_ROLE, _address)) {
-            revert OnlyOwnerOrGovernor(_address);
-        }
-        _;
-    }
-
-    /**
-     * @notice Modifier restricting access to addresses with the governor role
-     * @dev Reverts with OnlyGovernor error if the address lacks the governor role
-     * @param _address The address to check for governor role permission
-     */
-    modifier onlyGovernor(address _address) {
-        if (!hasRole(GOVERNOR_ROLE, _address)) revert OnlyGovernor(_address);
-        _;
-    }
-
-    /**
-     * @notice Modifier restricting access to addresses with the owner role
-     * @dev Reverts with OnlyOwner error if the address lacks the owner role
-     * @param _address The address to check for owner role permission
-     */
-    modifier onlyOwnerRole(address _address) {
-        if (!hasRole(OWNER_ROLE, _address)) revert OnlyOwner(_address);
-        _;
-    }
-
-    /**
-     * @notice Grants governor role to an address
-     * @dev Only callable by addresses with the OWNER_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @param _address The address to be granted the governor role
-     */
-    function grantGovernor(address _address) external onlyOwnerRole(msg.sender) {
-        _grantRole(GOVERNOR_ROLE, _address);
-        emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, true);
-    }
-
-    /**
-     * @notice Revokes governor role from an address
-     * @dev Only callable by addresses with the OWNER_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @param _address The address from which to revoke the governor role
-     */
-    function revokeGovernor(address _address) external onlyOwnerRole(msg.sender) {
-        _revokeRole(GOVERNOR_ROLE, _address);
-        emit ConfigPermissionsChange(_address, GOVERNOR_ROLE, false);
-    }
-
-    /**
-     * @notice Checks if an address has the governor role
-     * @dev Useful for front-ends or other contracts to verify permissions
-     * @param _address The address to check
-     * @return Boolean indicating whether the address has the governor role
-     */
-    function isGovernor(address _address) external view returns (bool) {
-        return hasRole(GOVERNOR_ROLE, _address);
-    }
-
-    /**
-     * @notice Checks if an address has the owner role
-     * @dev Useful for front-ends or other contracts to verify permissions
-     * @param _address The address to check
-     * @return Boolean indicating whether the address has the owner role
-     */
-    function isOwner(address _address) external view returns (bool) {
-        return hasRole(OWNER_ROLE, _address);
-    }
-
-    /**
-     * @notice Public wrapper around AccessControl's hasRole function
-     * @dev Allows external contracts to check if an address has a specific role
-     * @param _address The address to check
-     * @param _role The role identifier to check for
-     * @return Boolean indicating whether the address has the specified role
-     */
-    function hasRole(address _address, bytes32 _role) external view returns (bool) {
-        return super.hasRole(_role, _address);
-    }
-
-    /**
-     * @notice Grants template role to a contract address
-     * @dev Only callable by addresses with the GOVERNOR_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @dev Template contracts can execute agreement templates in the Nevermined ecosystem
-     * @param _address The contract address to be granted the template role
-     */
-    function grantTemplate(address _address) external onlyGovernor(msg.sender) {
-        _grantRole(CONTRACT_TEMPLATE_ROLE, _address);
-        emit ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, true);
-    }
-
-    /**
-     * @notice Revokes template role from a contract address
-     * @dev Only callable by addresses with the GOVERNOR_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @dev Once revoked, the contract can no longer execute agreement templates
-     * @param _address The contract address from which to revoke the template role
-     */
-    function revokeTemplate(address _address) external onlyGovernor(msg.sender) {
-        _revokeRole(CONTRACT_TEMPLATE_ROLE, _address);
-        emit ConfigPermissionsChange(_address, CONTRACT_TEMPLATE_ROLE, false);
-    }
-
-    /**
-     * @notice Checks if an address has the contract template role
-     * @dev Useful for front-ends or other contracts to verify if a contract can execute templates
-     * @param _address The address to check
-     * @return Boolean indicating whether the address has the contract template role
-     */
-    function isTemplate(address _address) external view returns (bool) {
-        return hasRole(CONTRACT_TEMPLATE_ROLE, _address);
-    }
-
-    /**
-     * @notice Grants condition role to a contract address
-     * @dev Only callable by addresses with the GOVERNOR_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @dev Condition contracts can fulfill conditions within agreement templates
-     * @param _address The contract address to be granted the condition role
-     */
-    function grantCondition(address _address) external onlyGovernor(msg.sender) {
-        _grantRole(CONTRACT_CONDITION_ROLE, _address);
-        emit ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, true);
-    }
-
-    /**
-     * @notice Revokes condition role from a contract address
-     * @dev Only callable by addresses with the GOVERNOR_ROLE
-     * @dev Emits ConfigPermissionsChange event when successful
-     * @dev Once revoked, the contract can no longer fulfill conditions
-     * @param _address The contract address from which to revoke the condition role
-     */
-    function revokeCondition(address _address) external onlyGovernor(msg.sender) {
-        _revokeRole(CONTRACT_CONDITION_ROLE, _address);
-        emit ConfigPermissionsChange(_address, CONTRACT_CONDITION_ROLE, false);
-    }
-
-    /**
-     * @notice Checks if an address has the contract condition role
-     * @dev Useful for front-ends or other contracts to verify if a contract can fulfill conditions
-     * @param _address The address to check
-     * @return Boolean indicating whether the address has the contract condition role
-     */
-    function isCondition(address _address) external view returns (bool) {
-        return hasRole(CONTRACT_CONDITION_ROLE, _address);
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////
@@ -296,7 +109,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
      * @custom:error InvalidNetworkFee Thrown if the fee is outside the valid range (0-1,000,000)
      * @custom:error InvalidFeeReceiver Thrown if a fee is set but the receiver is the zero address
      */
-    function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual onlyGovernor(msg.sender) {
+    function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         if (_networkFee < 0 || _networkFee > 1000000) {
@@ -349,7 +162,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
      * @param _paramName The name/key of the parameter to set (as bytes32)
      * @param _value The value to set for the parameter (as arbitrary bytes)
      */
-    function setParameter(bytes32 _paramName, bytes memory _value) external virtual onlyGovernor(msg.sender) {
+    function setParameter(bytes32 _paramName, bytes memory _value) external virtual restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         $.configParams[_paramName].value = _value;
@@ -389,7 +202,7 @@ contract NVMConfig is INVMConfig, AccessControlUpgradeable, AccessManagedUUPSUpg
      *
      * @param _paramName The name/key of the parameter to disable
      */
-    function disableParameter(bytes32 _paramName) external virtual onlyGovernor(msg.sender) {
+    function disableParameter(bytes32 _paramName) external virtual restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         if ($.configParams[_paramName].isActive) {
