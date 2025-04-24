@@ -17,7 +17,7 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
+contract DeployConditions is DeployConfig, Create2DeployUtils {
     error LockPaymentConditionDeployment_InvalidAuthority(address authority);
     error TransferCreditsConditionDeployment_InvalidAuthority(address authority);
     error DistributePaymentsConditionDeployment_InvalidAuthority(address authority);
@@ -53,15 +53,16 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
                 && fiatSettlementConditionSalt.implementationSalt != bytes32(0),
             InvalidSalt()
         );
-
-        console2.log('Deploying Conditions with:');
-        console2.log('\tOwner:', ownerAddress);
-        console2.log('\tNVMConfig:', address(nvmConfigAddress));
-        console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
-        console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
-        console2.log('\tPaymentsVault:', address(paymentsVaultAddress));
-        console2.log('\tAccessManager:', address(accessManagerAddress));
-
+        if (debug) {
+            console2.log('Deploying Conditions with:');
+            console2.log('\tOwner:', ownerAddress);
+            console2.log('\tNVMConfig:', address(nvmConfigAddress));
+            console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
+            console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
+            console2.log('\tPaymentsVault:', address(paymentsVaultAddress));
+            console2.log('\tAccessManager:', address(accessManagerAddress));
+        }
+        
         vm.startBroadcast(ownerAddress);
 
         // Deploy LockPaymentCondition
@@ -124,16 +125,16 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         require(lockPaymentConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy LockPaymentCondition Implementation
-        console2.log('Deploying LockPaymentCondition Implementation');
+        if (debug) console2.log('Deploying LockPaymentCondition Implementation');
         (address lockPaymentConditionImpl,) = deployWithSanityChecks(
             lockPaymentConditionSalt.implementationSalt,
             type(LockPaymentCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        console2.log('LockPaymentCondition Implementation deployed at:', address(lockPaymentConditionImpl));
+        if (debug) console2.log('LockPaymentCondition Implementation deployed at:', address(lockPaymentConditionImpl));
 
         // Deploy LockPaymentCondition Proxy
-        console2.log('Deploying LockPaymentCondition Proxy');
+        if (debug) console2.log('Deploying LockPaymentCondition Proxy');
         bytes memory lockPaymentConditionInitData = abi.encodeCall(
             LockPaymentCondition.initialize,
             (
@@ -150,7 +151,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         lockPaymentCondition = LockPaymentCondition(lockPaymentConditionProxy);
-        console2.log('LockPaymentCondition Proxy deployed at:', address(lockPaymentCondition));
+        if (debug) console2.log('LockPaymentCondition Proxy deployed at:', address(lockPaymentCondition));
 
         // Verify deployment
         require(
@@ -171,16 +172,16 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         require(transferCreditsConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy TransferCreditsCondition Implementation
-        console2.log('Deploying TransferCreditsCondition Implementation');
+        if (debug) console2.log('Deploying TransferCreditsCondition Implementation');
         (address transferCreditsConditionImpl,) = deployWithSanityChecks(
             transferCreditsConditionSalt.implementationSalt,
             type(TransferCreditsCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        console2.log('TransferCreditsCondition Implementation deployed at:', address(transferCreditsConditionImpl));
+        if (debug) console2.log('TransferCreditsCondition Implementation deployed at:', address(transferCreditsConditionImpl));
 
         // Deploy TransferCreditsCondition Proxy
-        console2.log('Deploying TransferCreditsCondition Proxy');
+        if (debug) console2.log('Deploying TransferCreditsCondition Proxy');
         bytes memory transferCreditsConditionInitData = abi.encodeCall(
             TransferCreditsCondition.initialize,
             (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
@@ -191,7 +192,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         transferCreditsCondition = TransferCreditsCondition(transferCreditsConditionProxy);
-        console2.log('TransferCreditsCondition Proxy deployed at:', address(transferCreditsCondition));
+        if (debug) console2.log('TransferCreditsCondition Proxy deployed at:', address(transferCreditsCondition));
 
         // Verify deployment
         require(
@@ -213,18 +214,18 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         require(distributePaymentsConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy DistributePaymentsCondition Implementation
-        console2.log('Deploying DistributePaymentsCondition Implementation');
+        if (debug) console2.log('Deploying DistributePaymentsCondition Implementation');
         (address distributePaymentsConditionImpl,) = deployWithSanityChecks(
             distributePaymentsConditionSalt.implementationSalt,
             type(DistributePaymentsCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        console2.log(
+        if (debug) console2.log(
             'DistributePaymentsCondition Implementation deployed at:', address(distributePaymentsConditionImpl)
         );
 
         // Deploy DistributePaymentsCondition Proxy
-        console2.log('Deploying DistributePaymentsCondition Proxy');
+        if (debug) console2.log('Deploying DistributePaymentsCondition Proxy');
         bytes memory distributePaymentsConditionInitData = abi.encodeCall(
             DistributePaymentsCondition.initialize,
             (
@@ -241,7 +242,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         distributePaymentsCondition = DistributePaymentsCondition(distributePaymentsConditionProxy);
-        console2.log('DistributePaymentsCondition Proxy deployed at:', address(distributePaymentsCondition));
+        if (debug) console2.log('DistributePaymentsCondition Proxy deployed at:', address(distributePaymentsCondition));
 
         // Verify deployment
         require(
@@ -262,16 +263,16 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
         require(fiatSettlementConditionSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy FiatSettlementCondition Implementation
-        console2.log('Deploying FiatSettlementCondition Implementation');
+        if (debug) console2.log('Deploying FiatSettlementCondition Implementation');
         (address fiatSettlementConditionImpl,) = deployWithSanityChecks(
             fiatSettlementConditionSalt.implementationSalt,
             type(FiatSettlementCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        console2.log('FiatSettlementCondition Implementation deployed at:', address(fiatSettlementConditionImpl));
+        if (debug) console2.log('FiatSettlementCondition Implementation deployed at:', address(fiatSettlementConditionImpl));
 
         // Deploy FiatSettlementCondition Proxy
-        console2.log('Deploying FiatSettlementCondition Proxy');
+        if (debug) console2.log('Deploying FiatSettlementCondition Proxy');
         bytes memory fiatSettlementConditionInitData = abi.encodeCall(
             FiatSettlementCondition.initialize,
             (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
@@ -282,7 +283,7 @@ contract DeployConditions is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         fiatSettlementCondition = FiatSettlementCondition(fiatSettlementConditionProxy);
-        console2.log('FiatSettlementCondition Proxy deployed at:', address(fiatSettlementCondition));
+        if (debug) console2.log('FiatSettlementCondition Proxy deployed at:', address(fiatSettlementCondition));
 
         // Verify deployment
         require(

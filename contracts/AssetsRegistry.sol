@@ -81,6 +81,12 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         if (_plans.length == 0) {
             revert NotPlansAttached(did);
         }
+
+        for (uint256 i = 0; i < _plans.length; i++) {
+            if ($.plans[_plans[i]].lastUpdated == 0) {
+                revert PlanNotFound(_plans[i]);
+            }
+        }
         $.assets[did] =
             DIDAsset({owner: msg.sender, creator: msg.sender, url: _url, lastUpdated: block.timestamp, plans: _plans});
 

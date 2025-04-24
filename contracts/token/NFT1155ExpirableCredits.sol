@@ -44,6 +44,13 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         __NFT1155Base_init(_nvmConfigAddress, _authority, _assetsRegistryAddress);
     }
 
+    /**
+     * @notice Mints credits for a specific plan
+     * @param _to Address that will receive the credits
+     * @param _planId Identifier of the plan
+     * @param _value Amount of credits to mint
+     * @param _data Additional data to pass to the receiver
+     */
     function mint(address _to, uint256 _planId, uint256 _value, bytes memory _data) public virtual override {
         mint(_to, _planId, _value, 0, _data);
     }
@@ -70,6 +77,13 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         super.mint(_to, _planId, _value, _data);
     }
 
+    /**
+     * Mints credits for a multiple plans
+     * @param _to the address to mint credits to
+     * @param _ids the array of plan identifiers
+     * @param _values the array of amounts to mint
+     * @param _data Additional data to pass to the receiver
+     */
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data)
         public
         virtual
@@ -105,6 +119,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         }
     }
 
+    /**
+     * Burns credits for a specific plan
+     * @param _from the address to burn credits from
+     * @param _planId the plan identifier
+     * @param _value the number of credits to burn
+     */
     function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
         NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
@@ -174,23 +194,6 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
         if (_amountBurned >= _amountMinted) return 0;
         else return _amountMinted - _amountBurned;
-    }
-
-    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids)
-        public
-        view
-        virtual
-        override
-        returns (uint256[] memory)
-    {
-        uint256 _length = _ids.length;
-        if (_length != _owners.length) revert InvalidLength(_length, _owners.length);
-
-        uint256[] memory _balances = new uint256[](_length);
-        for (uint256 i = 0; i < _length; i++) {
-            _balances[i] = balanceOf(_owners[i], _ids[i]);
-        }
-        return _balances;
     }
 
     /**

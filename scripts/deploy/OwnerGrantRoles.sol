@@ -14,6 +14,7 @@ import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
 contract OwnerGrantRoles is Script, DeployConfig {
+
     function run(
         NVMConfig nvmConfig,
         address ownerAddress,
@@ -24,16 +25,17 @@ contract OwnerGrantRoles is Script, DeployConfig {
         DistributePaymentsCondition distributePaymentsCondition,
         AccessManager accessManager
     ) public {
-        console2.log('Granting roles with:');
-        console2.log('\tNVMConfig:', address(nvmConfig));
-        console2.log('\tOwner:', ownerAddress);
-        console2.log('\tPaymentsVault:', address(paymentsVault));
-        console2.log('\tNFT1155Credits:', address(nftCredits));
-        console2.log('\tLockPaymentCondition:', address(lockPaymentCondition));
-        console2.log('\tTransferCreditsCondition:', address(transferCreditsCondition));
-        console2.log('\tDistributePaymentsCondition:', address(distributePaymentsCondition));
-        console2.log('\tAccessManager:', address(accessManager));
-
+        if (debug) {
+            console2.log('Granting roles with:');
+            console2.log('\tNVMConfig:', address(nvmConfig));
+            console2.log('\tOwner:', ownerAddress);
+            console2.log('\tPaymentsVault:', address(paymentsVault));
+            console2.log('\tNFT1155Credits:', address(nftCredits));
+            console2.log('\tLockPaymentCondition:', address(lockPaymentCondition));
+            console2.log('\tTransferCreditsCondition:', address(transferCreditsCondition));
+            console2.log('\tDistributePaymentsCondition:', address(distributePaymentsCondition));
+            console2.log('\tAccessManager:', address(accessManager));
+        }
         vm.startBroadcast(ownerAddress);
 
         // Grant roles for PaymentsVault

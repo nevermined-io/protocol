@@ -60,6 +60,30 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, AccessManagedUUPS
     }
 
     /**
+     * It gets the balance of multiple tokens for multiple owners.
+     * @param _owners the array of owners address
+     * @param _ids the array of token ids (planId)
+     * @return the array of balances
+     * @dev The length of the owners and ids arrays must be the same
+     */
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids)
+        public
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        uint256 _length = _ids.length;
+        if (_length != _owners.length) revert InvalidLength(_length, _owners.length);
+
+        uint256[] memory _balances = new uint256[](_length);
+        for (uint256 i = 0; i < _length; i++) {
+            _balances[i] = balanceOf(_owners[i], _ids[i]);
+        }
+        return _balances;
+    }
+
+    /**
      * It mints credits for a plan.
      * @notice Only the owner of the plan or an account with the CREDITS_MINTER_ROLE can mint credits
      * @notice The payment plan must exists

@@ -50,34 +50,6 @@ contract ManagePermissions is Script, DeployConfig {
         NVMConfig(nvmConfig).grantTemplate(fixedPaymentTemplate);
         NVMConfig(nvmConfig).grantTemplate(fiatPaymentTemplate);
 
-        // Grant Deposit and Withdrawal permissions to Payments Vault
-        // NVMConfig(nvmConfig).grantRole(DEPOSITOR_ROLE, lockPaymentCondition);
-        // NVMConfig(nvmConfig).grantRole(WITHDRAW_ROLE, distributePaymentsCondition);
-
-        // Grant Mint permissions to transferNFTCondition on NFT1155Credits contracts
-        // NVMConfig(nvmConfig).grantRole(CREDITS_MINTER_ROLE, transferCreditsCondition);
-
-        // Grant Upgrade permissions to NVMConfig
-        // accessManagerInstance.setTargetFunctionRole(
-        //   nvmConfig,
-        //   toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-        //   UPGRADE_ROLE
-        // );
-
-        // Grant Upgrade permissions to PaymentsVault
-        // accessManagerInstance.setTargetFunctionRole(
-        //   paymentsVault,
-        //   toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-        //   UPGRADE_ROLE
-        // );
-
-        // Grant Upgrade permissions to NFT1155Credits
-        // accessManagerInstance.setTargetFunctionRole(
-        //   nftCredits,
-        //   toArray(UUPSUpgradeable.upgradeToAndCall.selector),
-        //   UPGRADE_ROLE
-        // );
-
         vm.stopBroadcast();
 
         console2.log('Permissions configured successfully');
