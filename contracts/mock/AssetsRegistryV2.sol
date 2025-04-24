@@ -8,7 +8,7 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 
 /**
  * @title Nevermined Assets Registry V2 contract
- * @author @aaitor
+ * @author Nevermined AG
  * @notice This contract extends AssetsRegistry with new functionality for testing upgrades
  */
 contract AssetsRegistryV2 is AssetsRegistry {

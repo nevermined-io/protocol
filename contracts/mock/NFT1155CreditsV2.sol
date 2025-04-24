@@ -8,7 +8,7 @@ import {NFT1155Credits} from '../token/NFT1155Credits.sol';
 
 /**
  * @title Nevermined NFT1155Credits V2 contract
- * @author @aaitor
+ * @author Nevermined AG
  * @notice This contract extends NFT1155Credits with new functionality for testing upgrades
  */
 contract NFT1155CreditsV2 is NFT1155Credits {

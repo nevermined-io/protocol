@@ -3,14 +3,18 @@
 pragma solidity ^0.8.28;
 
 /**
- * @title IAccessManagedUUPSUpgradeable
- * @notice Interface for the AccessManagedUUPSUpgradeable contract
+ * @title Access Managed UUPS Upgradeable Interface
+ * @author Nevermined AG
+ * @notice Interface defining events and functionality for the Access Managed UUPS Upgradeable contract
+ * @dev This interface establishes the core events for tracking upgrades in contracts that implement
+ * the Universal Upgradeable Proxy Standard (UUPS) pattern with access management controls
  */
 interface IAccessManagedUUPSUpgradeable {
     /**
      * @notice Emitted when an upgrade is authorized
+     * @dev This event is emitted before the actual upgrade is performed, indicating an upgrade is pending
      * @param caller The address that initiated the upgrade (msg.sender)
-     * @param newImplementation The address of the new implementation
+     * @param newImplementation The address of the new implementation contract to upgrade to
      */
     event UpgradeAuthorized(address indexed caller, address indexed newImplementation);
 }

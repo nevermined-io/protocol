@@ -14,11 +14,27 @@ import {ReentrancyGuardTransientUpgradeable} from
     '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title TransferCreditsCondition
+ * @author Nevermined
+ * @notice Condition that handles the transfer of credits from payment plans to users
+ * @dev This contract is responsible for minting credits to a receiver based on a predefined
+ * plan configuration. The credits can be either fixed or expirable. The condition requires
+ * other conditions (e.g., LockPaymentCondition) to be fulfilled before executing.
+ *
+ * The contract handles different credit types:
+ * - EXPIRABLE: Credits with an expiration time
+ * - FIXED: Credits with no expiration
+ * - DYNAMIC: Currently not supported in this implementation
+ */
 contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition {
     // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION =
         0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
 
+    /**
+     * @notice Contract name identifier used in the Nevermined ecosystem
+     */
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
 
     /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
@@ -30,10 +46,11 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
 
     /**
      * @notice Initializes the TransferCreditsCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
-     * @param _authority Address of the AccessManager contract
-     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
-     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
+     * @param _authority Address of the AccessManager contract for role-based access control
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
+     * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
+     * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
         INVMConfig _nvmConfigAddress,
@@ -61,6 +78,7 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
      * @dev Checks if required conditions are fulfilled before proceeding
      * @dev Mints credits based on the plan's configuration (expirable or fixed)
      * @dev Reverts for unsupported credit types (dynamic)
+     * @dev The condition is fulfilled before external calls to maintain security
      */
     function fulfill(
         bytes32 _conditionId,
@@ -101,6 +119,11 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         }
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the TransferCreditsConditionStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getTransferCreditsConditionStorage() internal pure returns (TransferCreditsConditionStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
