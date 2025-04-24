@@ -43,6 +43,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     amount: 900,
     minAmount: 1,
     maxAmount: 1,
+    proofRequired: false,
   }
   let nftAddress: string
   const url = 'https://nevermined.io'

@@ -135,6 +135,7 @@ contract AssetsRegistryTest is BaseTest {
             redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
             durationSecs: 0,
             amount: 100,
+            proofRequired: false,
             minAmount: 1,
             maxAmount: 1
         });
@@ -169,7 +170,8 @@ contract AssetsRegistryTest is BaseTest {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 1
+            maxAmount: 1,
+            proofRequired: false
         });
 
         uint256 planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), owner);

@@ -72,10 +72,16 @@ contract NFT1155Credits is NFT1155Base {
      * @param _from Address from which credits will be burned
      * @param _planId Identifier of the plan
      * @param _value Amount of credits to burn
+     * @param _keyspace The keyspace of the nonce used to generate the signature
+     * @param _signature The signature of the credits burn proof
      * @dev Inherits redemption permission checks from NFT1155Base
      */
-    function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
-        super.burn(_from, _planId, _value);
+    function burn(address _from, uint256 _planId, uint256 _value, uint256 _keyspace, bytes calldata _signature)
+        public
+        virtual
+        override
+    {
+        super.burn(_from, _planId, _value, _keyspace, _signature);
     }
 
     /**
@@ -83,10 +89,18 @@ contract NFT1155Credits is NFT1155Base {
      * @param _from Address from which credits will be burned
      * @param _ids Array of plan identifiers
      * @param _values Array of credit amounts to burn
+     * @param _keyspace The keyspace of the nonce used to generate the signature
+     * @param _signature The signature of the credits burn proof
      * @dev Inherits redemption permission checks from NFT1155Base
      */
-    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
-        super.burnBatch(_from, _ids, _values);
+    function burnBatch(
+        address _from,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        uint256 _keyspace,
+        bytes calldata _signature
+    ) public virtual override {
+        super.burnBatch(_from, _ids, _values, _keyspace, _signature);
     }
 
     /**

@@ -166,7 +166,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Then burn some as authorized burner
         vm.prank(burner);
-        nftExpirableCredits.burn(receiver, planId, 1);
+        nftExpirableCredits.burn(receiver, planId, 1, 0, '');
 
         // Check balance after burn
         uint256 balance = nftExpirableCredits.balanceOf(receiver, planId);
@@ -181,14 +181,14 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         // Try to burn as unauthorized account
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
-        nftExpirableCredits.burn(receiver, planId, 1);
+        nftExpirableCredits.burn(receiver, planId, 1, 0, '');
     }
 
     function test_burnBatch() public {
         // Mint credits for both plans
         vm.startPrank(minter);
-        nftExpirableCredits.mint(receiver, planId, 100, 0, '');
-        nftExpirableCredits.mint(receiver, planId2, 200, 0, '');
+        nftExpirableCredits.mint(receiver, planId, 100, '');
+        nftExpirableCredits.mint(receiver, planId2, 200, '');
         vm.stopPrank();
 
         // Prepare batch burn data
@@ -201,7 +201,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Burn batch as authorized burner
         vm.prank(burner);
-        nftExpirableCredits.burnBatch(receiver, ids, amounts);
+        nftExpirableCredits.burnBatch(receiver, ids, amounts, 0, '');
 
         // Check balances after burn
         uint256 balance1 = nftExpirableCredits.balanceOf(receiver, planId);
@@ -229,7 +229,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         // Try to burn batch as unauthorized account
         vm.prank(unauthorized);
         vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
-        nftExpirableCredits.burnBatch(receiver, ids, amounts);
+        nftExpirableCredits.burnBatch(receiver, ids, amounts, 0, '');
     }
 
     function test_mintBatch() public {

@@ -62,7 +62,8 @@ contract LockPaymentConditionTest is BaseTest {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 100
+            maxAmount: 100,
+            proofRequired: false
         });
 
         // Register asset and plan
@@ -147,7 +148,8 @@ contract LockPaymentConditionTest is BaseTest {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 100
+            maxAmount: 100,
+            proofRequired: false
         });
 
         // Register new asset and plan
@@ -253,7 +255,8 @@ contract LockPaymentConditionTest is BaseTest {
             durationSecs: 0,
             amount: 100,
             minAmount: 1,
-            maxAmount: 100
+            maxAmount: 100,
+            proofRequired: false
         });
 
         // Register new asset and plan

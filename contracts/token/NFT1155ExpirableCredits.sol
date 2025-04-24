@@ -150,14 +150,56 @@ contract NFT1155ExpirableCredits is NFT1155Base {
      * @param _from Address from which credits will be burned
      * @param _planId Identifier of the plan
      * @param _value Amount of credits to burn
+     * @param _keyspace The keyspace of the nonce used to generate the signature
+     * @param _signature The signature of the credits burn proof
      * @dev Implements custom burn logic that records each burn operation against valid, non-expired credits
      */
-    function burn(address _from, uint256 _planId, uint256 _value) public virtual override {
-        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
+    function burn(address _from, uint256 _planId, uint256 _value, uint256 _keyspace, bytes calldata _signature)
+        public
+        virtual
+        override
+    {
+        require(
+            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
+            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
+        );
 
-        if (!_getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE)) {
-            revert INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE);
+        _processPreCreditBurn(_from, _planId, _value);
+
+        super.burn(_from, _planId, _value, _keyspace, _signature);
+    }
+
+    /**
+     * @notice Burns multiple credits from multiple plans in a single transaction
+     * @param _from Address from which credits will be burned
+     * @param _ids Array of plan identifiers
+     * @param _values Array of credit amounts to burn
+     * @dev Validates array lengths match before burning each batch
+     */
+    function burnBatch(
+        address _from,
+        uint256[] memory _ids,
+        uint256[] memory _values,
+        uint256 _keyspace,
+        bytes calldata _signature
+    ) public virtual override {
+        uint256 _length = _ids.length;
+        if (_length != _values.length) revert InvalidLength(_length, _values.length);
+
+        require(
+            _getNFT1155BaseStorage().nvmConfig.hasRole(msg.sender, CREDITS_BURNER_ROLE),
+            INVMConfig.InvalidRole(msg.sender, CREDITS_BURNER_ROLE)
+        );
+
+        for (uint256 i = 0; i < _length; i++) {
+            _processPreCreditBurn(_from, _ids[i], _values[i]);
         }
+
+        super.burnBatch(_from, _ids, _values, _keyspace, _signature);
+    }
+
+    function _processPreCreditBurn(address _from, uint256 _planId, uint256 _value) internal {
+        NFT1155ExpirableCreditsStorage storage $ = _getNFT1155ExpirableCreditsStorage();
 
         bytes32 _key = _getTokenKey(_from, _planId);
         uint256 _pendingToBurn = _value;
@@ -177,24 +219,6 @@ contract NFT1155ExpirableCredits is NFT1155Base {
                     );
                 }
             }
-        }
-
-        super.burn(_from, _planId, _value);
-    }
-
-    /**
-     * @notice Burns multiple credits from multiple plans in a single transaction
-     * @param _from Address from which credits will be burned
-     * @param _ids Array of plan identifiers
-     * @param _values Array of credit amounts to burn
-     * @dev Validates array lengths match before burning each batch
-     */
-    function burnBatch(address _from, uint256[] memory _ids, uint256[] memory _values) public virtual override {
-        uint256 _length = _ids.length;
-        if (_length != _values.length) revert InvalidLength(_length, _values.length);
-
-        for (uint256 i = 0; i < _length; i++) {
-            burn(_from, _ids[i], _values[i]);
         }
     }
 
