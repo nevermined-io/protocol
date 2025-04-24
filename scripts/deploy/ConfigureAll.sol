@@ -9,7 +9,6 @@ import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
 contract ConfigureAll is Script, DeployConfig {
-    bool public debug = vm.envOr('DEBUG', false);
 
     function run() public {
 
