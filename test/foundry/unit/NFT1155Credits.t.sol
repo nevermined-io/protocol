@@ -38,7 +38,7 @@ contract NFT1155CreditsTest is BaseTest {
         nftCredits.mint(owner, 1, 1, '');
     }
 
-    function test_mint_correct() public {
+    function test_minter_role_can_mint() public {
         vm.prank(owner);
         nvmConfig.grantRole(CREDITS_MINTER_ROLE, address(this));
 
@@ -47,6 +47,14 @@ contract NFT1155CreditsTest is BaseTest {
         nftCredits.mint(receiver, planId, 1, '');
         uint256 balance = nftCredits.balanceOf(receiver, planId);
         assertEq(balance, 1);
+    }
+
+    function test_plan_owner_can_mint() public {
+        uint256 planId = _createPlan();
+
+        nftCredits.mint(receiver, planId, 2, '');
+        uint256 balance = nftCredits.balanceOf(receiver, planId);
+        assertEq(balance, 2);
     }
 
     function test_mint_unauthorized() public {
@@ -111,8 +119,8 @@ contract NFT1155CreditsTest is BaseTest {
         });
 
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(0));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits));
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
     }
 
     function test_mintBatch_unauthorized() public {

@@ -8,22 +8,41 @@ import {IAsset} from '../interfaces/IAsset.sol';
 bytes32 constant CREDITS_BURN_PROOF_TYPEHASH =
     keccak256(abi.encodePacked('CreditsBurnProofData(uint256 keyspace,uint256 nonce,uint256[] planIds)'));
 
+/**
+ * @title NFT1155 Interface
+ * @author Nevermined AG
+ * @notice Interface defining the errors and functionality for NFT1155 tokens in the Nevermined ecosystem
+ * @dev This interface establishes the error handling for ERC-1155 based NFTs that represent
+ * subscription credits, access rights, or other tokenized assets in the protocol
+ */
 interface INFT1155 {
+    /**
+     * @title CreditsBurnProofData
+     * @notice This struct is signed by the owner of the credits to authorize the redemption of credits
+     * @notice Data structure for credits burn proofs
+     * @dev Contains the keyspace, nonce, and plan IDs for a credits burn proof
+     */
     struct CreditsBurnProofData {
         uint256 keyspace;
         uint256 nonce;
         uint256[] planIds;
     }
 
-    /// The redemption permissions of the plan with id `planId` are not valid for the account `sender`
-    /// @param planId The identifier of the plan
-    /// @param redemptionType The type of redemptions that can be used for the plan
-    /// @param sender The address of the account calling this function
+    /**
+     * @notice Error thrown when attempting to redeem a plan with invalid permissions
+     * @dev Each plan has specific redemption types that control who can redeem it
+     * @param planId The identifier of the plan being redeemed
+     * @param redemptionType The type of redemptions that can be used for the plan
+     * @param sender The address of the account attempting the redemption
+     */
     error InvalidRedemptionPermission(uint256 planId, IAsset.RedemptionType redemptionType, address sender);
 
-    /// The lentgh of the ids and values arrays must be the same
-    /// @param idsLength The length of the ids array
-    /// @param valuesLength The length of the values array
+    /**
+     * @notice Error thrown when array lengths for token IDs and values don't match
+     * @dev This typically happens in batch operations where each ID must have a corresponding value
+     * @param idsLength The length of the ids array provided
+     * @param valuesLength The length of the values array provided
+     */
     error InvalidLength(uint256 idsLength, uint256 valuesLength);
 
     /// The signature is invalid

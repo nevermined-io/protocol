@@ -5,13 +5,26 @@ pragma solidity ^0.8.28;
 
 import {IAsset} from '../interfaces/IAsset.sol';
 
+/**
+ * @title Fiat Settlement Interface
+ * @author Nevermined AG
+ * @notice Interface defining the errors and functionality for processing fiat currency settlements
+ * @dev This interface is used by contracts that handle settlement of transactions in fiat currencies,
+ * which are processed off-chain but verified on-chain
+ */
 interface IFiatSettlement {
-    /// The settlement params specified are invalid
-    /// @param params Settlement params provided
+    /**
+     * @notice Error thrown when invalid settlement parameters are provided
+     * @dev Settlement parameters must follow a specific format to be validated correctly
+     * @param params The invalid settlement parameters that were provided
+     */
     error InvalidSettlementParams(bytes[] params);
 
-    /// This condition only can be fulfilled for plans where the price type is FIXED_FIAT_PRICE
-    /// @param planId The identifier of the plan
-    /// @param priceType The type of price of the plan
+    /**
+     * @notice Error thrown when attempting to process a non-fiat price plan with fiat settlement
+     * @dev The fiat settlement can only be used with plans explicitly marked as FIXED_FIAT_PRICE
+     * @param planId The identifier of the plan that was incorrectly passed
+     * @param priceType The actual price type of the plan (expected to be FIXED_FIAT_PRICE)
+     */
     error OnlyPlanWithFiatPrice(uint256 planId, IAsset.PriceType priceType);
 }

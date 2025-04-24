@@ -16,13 +16,13 @@ import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
+contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     error AccessManagerDeployment_InvalidAuthority(address authority);
     error AssetRegistryDeployment_InvalidAuthority(address authority);
     error AgreementsStoreDeployment_InvalidAuthority(address authority);
     error PaymentsVaultDeployment_InvalidAuthority(address authority);
     error InvalidSalt();
-
+    
     function run(
         INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
@@ -38,12 +38,14 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
                 && paymentsVaultSalt.implementationSalt != bytes32(0),
             InvalidSalt()
         );
-
-        console2.log('Deploying Core Contracts with:');
-        console2.log('\tNVMConfig:', address(nvmConfigAddress));
-        console2.log('\tAccessManager:', address(accessManagerAddress));
-        console2.log('\tOwner:', ownerAddress);
-
+        
+        if (debug) {
+            console2.log('Deploying Core Contracts with:');
+            console2.log('\tNVMConfig:', address(nvmConfigAddress));
+            console2.log('\tAccessManager:', address(accessManagerAddress));
+            console2.log('\tOwner:', ownerAddress);
+        }
+        
         vm.startBroadcast(ownerAddress);
 
         // Deploy AssetsRegistry
@@ -73,14 +75,14 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
         require(assetsRegistrySalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy AssetsRegistry Implementation
-        console2.log('Deploying AssetsRegistry Implementation');
+        if (debug) console2.log('Deploying AssetsRegistry Implementation');
         (address assetsRegistryImpl,) = deployWithSanityChecks(
             assetsRegistrySalt.implementationSalt, type(AssetsRegistry).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('AssetsRegistry Implementation deployed at:', address(assetsRegistryImpl));
+        if (debug) console2.log('AssetsRegistry Implementation deployed at:', address(assetsRegistryImpl));
 
         // Deploy AssetsRegistry Proxy
-        console2.log('Deploying AssetsRegistry Proxy');
+        if (debug) console2.log('Deploying AssetsRegistry Proxy');
         bytes memory assetsRegistryInitData =
             abi.encodeCall(AssetsRegistry.initialize, (nvmConfigAddress, accessManagerAddress));
         (address assetsRegistryProxy,) = deployWithSanityChecks(
@@ -89,7 +91,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         assetsRegistry = AssetsRegistry(assetsRegistryProxy);
-        console2.log('AssetsRegistry Proxy deployed at:', address(assetsRegistry));
+        if (debug) console2.log('AssetsRegistry Proxy deployed at:', address(assetsRegistry));
 
         // Verify deployment
         require(
@@ -108,14 +110,14 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
         require(agreementsStoreSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy Agreements Store Implementation
-        console2.log('Deploying AgreementsStore Implementation');
+        if (debug) console2.log('Deploying AgreementsStore Implementation');
         (address agreementsStoreImpl,) = deployWithSanityChecks(
             agreementsStoreSalt.implementationSalt, type(AgreementsStore).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('AgreementsStore Implementation deployed at:', address(agreementsStoreImpl));
+        if (debug) console2.log('AgreementsStore Implementation deployed at:', address(agreementsStoreImpl));
 
         // Deploy Agreements Store Proxy
-        console2.log('Deploying AgreementsStore Proxy');
+        if (debug) console2.log('Deploying AgreementsStore Proxy');
         bytes memory agreementsStoreInitData =
             abi.encodeCall(AgreementsStore.initialize, (nvmConfigAddress, accessManagerAddress));
         (address agreementsStoreProxy,) = deployWithSanityChecks(
@@ -124,7 +126,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         agreementsStore = AgreementsStore(agreementsStoreProxy);
-        console2.log('AgreementsStore Proxy deployed at:', address(agreementsStore));
+        if (debug) console2.log('AgreementsStore Proxy deployed at:', address(agreementsStore));
 
         // Verify deployment
         require(
@@ -143,14 +145,14 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
         require(paymentsVaultSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy PaymentsVault Implementation
-        console2.log('Deploying PaymentsVault Implementation');
+        if (debug) console2.log('Deploying PaymentsVault Implementation');
         (address paymentsVaultImpl,) = deployWithSanityChecks(
             paymentsVaultSalt.implementationSalt, type(PaymentsVault).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('PaymentsVault Implementation deployed at:', address(paymentsVaultImpl));
+        if (debug) console2.log('PaymentsVault Implementation deployed at:', address(paymentsVaultImpl));
 
         // Deploy PaymentsVault Proxy
-        console2.log('Deploying PaymentsVault Proxy');
+        if (debug) console2.log('Deploying PaymentsVault Proxy');
         bytes memory paymentsVaultInitData =
             abi.encodeCall(PaymentsVault.initialize, (nvmConfigAddress, accessManagerAddress));
         (address paymentsVaultProxy,) = deployWithSanityChecks(
@@ -159,7 +161,7 @@ contract DeployCoreContracts is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         paymentsVault = PaymentsVault(payable(paymentsVaultProxy));
-        console2.log('PaymentsVault Proxy deployed at:', address(paymentsVault));
+        if (debug) console2.log('PaymentsVault Proxy deployed at:', address(paymentsVault));
 
         // Verify Deployment
         require(

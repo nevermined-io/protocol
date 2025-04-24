@@ -7,7 +7,7 @@ import {PaymentsVault} from '../PaymentsVault.sol';
 
 /**
  * @title Nevermined Payments Vault V2 contract
- * @author @aaitor
+ * @author Nevermined AG
  * @notice This contract extends PaymentsVault with new functionality for testing upgrades
  */
 contract PaymentsVaultV2 is PaymentsVault {

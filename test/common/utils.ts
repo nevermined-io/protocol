@@ -68,6 +68,17 @@ export const createCreditsBurnProof = (
   planIds,
 })
 
+export function createExpirableCreditsConfig(): any {
+  return {
+    creditsType: 0, // Expirable
+    redemptionType: 0, // ONLY_GLOBAL_ROLE
+    durationSecs: 60n, // 60 secs
+    amount: 100n,
+    minAmount: 1n,
+    maxAmount: 1n,
+  }
+}
+
 export async function registerPlan(
   assetsRegistry: any,
   publisher: any,

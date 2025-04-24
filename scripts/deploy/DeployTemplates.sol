@@ -19,11 +19,11 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
+contract DeployTemplates is DeployConfig, Create2DeployUtils {
     error FixedPaymentTemplateDeployment_InvalidAuthority(address authority);
     error FiatPaymentTemplateDeployment_InvalidAuthority(address authority);
     error InvalidSalt();
-
+    
     function run(
         address ownerAddress,
         INVMConfig nvmConfigAddress,
@@ -45,17 +45,18 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
             InvalidSalt()
         );
 
-        console2.log('Deploying Templates with:');
-        console2.log('\tOwner:', ownerAddress);
-        console2.log('\tNVMConfig:', address(nvmConfigAddress));
-        console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
-        console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
-        console2.log('\tLockPaymentCondition:', address(lockPaymentConditionAddress));
-        console2.log('\tTransferCreditsCondition:', address(transferCreditsConditionAddress));
-        console2.log('\tDistributePaymentsCondition:', address(distributePaymentsConditionAddress));
-        console2.log('\tFiatSettlementCondition:', address(fiatSettlementConditionAddress));
-        console2.log('\tAccessManager:', address(accessManagerAddress));
-
+        if (debug) {
+            console2.log('Deploying Templates with:');
+            console2.log('\tOwner:', ownerAddress);
+            console2.log('\tNVMConfig:', address(nvmConfigAddress));
+            console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
+            console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
+            console2.log('\tLockPaymentCondition:', address(lockPaymentConditionAddress));
+            console2.log('\tTransferCreditsCondition:', address(transferCreditsConditionAddress));
+            console2.log('\tDistributePaymentsCondition:', address(distributePaymentsConditionAddress));
+            console2.log('\tFiatSettlementCondition:', address(fiatSettlementConditionAddress));
+            console2.log('\tAccessManager:', address(accessManagerAddress));
+        }
         vm.startBroadcast(ownerAddress);
 
         // Deploy FixedPaymentTemplate
@@ -103,16 +104,16 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
         require(fixedPaymentTemplateSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy FixedPaymentTemplate Implementation
-        console2.log('Deploying FixedPaymentTemplate Implementation');
+        if (debug) console2.log('Deploying FixedPaymentTemplate Implementation');
         (address fixedPaymentTemplateImpl,) = deployWithSanityChecks(
             fixedPaymentTemplateSalt.implementationSalt,
             type(FixedPaymentTemplate).creationCode,
             revertIfAlreadyDeployed
         );
-        console2.log('FixedPaymentTemplate Implementation deployed at:', address(fixedPaymentTemplateImpl));
+        if (debug) console2.log('FixedPaymentTemplate Implementation deployed at:', address(fixedPaymentTemplateImpl));
 
         // Deploy FixedPaymentTemplate Proxy
-        console2.log('Deploying FixedPaymentTemplate Proxy');
+        if (debug) console2.log('Deploying FixedPaymentTemplate Proxy');
         bytes memory fixedPaymentTemplateInitData = abi.encodeCall(
             FixedPaymentTemplate.initialize,
             (
@@ -131,7 +132,7 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         fixedPaymentTemplate = FixedPaymentTemplate(fixedPaymentTemplateProxy);
-        console2.log('FixedPaymentTemplate Proxy deployed at:', address(fixedPaymentTemplate));
+        if (debug) console2.log('FixedPaymentTemplate Proxy deployed at:', address(fixedPaymentTemplate));
 
         // Verify deployment
         require(
@@ -154,14 +155,14 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
         require(fiatPaymentTemplateSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy FiatPaymentTemplate Implementation
-        console2.log('Deploying FiatPaymentTemplate Implementation');
+        if (debug) console2.log('Deploying FiatPaymentTemplate Implementation');
         (address fiatPaymentTemplateImpl,) = deployWithSanityChecks(
             fiatPaymentTemplateSalt.implementationSalt, type(FiatPaymentTemplate).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('FiatPaymentTemplate Implementation deployed at:', address(fiatPaymentTemplateImpl));
+        if (debug) console2.log('FiatPaymentTemplate Implementation deployed at:', address(fiatPaymentTemplateImpl));
 
         // Deploy FiatPaymentTemplate Proxy
-        console2.log('Deploying FiatPaymentTemplate Proxy');
+        if (debug) console2.log('Deploying FiatPaymentTemplate Proxy');
         bytes memory fiatPaymentTemplateInitData = abi.encodeCall(
             FiatPaymentTemplate.initialize,
             (
@@ -179,7 +180,7 @@ contract DeployTemplates is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         fiatPaymentTemplate = FiatPaymentTemplate(fiatPaymentTemplateProxy);
-        console2.log('FiatPaymentTemplate Proxy deployed at:', address(fiatPaymentTemplate));
+        if (debug) console2.log('FiatPaymentTemplate Proxy deployed at:', address(fiatPaymentTemplate));
 
         // Verify deployment
         require(

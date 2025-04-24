@@ -5,6 +5,42 @@
 > 💧 Smart Contracts implementation of Nevermined in Solidity
 > [nevermined.io](https://nevermined.io)
 
+[![GitHub license](https://img.shields.io/github/license/nevermined-io/contracts-exp.svg)](https://github.com/nevermined-io/contracts-exp/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/@nevermined-io/contracts)](https://www.npmjs.com/package/@nevermined-io/contracts)
+[![Build Status](https://github.com/nevermined-io/contracts-exp/workflows/Build/badge.svg)](https://github.com/nevermined-io/contracts-exp/actions)
+[![Documentation Status](https://readthedocs.io/projects/nevermined-docs/badge/?version=latest)](https://docs.nevermined.io/)
+
+## Table of Contents
+
+- [Nevermined Smart Contracts v2](#nevermined-smart-contracts-v2)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+    - [Key Features](#key-features)
+  - [Architecture](#architecture)
+    - [Core Components](#core-components)
+    - [Conditions System](#conditions-system)
+    - [Agreement Templates](#agreement-templates)
+    - [Contract Inheritance and Relationships](#contract-inheritance-and-relationships)
+    - [Access Control System](#access-control-system)
+  - [Setup and Installation](#setup-and-installation)
+    - [Prerequisites](#prerequisites)
+    - [Installation](#installation)
+  - [Development Scripts](#development-scripts)
+    - [Building and Compiling](#building-and-compiling)
+    - [Testing](#testing)
+    - [Local Development](#local-development)
+    - [Code Quality](#code-quality)
+    - [Deployment](#deployment)
+  - [Contract Interaction Flow](#contract-interaction-flow)
+  - [Detailed Function Reference](#detailed-function-reference)
+    - [Asset Management](#asset-management)
+    - [Agreement Management](#agreement-management)
+    - [Payment Management](#payment-management)
+    - [Credits Management](#credits-management)
+  - [Upgradeability Pattern](#upgradeability-pattern)
+  - [Contributors](#contributors)
+  - [License](#license)
+
 ## Overview
 
 Nevermined Smart Contracts form the core of the Nevermined protocol, enabling secure asset registration, access control, and payment management in a decentralized environment. This protocol facilitates the entire lifecycle of digital assets, from registration and pricing to access management and payment processing.
@@ -25,10 +61,15 @@ The Nevermined protocol allows users to:
 - **Payment Handling**: Secure escrow and distribution of payments
 - **Access Control**: NFT-based credits system for managing access rights
 - **Configurable Fees**: Network fee management for platform sustainability
+- **Upgradeable Contracts**: Future-proof design with UUPS pattern
+- **Multi-token Support**: Native cryptocurrency and ERC20 token support
+- **Role-based Access**: Granular permissions management
 
 ## Architecture
 
 The Nevermined Smart Contracts are organized around several core components:
+
+![Nevermined Architecture](docs/nevermined_architecture.png)
 
 ### Core Components
 
@@ -107,7 +148,9 @@ The protocol implements a comprehensive role-based access control system:
 ### Prerequisites
 
 - Node.js (>= 22.x)
-- Yarn
+- Yarn (>= 1.22.x)
+- Git
+- Foundry (for advanced testing and deployment)
 
 ### Installation
 
@@ -118,6 +161,10 @@ cd contracts-exp
 
 # Install dependencies
 yarn install
+
+# Install Foundry (if not already installed)
+curl -L https://foundry.paradigm.xyz | bash
+foundryup
 ```
 
 ## Development Scripts
@@ -155,8 +202,8 @@ yarn coverage
 ### Local Development
 
 ```bash
-# Start a local Hardhat node
-yarn chain
+# Start a local Anvil chain (Foundry)
+anvil
 ```
 
 ### Code Quality
@@ -171,17 +218,11 @@ yarn lint:fix
 # Format code
 yarn format
 
-# Format Solidity code
-yarn prettier:solidity
+# Test coverage
+yarn coverage
 
-# Format TypeScript code
-yarn prettier:ts
-
-# Check code with Biome
-yarn biome
-
-# Fix code with Biome
-yarn biome:fix
+# Gas usage report
+yarn test:gas
 ```
 
 ### Deployment
@@ -241,6 +282,14 @@ The Nevermined contracts implement the UUPS (Universal Upgradeable Proxy Standar
 - All storage is isolated using ERC-7201 namespaced storage pattern
 - Contracts inherit from AccessManagedUUPSUpgradeable for secure upgrades
 - Initialization functions replace constructors for proper proxy initialization
+
+## Contributors
+
+This project exists thanks to all the people who contribute:
+
+<img src="https://github.com/aaitor.png" width="60px;"/> <b>Aitor Argomaniz</b> - [@aaitor](https://github.com/aaitor) <br/>
+<img src="https://github.com/ankurdubey521.png" width="60px;"/> <b>Ankur Dubey</b> - [@ankurdubey521](https://github.com/ankurdubey521) <br/>
+<img src="https://github.com/eruizgar91.png" width="60px;"/> <b>Enrique Ruiz</b> - [@eruizgar91](https://github.com/eruizgar91) <br/>
 
 ## License
 

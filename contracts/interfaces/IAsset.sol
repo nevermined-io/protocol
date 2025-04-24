@@ -3,90 +3,146 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+/**
+ * @title Asset Management Interface
+ * @author Nevermined AG
+ * @notice Interface defining the core asset and plan management functionality in the Nevermined Protocol
+ * @dev This interface establishes the fundamental data structures, events, errors, and functions
+ * required for registering and managing digital assets and their associated plans in the ecosystem
+ */
 interface IAsset {
-    /// Different types of prices that can be configured for a plan
-    /// @notice 0 - FIXED_PRICE, 1 - FIXED_FIAT_PRICE, 2 - SMART_CONTRACT_PRICE
-    /// If FIXED_PRICE it means the plan can be paid in crypto by a fixed amount of a ERC20 or Native token
-    /// If FIXED_FIAT_PRICE it means the plan can be paid in fiat by a fixed amount (typically USD)
-    /// If SMART_CONTRACT_PRICE it means the plan can be paid in crypto and the amount to be paid is calculated by a smart contract
+    /**
+     * @title PriceType
+     * @notice Different types of pricing models that can be configured for a plan
+     * @dev The enum value affects how payment processing and validation is performed
+     */
     enum PriceType {
+        /**
+         * @notice Fixed amount in cryptocurrency (ERC20 or native token)
+         */
         FIXED_PRICE,
+        /**
+         * @notice Fixed amount in fiat currency (typically USD) with off-chain settlement
+         */
         FIXED_FIAT_PRICE,
+        /**
+         * @notice Dynamic price calculated by a smart contract at execution time
+         */
         SMART_CONTRACT_PRICE
     }
 
-    /// Different types of credits that can be obtained when purchasing a plan
-    /// @notice 0 - EXPIRABLE, 1 - FIXED, 2 - DYNAMIC
-    /// If EXPIRABLE it means the credits can be used for a fixed amount of time (calculated in seconds)
-    /// If FIXED it means the credits can be used for a fixed amount of times
-    /// If DYNAMIC it means the credits can be used but the redemption amount is dynamic
+    /**
+     * @title CreditsType
+     * @notice Different types of credit models that can be obtained when purchasing a plan
+     * @dev The enum value affects how credits are managed, tracked, and consumed
+     */
     enum CreditsType {
+        /**
+         * @notice Credits valid for a fixed duration in seconds
+         */
         EXPIRABLE,
+        /**
+         * @notice Credits valid for a fixed number of redemptions
+         */
         FIXED,
+        /**
+         * @notice Credits with dynamic redemption amounts
+         */
         DYNAMIC
     }
 
-    /// Different types of redemptions criterias that can be used when redeeming credits
-    /// @notice 0 - ONLY_GLOBAL_ROLE, 1 - ONLY_OWNER, 2 - ROLE_AND_OWNER
-    /// If ONLY_GLOBAL_ROLE it means the credits can be redeemed only by an account with the `CREDITS_BURNER_ROLE`
-    /// If ONLY_OWNER it means the credits can be redeemed only by the owner of the Plan
-    /// If ONLY_PLAN_ROLE it means the credits can be redeemed by an account with specifics grants for the plan
+    /**
+     * @title RedemptionType
+     * @notice Different permission models for credit redemption
+     * @dev Controls who can redeem credits associated with a plan
+     */
     enum RedemptionType {
+        /**
+         * @notice Only accounts with global CREDITS_BURNER_ROLE can redeem
+         */
         ONLY_GLOBAL_ROLE,
+        /**
+         * @notice Only the owner of the credits can redeem
+         */
         ONLY_OWNER,
+        /**
+         * @notice Only accounts with plan-specific redemption roles can redeem
+         */
         ONLY_PLAN_ROLE
     }
 
+    /**
+     * @title DIDAsset
+     * @notice Core data structure representing a registered digital asset
+     * @dev Stores metadata and configuration for accessing the asset
+     */
     struct DIDAsset {
-        // The owner of the asset
+        /**
+         * @notice The current owner of the asset who can modify its configuration
+         */
         address owner;
-        // Asset original creator, this can't be modified after the asset is registered
+        /**
+         * @notice Original creator of the asset (immutable after registration)
+         */
         address creator;
-        // URL to the metadata associated to the DID
+        /**
+         * @notice URL to the metadata associated with the DID
+         */
         string url;
-        // When was the DID last updated
+        /**
+         * @notice Timestamp of when the DID was last updated
+         */
         uint256 lastUpdated;
-        // Array of plans that can be used to purchase access to the asset
+        /**
+         * @notice Array of plan IDs that can be used to purchase access to the asset
+         */
         uint256[] plans;
     }
 
-    /// Definition of the price configuration for a plan
+    /**
+     * @title PriceConfig
+     * @notice Configuration for the pricing model of a plan
+     * @dev Different fields are used depending on the priceType selected
+     */
     struct PriceConfig {
         /**
-         * The type or configuration of the price
-         * @notice 0 - fixed price. 1 - fiat price. 2 - smart contract price
+         * @notice The type or configuration of the price
          */
         PriceType priceType;
         /**
-         * The address of the token (ERC20 or Native if zero address) for paying the plan
-         * @notice only if priceType == FIXED_PRICE or SMART_CONTRACT_PRICE
+         * @notice The address of the token for payments
+         * @dev Use zero address for native token; only relevant for FIXED_PRICE or SMART_CONTRACT_PRICE
          */
         address tokenAddress;
         /**
-         * The amounts to be paid for the plan
-         * @notice only if priceType == FIXED_PRICE or FIXED_FIAT_PRICE
+         * @notice The payment amounts for the plan
+         * @dev Only used if priceType is FIXED_PRICE or FIXED_FIAT_PRICE
          */
         uint256[] amounts;
         /**
-         * The receivers of the payments of the plan
-         * @notice only if priceType == FIXED_PRICE
+         * @notice The payment receivers for the plan
+         * @dev Only used if priceType is FIXED_PRICE
          */
         address[] receivers;
         /**
-         * The address of the smart contract that calculates the price
-         * @notice only if priceType == SMART_CONTRACT_PRICE
+         * @notice The address of the smart contract that calculates the price
+         * @dev Only used if priceType is SMART_CONTRACT_PRICE
          */
-        address contractAddress; // only if priceType == 2
+        address contractAddress;
     }
 
-    /// Definition of the credits configuration for a plan
+    /**
+     * @title CreditsConfig
+     * @notice Configuration for the credits model of a plan
+     * @dev Different fields are used depending on the creditsType selected
+     */
     struct CreditsConfig {
         /**
-         * The type of configuration of the credits type
+         * @notice The type of credits granted
          */
         CreditsType creditsType;
         /**
-         * How the credits can be redeemed
+         * @notice Controls who can redeem the credits
          */
         RedemptionType redemptionType;
         /**
@@ -96,187 +152,273 @@ interface IAsset {
         /**
          * The duration of the credits in seconds
          * @notice only if creditsType == EXPIRABLE
+         * @notice Duration in seconds that the credits remain valid
+         * @dev Only used if creditsType is EXPIRABLE
          */
         uint256 durationSecs;
         /**
-         * The amount of credits that are granted when purchasing the plan
+         * @notice Total credits granted when purchasing the plan
          */
         uint256 amount;
         /**
-         * The minimum number of credits redeemed when using the plan
-         * @notice only if creditsType == FIXED or DYNAMIC
+         * @notice Minimum credits redeemed per use
+         * @dev Used for FIXED or DYNAMIC credit types
          */
         uint256 minAmount;
         /**
-         * The maximum number of credits redeemed when using the plan
-         * @notice only if creditsType == DYNAMIC
+         * @notice Maximum credits redeemed per use
+         * @dev Only used if creditsType is DYNAMIC
          */
         uint256 maxAmount;
     }
 
-    /// Definition of a plan
+    /**
+     * @title Plan
+     * @notice Core data structure for subscription/access plans
+     * @dev Combines pricing and credits models into a complete offering
+     */
     struct Plan {
-        // The owner of the Plan
+        /**
+         * @notice The current owner of the plan
+         */
         address owner;
-        // The price configuration of the plan
+        /**
+         * @notice The price configuration of the plan
+         */
         PriceConfig price;
-        // The credits configuration of the plan
+        /**
+         * @notice The credits configuration of the plan
+         */
         CreditsConfig credits;
-        // The address of the NFT contract that represents the plan
+        /**
+         * @notice The address of the NFT contract that represents the plan's credits
+         */
         address nftAddress;
-        // The timestamp of the last time the plan definition was updated
+        /**
+         * @notice Timestamp of when the plan definition was last updated
+         */
         uint256 lastUpdated;
     }
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //////////////// EVENTS ///////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////
+    /* EVENTS */
 
     /**
-     * @notice Event that is emitted when a new Asset is registered
-     * @param did the unique identifier of the asset
-     * @param creator the address of the account registering the asset
+     * @notice Emitted when a new Asset is registered in the system
+     * @param did The unique identifier of the asset (decentralized ID)
+     * @param creator The address that registered the asset
      */
     event AssetRegistered(bytes32 indexed did, address indexed creator);
 
     /**
-     * @notice Event that is emitted when a new plan is registered
-     * @param planId the unique identifier of the plan
-     * @param creator the address of the account registering the plan
+     * @notice Emitted when a new subscription/access plan is registered
+     * @param planId The unique identifier of the plan
+     * @param creator The address that created the plan
      */
     event PlanRegistered(uint256 indexed planId, address indexed creator);
 
     /**
-     * @notice Event that is emitted when an asset ownership is transferred
-     * @param did the unique identifier of the asset
-     * @param previousOwner the address of the previous owner
-     * @param newOwner the address of the new owner
+     * @notice Emitted when an asset's ownership is transferred
+     * @param did The unique identifier of the asset
+     * @param previousOwner The address of the previous owner
+     * @param newOwner The address of the new owner
      */
     event AssetOwnershipTransferred(bytes32 indexed did, address indexed previousOwner, address indexed newOwner);
 
     /**
-     * @notice Event that is emitted when a plan ownership is transferred
-     * @param planId the unique identifier of the plan
-     * @param previousOwner the address of the previous owner
-     * @param newOwner the address of the new owner
+     * @notice Emitted when a plan's ownership is transferred
+     * @param planId The unique identifier of the plan
+     * @param previousOwner The address of the previous owner
+     * @param newOwner The address of the new owner
      */
     event PlanOwnershipTransferred(uint256 indexed planId, address indexed previousOwner, address indexed newOwner);
 
     /**
-     * @notice Event that is emitted when a plan is added to an asset
-     * @param did the unique identifier of the asset
-     * @param planId the unique identifier of the plan
-     * @param owner the address of the account that added the plan
+     * @notice Emitted when a plan is associated with an asset
+     * @param did The unique identifier of the asset
+     * @param planId The unique identifier of the plan
+     * @param owner The address that added the plan to the asset
      */
     event PlanAddedToAsset(bytes32 indexed did, uint256 indexed planId, address indexed owner);
 
     /**
-     * @notice Event that is emitted when a plan is removed from an asset
-     * @param did the unique identifier of the asset
-     * @param planId the unique identifier of the plan
-     * @param owner the address of the account that removed the plan
+     * @notice Emitted when a plan is removed from an asset
+     * @param did The unique identifier of the asset
+     * @param planId The unique identifier of the plan
+     * @param owner The address that removed the plan
      */
     event PlanRemovedFromAsset(bytes32 indexed did, uint256 indexed planId, address indexed owner);
 
     /**
-     * @notice Event that is emitted when all plans for an asset are replaced
-     * @param did the unique identifier of the asset
-     * @param owner the address of the account that replaced the plans
+     * @notice Emitted when all plans for an asset are replaced
+     * @param did The unique identifier of the asset
+     * @param owner The address that replaced the plans
      */
     event AssetPlansReplaced(bytes32 indexed did, address indexed owner);
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //////////////// ERRORS ///////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////
+    /* ERRORS */
 
-    /// A plan with the same `plainId` is already registered and can not be registered again.abi
-    /// The `planId` is computed using the hash of the `PriceConfig`, `CreditsConfig`, `nftAddress` and the creator of the plan
-    /// @param planId The identifier of the plan
+    /**
+     * @notice Error thrown when attempting to register a plan that already exists
+     * @dev The planId is computed using the hash of the plan's configuration and creator
+     * @param planId The identifier of the plan that already exists
+     */
     error PlanAlreadyRegistered(uint256 planId);
 
-    /// The DID `did` representing the key for an Asset is already registered
-    /// @param did The identifier of the asset to register
+    /**
+     * @notice Error thrown when an invalid NFT contract address is provided
+     * @dev The NFT address must be a valid ERC-1155 contract
+     * @param nftAddress The invalid NFT contract address
+     */
+    error InvalidNFTAddress(address nftAddress);
+
+    /**
+     * @notice Error thrown when attempting to register an asset with a DID that already exists
+     * @param did The DID that is already registered
+     */
     error DIDAlreadyRegistered(bytes32 did);
 
-    /// When registering the asset, the plans array is empty
-    /// @param did The identifier to register
+    /**
+     * @notice Error thrown when registering an asset without attaching any plans
+     * @dev Assets must have at least one associated plan at registration
+     * @param did The DID that was attempted to be registered
+     */
     error NotPlansAttached(bytes32 did);
 
-    /// The `did` representing the unique identifier of an Asset doesn't exist
-    /// @param did The decentralized identifier of the Asset
+    /**
+     * @notice Error thrown when attempting to access an asset that does not exist
+     * @param did The DID that was not found
+     */
     error AssetNotFound(bytes32 did);
 
-    /// The `planId` representing the unique identifier of Plan doesn't exist
-    /// @param planId The unique identifier of a Plan
+    /**
+     * @notice Error thrown when attempting to access a plan that does not exist
+     * @param planId The plan ID that was not found
+     */
     error PlanNotFound(uint256 planId);
 
-    /// The `amounts` and `receivers` do not include the Nevermined fees
-    /// @param amounts The distribution of the payment amounts
-    /// @param receivers The distribution of the payment amounts receivers
+    /**
+     * @notice Error thrown when plan payment configuration does not include Nevermined protocol fees
+     * @dev All plans must allocate a portion of payments to Nevermined protocol fees
+     * @param amounts The distribution of payment amounts
+     * @param receivers The receivers of the payments
+     */
     error NeverminedFeesNotIncluded(uint256[] amounts, address[] receivers);
 
-    /// The `creditsType` given as parameter is not supported
-    /// @param creditsType The type of credits
+    /**
+     * @notice Error thrown when an unsupported credits type is used
+     * @param creditsType The invalid credits type
+     */
     error InvalidCreditsType(CreditsType creditsType);
 
-    /// The `amount` of credits to redeem is not valid
-    /// @param planId The identifier of the plan
-    /// @param creditsType The type of credits
-    /// @param amount The amount of credits to redeem
+    /**
+     * @notice Error thrown when an invalid redemption amount is specified
+     * @dev The amount must be compatible with the plan's credit configuration
+     * @param planId The identifier of the plan
+     * @param creditsType The type of credits for the plan
+     * @param amount The invalid redemption amount
+     */
     error InvalidRedemptionAmount(uint256 planId, CreditsType creditsType, uint256 amount);
 
-    /// The caller with address `caller` is not the owner (`owner`) of the asset `did`
-    /// @param did The identifier of the asset
-    /// @param caller The address of the caller
-    /// @param owner The current address of the owner
+    /**
+     * @notice Error thrown when a non-owner attempts to modify an asset
+     * @param did The identifier of the asset
+     * @param caller The address of the caller
+     * @param owner The current owner of the asset
+     */
     error NotAssetOwner(bytes32 did, address caller, address owner);
 
-    /// The caller with address `caller` is not the owner (`owner`) of the plan `planId`
-    /// @param planId The identifier of the plan
-    /// @param caller The address of the caller
-    /// @param owner The current address of the owner
+    /**
+     * @notice Error thrown when a non-owner attempts to modify a plan
+     * @param planId The identifier of the plan
+     * @param caller The address of the caller
+     * @param owner The current owner of the plan
+     */
     error NotPlanOwner(uint256 planId, address caller, address owner);
 
-    /// The `planId` is not associated with the asset `did`
-    /// @param did The decentralized identifier of the Asset
-    /// @param planId The unique identifier of a Plan
+    /**
+     * @notice Error thrown when attempting to modify a plan that is not associated with an asset
+     * @param did The DID of the asset
+     * @param planId The ID of the plan that is not associated with the asset
+     */
     error PlanNotInAsset(bytes32 did, uint256 planId);
 
-    ///////////////////////////////////////////////////////////////////////////////
-    //////////////// FUNCTIONS ////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////
+    /* FUNCTIONS */
 
+    /**
+     * @notice Retrieves the full details of an asset
+     * @param _did The unique identifier of the asset
+     * @return The DIDAsset struct containing the asset's details
+     */
     function getAsset(bytes32 _did) external view returns (DIDAsset memory);
 
+    /**
+     * @notice Checks if an asset exists in the registry
+     * @param _did The unique identifier of the asset
+     * @return Boolean indicating whether the asset exists
+     */
     function assetExists(bytes32 _did) external view returns (bool);
 
+    /**
+     * @notice Retrieves the full details of a plan
+     * @param _planId The unique identifier of the plan
+     * @return The Plan struct containing the plan's details
+     */
     function getPlan(uint256 _planId) external view returns (Plan memory);
 
+    /**
+     * @notice Checks if a plan exists in the registry
+     * @param _planId The unique identifier of the plan
+     * @return Boolean indicating whether the plan exists
+     */
     function planExists(uint256 _planId) external view returns (bool);
 
+    /**
+     * @notice Checks if Nevermined protocol fees are correctly included in a payment distribution
+     * @param _amounts The distribution of payment amounts
+     * @param _receivers The receivers of the payments
+     * @return Boolean indicating whether Nevermined fees are correctly included
+     */
     function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
         external
         view
         returns (bool);
 
+    /**
+     * @notice Associates a plan with an asset
+     * @dev Only the owner of the asset can call this function
+     * @param _did The unique identifier of the asset
+     * @param _planId The unique identifier of the plan to add
+     */
     function addPlanToAsset(bytes32 _did, uint256 _planId) external;
 
+    /**
+     * @notice Removes a plan from an asset
+     * @dev Only the owner of the asset can call this function
+     * @param _did The unique identifier of the asset
+     * @param _planId The unique identifier of the plan to remove
+     */
     function removePlanFromAsset(bytes32 _did, uint256 _planId) external;
 
+    /**
+     * @notice Replaces all plans associated with an asset
+     * @dev Only the owner of the asset can call this function
+     * @param _did The unique identifier of the asset
+     * @param _plans Array of plan identifiers to associate with the asset
+     */
     function replacePlansForAsset(bytes32 _did, uint256[] memory _plans) external;
 
     /**
-     * @notice Transfers the ownership of an asset to a new owner.
-     * @notice This function can only be called by the current owner of the asset
-     * @param _did The identifier of the asset
+     * @notice Transfers the ownership of an asset to a new owner
+     * @dev Only the current owner of the asset can call this function
+     * @param _did The unique identifier of the asset
      * @param _newOwner The address of the new owner
      */
     function transferAssetOwnership(bytes32 _did, address _newOwner) external;
 
     /**
-     * @notice Transfers the ownership of a plan to a new owner.
-     * @notice This function can only be called by the current owner of the plan
-     * @param _planId The identifier of the plan
+     * @notice Transfers the ownership of a plan to a new owner
+     * @dev Only the current owner of the plan can call this function
+     * @param _planId The unique identifier of the plan
      * @param _newOwner The address of the new owner
      */
     function transferPlanOwnership(uint256 _planId, address _newOwner) external;

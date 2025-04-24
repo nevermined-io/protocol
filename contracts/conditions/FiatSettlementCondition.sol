@@ -12,12 +12,34 @@ import {ReentrancyGuardTransientUpgradeable} from
     '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title FiatSettlementCondition
+ * @author Nevermined
+ * @notice Condition that handles fiat payment settlements for agreements
+ * @dev This contract enables integration with traditional payment systems by allowing
+ * authorized accounts to confirm fiat payments for agreements. Unlike crypto payments
+ * that are handled by LockPaymentCondition, this contract deals with off-chain fiat
+ * payments processed through payment providers like Stripe.
+ *
+ * The contract utilizes a role-based permission system where only accounts with the
+ * FIAT_SETTLEMENT_ROLE can fulfill the condition, providing a bridge between
+ * traditional payment rails and the Nevermined protocol.
+ *
+ * This pattern enables hybrid payment models where users can pay in fiat currency
+ * while still participating in the token-based ecosystem.
+ */
 contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition, IFiatSettlement {
+    /**
+     * @notice Contract name identifier used in the Nevermined ecosystem
+     */
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('FiatSettlementCondition');
 
     /**
-     * @notice Role granted to accounts allowing to settle the fiat payment conditions (they can fulfill the Fiat Settlement conditions)
-     * @dev This role is granted to the accounts doing the off-chain fiat settlement validation via the integration with an external provider (i.e Stripe)
+     * @notice Role granted to accounts allowing to settle the fiat payment conditions
+     * @dev This role is granted to the accounts doing the off-chain fiat settlement validation
+     * via the integration with an external provider (i.e Stripe). These accounts act as oracles
+     * that verify that a fiat payment has been successfully processed before marking
+     * the condition as fulfilled.
      */
     bytes32 public constant FIAT_SETTLEMENT_ROLE = keccak256('FIAT_SETTLEMENT_ROLE');
 
@@ -34,10 +56,11 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
 
     /**
      * @notice Initializes the FiatSettlementCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract
-     * @param _authority Address of the AccessManager contract
-     * @param _assetsRegistryAddress Address of the AssetsRegistry contract
-     * @param _agreementStoreAddress Address of the AgreementsStore contract
+     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
+     * @param _authority Address of the AccessManager contract for role-based access control
+     * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
+     * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
+     * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
         INVMConfig _nvmConfigAddress,
@@ -60,10 +83,11 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
      * @param _agreementId Identifier of the agreement
      * @param _planId Identifier of the pricing plan
      * @param _senderAddress Address of the account that verified the fiat payment
-     * @param _params Additional parameters for the settlement
+     * @param _params Additional parameters for the settlement (could include payment reference, timestamps, etc.)
      * @dev Only registered templates can call this function
      * @dev Only accounts with FIAT_SETTLEMENT_ROLE can fulfill this condition
-     * @dev Verifies that the plan has a fiat price type
+     * @dev The sender cannot be the owner of the plan to prevent self-settlement
+     * @dev Verifies that the plan has a fiat price type (FIXED_FIAT_PRICE)
      * @dev Validates settlement parameters before fulfilling the condition
      */
     function fulfill(
@@ -108,10 +132,15 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
      * @dev Currently returns true by default, validation to be implemented
      */
     function _areSettlementParamsValid(bytes[] memory /*_params*/ ) internal pure returns (bool) {
-        // TODO: Implemment some level of params validation
+        // TODO: Implement some level of params validation
         return true;
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the FiatSettlementConditionStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getFiatSettlementConditionStorage() internal pure returns (FiatSettlementConditionStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly {

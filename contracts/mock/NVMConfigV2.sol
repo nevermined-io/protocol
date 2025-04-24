@@ -7,7 +7,7 @@ import {NVMConfig} from '../NVMConfig.sol';
 
 /**
  * @title Nevermined Config V2 contract
- * @author @aaitor
+ * @author Nevermined AG
  * @notice This contract extends NVMConfig with new functionality for testing upgrades
  */
 contract NVMConfigV2 is NVMConfig {

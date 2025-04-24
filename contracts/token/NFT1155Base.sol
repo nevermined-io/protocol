@@ -15,6 +15,19 @@ import {IERC2981} from '@openzeppelin/contracts/interfaces/IERC2981.sol';
 
 import {ECDSA} from '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 
+/**
+ * @title NFT1155Base
+ * @author Nevermined
+ * @notice Abstract base contract for implementing ERC1155-based credit tokens in the Nevermined ecosystem
+ * @dev This contract extends ERC1155Upgradeable to implement credit tokens with role-based permissions for minting,
+ * burning, and transferring. It uses OpenZeppelin's AccessManagedUUPSUpgradeable for permissions management and
+ * implements custom redemption rules based on plan configurations.
+ *
+ * Credits are linked to specific plans defined in the AssetsRegistry contract. Each plan has its own configuration
+ * regarding how credits can be minted, redeemed, and by whom.
+ *
+ * This contract prevents credit transfers by default, as credits are designed to be non-transferable.
+ */
 abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable, AccessManagedUUPSUpgradeable {
     /**
      * @notice Role allowing to mint credits
@@ -43,7 +56,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         mapping(address sender => mapping(uint256 keyspace => uint256 nonce)) nonces;
     }
 
-    // solhint-disable-next-line func-name-mixedcase
     /**
      * @notice Initializes the NFT1155Base contract with required dependencies
      * @param _nvmConfigAddress Address of the NVMConfig contract
@@ -51,6 +63,7 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract
      * @dev Internal initialization function to be called by inheriting contracts
      */
+    // solhint-disable-next-line func-name-mixedcase
     function __NFT1155Base_init(INVMConfig _nvmConfigAddress, IAccessManager _authority, IAsset _assetsRegistryAddress)
         internal
         onlyInitializing
@@ -62,6 +75,30 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
 
         $.nvmConfig = _nvmConfigAddress;
         $.assetsRegistry = _assetsRegistryAddress;
+    }
+
+    /**
+     * It gets the balance of multiple tokens for multiple owners.
+     * @param _owners the array of owners address
+     * @param _ids the array of token ids (planId)
+     * @return the array of balances
+     * @dev The length of the owners and ids arrays must be the same
+     */
+    function balanceOfBatch(address[] memory _owners, uint256[] memory _ids)
+        public
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        uint256 _length = _ids.length;
+        if (_length != _owners.length) revert InvalidLength(_length, _owners.length);
+
+        uint256[] memory _balances = new uint256[](_length);
+        for (uint256 i = 0; i < _length; i++) {
+            _balances[i] = balanceOf(_owners[i], _ids[i]);
+        }
+        return _balances;
     }
 
     /**

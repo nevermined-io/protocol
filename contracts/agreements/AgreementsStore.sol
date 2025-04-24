@@ -8,6 +8,17 @@ import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
+/**
+ * @title AgreementsStore
+ * @author Nevermined
+ * @notice Central registry for all agreements within the Nevermined protocol
+ * @dev The AgreementsStore manages the lifecycle of agreements and their associated conditions
+ *      acting as a source of truth for agreement states. It maintains an immutable record of
+ *      all agreements and their conditions, allowing only authorized templates and conditions
+ *      to register and update agreement states. The contract uses ERC-7201 namespaced storage
+ *      pattern for upgrade safety and implements access controls to ensure only authorized
+ *      contracts can modify agreement data.
+ */
 contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
 
@@ -26,6 +37,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @notice Initializes the AgreementsStore contract
      * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
      * @param _authority Address of the AccessManager contract handling permissions
+     * @dev Sets up the contract with the required configuration and access control settings
      */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         _getAgreementsStoreStorage().nvmConfig = _nvmConfigAddress;
@@ -42,6 +54,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @param _params Additional parameters for the agreement
      * @dev Only templates can register agreements
      * @dev Emits AgreementRegistered event on successful registration
+     * @dev Each agreement must have a unique ID and can only be registered once
      */
     function register(
         bytes32 _agreementId,
@@ -76,6 +89,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @param _state New state for the condition
      * @dev Only templates or conditions can update condition states
      * @dev Emits ConditionUpdated event on successful update
+     * @dev The agreement must exist and contain the specified condition
      */
     function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state) external {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
@@ -103,6 +117,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @notice Retrieves an agreement by its identifier
      * @param _agreementId The unique identifier of the agreement to retrieve
      * @return The Agreement structure containing the agreement's details
+     * @dev Returns the complete agreement data including conditions, states, and parameters
      */
     function getAgreement(bytes32 _agreementId) external view returns (IAgreement.Agreement memory) {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
@@ -115,6 +130,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @param _conditionId Identifier of the condition
      * @return state The current state of the condition
      * @dev Reverts if the agreement or condition doesn't exist
+     * @dev Iterates through the agreement's conditions to find the matching condition ID
      */
     function getConditionState(bytes32 _agreementId, bytes32 _conditionId)
         external
@@ -136,6 +152,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @notice Checks if an agreement exists by its identifier
      * @param _agreementId The unique identifier of the agreement to check
      * @return Boolean indicating whether the agreement exists
+     * @dev An agreement exists if its lastUpdated timestamp is non-zero
      */
     function agreementExists(bytes32 _agreementId) external view returns (bool) {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
@@ -150,6 +167,7 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @return Boolean indicating whether all required conditions are fulfilled
      * @dev Returns false if the target condition is already fulfilled or aborted
      * @dev Returns false if any dependent condition is not fulfilled
+     * @dev Used to enforce condition dependencies in agreement execution flow
      */
     function areConditionsFulfilled(bytes32 _agreementId, bytes32 _conditionId, bytes32[] memory _dependantConditions)
         external
@@ -194,11 +212,17 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @param _seed Seed for agreement ID generation
      * @param _creator Address of the agreement creator
      * @return The generated agreement ID
+     * @dev Uses keccak256 hashing to ensure uniqueness of agreement IDs
      */
     function hashAgreementId(bytes32 _seed, address _creator) external pure returns (bytes32) {
         return keccak256(abi.encode(_seed, _creator));
     }
 
+    /**
+     * @notice Internal function to get the contract's storage reference
+     * @return $ Storage reference to the AgreementsStoreStorage struct
+     * @dev Uses ERC-7201 namespaced storage pattern for upgrade safety
+     */
     function _getAgreementsStoreStorage() internal pure returns (AgreementsStoreStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {

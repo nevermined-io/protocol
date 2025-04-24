@@ -71,10 +71,12 @@ contract LockPaymentConditionTest is BaseTest {
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(0));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(2));
@@ -154,10 +156,13 @@ contract LockPaymentConditionTest is BaseTest {
         bytes32 didSeed = bytes32(uint256(3));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(0));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
 
         // Get the plan ID
-        uint256 erc20PlanId = uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this)));
+        uint256 erc20PlanId =
+            uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this)));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(4));
@@ -258,10 +263,13 @@ contract LockPaymentConditionTest is BaseTest {
         bytes32 didSeed = bytes32(uint256(5));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(0));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
 
         // Get the plan ID
-        uint256 fiatPlanId = uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(0), address(this)));
+        uint256 fiatPlanId =
+            uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this)));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(6));

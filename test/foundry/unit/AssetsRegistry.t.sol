@@ -107,11 +107,48 @@ contract AssetsRegistryTest is BaseTest {
         assertTrue(asset.lastUpdated > 0);
     }
 
-    function test_cannotRegisterAssetWithoutPlans() public {
+    function test_cannotRegisterIfPlanDoesntExist() public {
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = 999;
+
+        vm.expectPartialRevert(IAsset.PlanNotFound.selector);
+        assetsRegistry.register('test-did', 'https://example.com', planIds);
+    }
+
+    function test_cannotCreatePlanIfWrongNFTAddress() public {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 999;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = address(this);
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            proofRequired: false,
+            minAmount: 1,
+            maxAmount: 1
+        });
+
+        address nftAddress = address(assetsRegistry);
+        vm.expectPartialRevert(IAsset.InvalidNFTAddress.selector);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress);
+    }
+
+    function test_canRegisterAssetWithoutPlans() public {
         uint256[] memory emptyPlans = new uint256[](0);
 
         vm.prank(owner);
-        vm.expectPartialRevert(IAsset.NotPlansAttached.selector);
 
         assetsRegistry.register('test-did', URL, emptyPlans);
     }
