@@ -9,7 +9,7 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
+contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
     error NVMConfigDeployment_InvalidAuthority(address authority);
     error NVMConfigDeployment_InvalidGovernor(address governor);
     error InvalidSalt();
@@ -24,10 +24,12 @@ contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
         // Check for zero salt
         require(deploymentSalt.implementationSalt != bytes32(0), InvalidSalt());
 
-        console2.log('Deploying NVMConfig with:');
-        console2.log('\tOwner:', ownerAddress);
-        console2.log('\tGovernor:', governorAddress);
-        console2.log('\tAccessManager:', address(accessManagerAddress));
+        if (debug) {
+            console2.log('Deploying NVMConfig with:');
+            console2.log('\tOwner:', ownerAddress);
+            console2.log('\tGovernor:', governorAddress);
+            console2.log('\tAccessManager:', address(accessManagerAddress));
+        }
 
         vm.startBroadcast(ownerAddress);
 
@@ -37,14 +39,14 @@ contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
         }
 
         // Deploy NVMConfig Implementation
-        console2.log('Deploying NVMConfig Implementation');
+        if (debug) console2.log('Deploying NVMConfig Implementation');
         (address nvmConfigImpl,) = deployWithSanityChecks(
             deploymentSalt.implementationSalt, type(NVMConfig).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('NVMConfig Implementation deployed at:', address(nvmConfigImpl));
+        if (debug) console2.log('NVMConfig Implementation deployed at:', address(nvmConfigImpl));
 
         // Deploy NVMConfig Proxy
-        console2.log('Deploying NVMConfig Proxy');
+        if (debug) console2.log('Deploying NVMConfig Proxy');
         bytes memory nvmConfigInitData =
             abi.encodeCall(NVMConfig.initialize, (ownerAddress, accessManagerAddress, governorAddress));
         (address nvmConfigProxy,) = deployWithSanityChecks(
@@ -53,7 +55,7 @@ contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
             revertIfAlreadyDeployed
         );
         NVMConfig nvmConfig = NVMConfig(nvmConfigProxy);
-        console2.log('NVMConfig Proxy deployed at:', address(nvmConfig));
+        if (debug) console2.log('NVMConfig Proxy deployed at:', address(nvmConfig));
 
         // Verify deployment
         require(
@@ -61,10 +63,11 @@ contract DeployNVMConfig is Script, DeployConfig, Create2DeployUtils {
             NVMConfigDeployment_InvalidAuthority(address(nvmConfig.authority()))
         );
 
-        console2.log('NVMConfig initialized with Owner:', ownerAddress);
-        console2.log('NVMConfig initialized with Governor:', governorAddress);
-        console2.log('NVMConfig initialized with AccessManager:', address(accessManagerAddress));
-
+        if (debug) {
+            console2.log('NVMConfig initialized with AccessManager:', address(accessManagerAddress));
+            console2.log('NVMConfig initialized with Owner:', ownerAddress);
+            console2.log('NVMConfig initialized with Governor:', governorAddress);
+        }
         vm.stopBroadcast();
 
         return nvmConfig;

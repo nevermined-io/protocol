@@ -136,6 +136,7 @@ contract DeployAll is Script, DeployConfig {
     }
 
     function run() public returns (DeployedContracts memory deployed) {
+        bool debug = vm.envOr('DEBUG', false);
         address ownerAddress = vm.envOr('OWNER_ADDRESS', msg.sender);
         address governorAddress = vm.envOr('GOVERNOR_ADDRESS', msg.sender);
 
@@ -148,11 +149,13 @@ contract DeployAll is Script, DeployConfig {
             string(abi.encodePacked('./deployments/deployment-v', version, '-', vm.toString(block.chainid), '.json'))
         );
 
-        console2.log('Deploying all contracts with addresses:');
-        console2.log('\tOwner:', ownerAddress);
-        console2.log('\tGovernor:', governorAddress);
-        console2.log('Version: ', version);
-
+        if (debug) {
+            console2.log('Deploying all contracts with addresses:');
+            console2.log('\tOwner:', ownerAddress);
+            console2.log('\tGovernor:', governorAddress);
+            console2.log('Version: ', version);
+        }
+        
         // Load the deployment scripts
         DeployAccessManager deployAccessManager = new DeployAccessManager();
         DeployNVMConfig deployNVMConfig = new DeployNVMConfig();
@@ -177,12 +180,12 @@ contract DeployAll is Script, DeployConfig {
             deploymentSalt[type(NVMConfig).name],
             revertIfAlreadyDeployed
         );
-        console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
+        if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
 
         // 3. Deploy Libraries
         deployed.tokenUtils =
             deployLibraries.run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
-        console2.log('TokenUtils deployed at:', deployed.tokenUtils);
+        if (debug) console2.log('TokenUtils deployed at:', deployed.tokenUtils);
 
         // 4. Deploy Core Contracts
         (deployed.assetsRegistry, deployed.agreementsStore, deployed.paymentsVault) = deployCoreContracts.run(
@@ -194,10 +197,11 @@ contract DeployAll is Script, DeployConfig {
             deploymentSalt[type(PaymentsVault).name],
             revertIfAlreadyDeployed
         );
-        console2.log('AssetsRegistry deployed at:', address(deployed.assetsRegistry));
-        console2.log('AgreementsStore deployed at:', address(deployed.agreementsStore));
-        console2.log('PaymentsVault deployed at:', address(deployed.paymentsVault));
-
+        if (debug) {
+            console2.log('AssetsRegistry deployed at:', address(deployed.assetsRegistry));
+            console2.log('AgreementsStore deployed at:', address(deployed.agreementsStore));
+            console2.log('PaymentsVault deployed at:', address(deployed.paymentsVault));
+        }
         // 5. Deploy NFT Contracts
         (deployed.nftCredits, deployed.nftExpirableCredits) = deployNFTContracts.run(
             deployed.nvmConfig,
@@ -208,8 +212,8 @@ contract DeployAll is Script, DeployConfig {
             deploymentSalt[type(NFT1155ExpirableCredits).name],
             revertIfAlreadyDeployed
         );
-        console2.log('NFT1155Credits deployed at:', address(deployed.nftCredits));
-        console2.log('NFT1155ExpirableCredits deployed at:', address(deployed.nftExpirableCredits));
+        if (debug) console2.log('NFT1155Credits deployed at:', address(deployed.nftCredits));
+        if (debug) console2.log('NFT1155ExpirableCredits deployed at:', address(deployed.nftExpirableCredits));
 
         // 6. Deploy Conditions
         (
@@ -230,10 +234,12 @@ contract DeployAll is Script, DeployConfig {
             deploymentSalt[type(FiatSettlementCondition).name],
             revertIfAlreadyDeployed
         );
-        console2.log('LockPaymentCondition deployed at:', address(deployed.lockPaymentCondition));
-        console2.log('TransferCreditsCondition deployed at:', address(deployed.transferCreditsCondition));
-        console2.log('DistributePaymentsCondition deployed at:', address(deployed.distributePaymentsCondition));
-        console2.log('FiatSettlementCondition deployed at:', address(deployed.fiatSettlementCondition));
+        if (debug) {
+            console2.log('LockPaymentCondition deployed at:', address(deployed.lockPaymentCondition));
+            console2.log('TransferCreditsCondition deployed at:', address(deployed.transferCreditsCondition));
+            console2.log('DistributePaymentsCondition deployed at:', address(deployed.distributePaymentsCondition));
+            console2.log('FiatSettlementCondition deployed at:', address(deployed.fiatSettlementCondition));
+        }
 
         // 7. Deploy Templates
         (deployed.fixedPaymentTemplate, deployed.fiatPaymentTemplate) = deployTemplates.run(
@@ -250,8 +256,8 @@ contract DeployAll is Script, DeployConfig {
             deploymentSalt[type(FiatPaymentTemplate).name],
             revertIfAlreadyDeployed
         );
-        console2.log('FixedPaymentTemplate deployed at:', address(deployed.fixedPaymentTemplate));
-        console2.log('FiatPaymentTemplate deployed at:', address(deployed.fiatPaymentTemplate));
+        if (debug) console2.log('FixedPaymentTemplate deployed at:', address(deployed.fixedPaymentTemplate));
+        if (debug) console2.log('FiatPaymentTemplate deployed at:', address(deployed.fiatPaymentTemplate));
 
         // 8. Grant roles by Owner
         ownerGrantRoles.run(
@@ -264,7 +270,7 @@ contract DeployAll is Script, DeployConfig {
             deployed.distributePaymentsCondition,
             deployed.accessManager
         );
-        console2.log('Roles granted successfully by Owner');
+        if (debug) console2.log('Roles granted successfully by Owner');
 
         // Build JSON with the deployment information
         string memory rootJsonKey = 'root';
@@ -318,6 +324,6 @@ contract DeployAll is Script, DeployConfig {
         jsonContent = vm.serializeString(rootJsonKey, contractJsonKey, contractJsonContent);
 
         vm.writeJson(jsonContent, outputJsonPath);
-        console2.log('Deployment addresses written to %s', outputJsonPath);
+        if (debug) console2.log('Deployment addresses written to %s', outputJsonPath);
     }
 }

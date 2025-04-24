@@ -2,11 +2,12 @@
 pragma solidity ^0.8.28;
 
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
+import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
 address constant CREATE2_FACTORY_ADDRESS = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-contract Create2DeployUtils {
+contract Create2DeployUtils is Script {
     error Create2DeployerNotDeployed();
     error DeploymentFailed(bytes data);
     error AlreadyDeployed(address deployedAddress);
@@ -17,6 +18,8 @@ contract Create2DeployUtils {
         internal
         returns (address, bool isAlreadyDeployed)
     {
+        bool debug = vm.envOr('DEBUG', false);
+
         if (CREATE2_FACTORY_ADDRESS.code.length == 0) {
             revert Create2DeployerNotDeployed();
         }
@@ -24,7 +27,7 @@ contract Create2DeployUtils {
         address expectedAddress = generateDeterminsticAddress(_salt, _creationCode);
 
         if (address(expectedAddress).code.length != 0) {
-            console2.log('Contract already deployed at: ', expectedAddress);
+            if (debug) console2.log('Contract already deployed at: ', expectedAddress);
 
             require(!_revertIfAlreadyDeployed, AlreadyDeployed(expectedAddress));
 
@@ -36,7 +39,7 @@ contract Create2DeployUtils {
         require(addr == expectedAddress, NotDeployedToExpectedAddress(expectedAddress, addr));
         require(address(addr).code.length != 0, AddressDoesNotContainBytecode(addr));
 
-        console2.log('Contract deployed at: ', addr);
+        if (debug) console2.log('Contract deployed at: ', addr);
 
         return (addr, false);
     }

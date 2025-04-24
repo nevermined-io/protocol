@@ -9,17 +9,20 @@ import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
 contract ConfigureAll is Script, DeployConfig {
+    bool public debug = vm.envOr('DEBUG', false);
+
     function run() public {
+
         address governorAddress = msg.sender;
 
-        console2.log('Configuring contracts with Governor address:', governorAddress);
+        if (debug) console2.log('Configuring contracts with Governor address:', governorAddress);
 
         string memory addressesJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
 
         string memory json = vm.readFile(addressesJson);
 
         console2.log('Configuring contracts with JSON addresses from file:', addressesJson);
-        console2.log(json);
+        if (debug) console2.log(json);
 
         // Load the deployment scripts
         ManagePermissions managePermissions = new ManagePermissions();
@@ -38,19 +41,19 @@ contract ConfigureAll is Script, DeployConfig {
             vm.parseJsonAddress(json, '$.contracts.FiatPaymentTemplate'),
             vm.parseJsonAddress(json, '$.contracts.AccessManager')
         );
-        console2.log('Permissions configured');
+        if (debug) console2.log('Permissions configured');
 
         setNetworkFees.run(governorAddress, vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
 
 
         string memory blockNumberJson = vm.toString(block.number);
         vm.writeJson(blockNumberJson, addressesJson, "$.blockNumber");
-        console2.log('Added block number to JSON:', block.number);
+        if (debug) console2.log('Added block number to JSON:', block.number);
 
         uint256 snapshotId = vm.snapshotState();
         string memory snapshotIdString = vm.toString(snapshotId);
         vm.writeJson(snapshotIdString, addressesJson, "$.snapshotId");
-        console2.log('Added snapshot id to JSON:', snapshotId);
+        if (debug) console2.log('Added snapshot id to JSON:', snapshotId);
 
     }
 }

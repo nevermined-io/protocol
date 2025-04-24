@@ -8,8 +8,10 @@ contract DeployConfig is Script {
     address public governor;
     uint256 public networkFee;
     address public feeReceiver;
+    bool public debug;
 
     constructor() {
+        debug = vm.envOr('DEBUG', false);
         // Default values for network fee
         networkFee = 10000; // 1% by default
 

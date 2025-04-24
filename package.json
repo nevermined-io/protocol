@@ -18,7 +18,7 @@
     "biome:fix": "npx @biomejs/biome format . --write ",
     "build": "forge build",
     "compile": "npx hardhat compile",
-    "deploy:local": "yarn deploy:local:install && yarn deploy:local:config",
+    "deploy:local": "export DEBUG=true && yarn deploy:local:install && yarn deploy:local:config",
     "deploy:local:install": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:local:config": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
     "deploy:base-sepolia": "source .env.base-sepolia.sh && yarn deploy:remote:install && yarn deploy:remote:config",

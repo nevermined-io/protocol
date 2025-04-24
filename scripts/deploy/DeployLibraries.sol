@@ -8,18 +8,20 @@ import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {Script} from 'forge-std/Script.sol';
 import {console2} from 'forge-std/console2.sol';
 
-contract DeployLibraries is Script, DeployConfig, Create2DeployUtils {
+contract DeployLibraries is DeployConfig, Create2DeployUtils {
     error TokenUtilsDeployment_Failed();
     error InvalidSalt();
-
+    
     function run(
         address ownerAddress,
         UpgradeableContractDeploySalt memory tokenUtilsSalt,
         bool revertIfAlreadyDeployed
     ) public returns (address) {
-        console2.log('Deploying Libraries with:');
-        console2.log('\tOwner:', ownerAddress);
-
+        if (debug) {
+            console2.log('Deploying Libraries with:');
+            console2.log('\tOwner:', ownerAddress);
+        }
+        
         // Check for zero salt
         require(tokenUtilsSalt.implementationSalt != bytes32(0), InvalidSalt());
 
@@ -41,11 +43,11 @@ contract DeployLibraries is Script, DeployConfig, Create2DeployUtils {
         require(tokenUtilsSalt.implementationSalt != bytes32(0), InvalidSalt());
 
         // Deploy TokenUtils library
-        console2.log('Deploying TokenUtils Library');
+        if (debug) console2.log('Deploying TokenUtils Library');
         (tokenUtilsAddress,) = deployWithSanityChecks(
             tokenUtilsSalt.implementationSalt, type(TokenUtils).creationCode, revertIfAlreadyDeployed
         );
-        console2.log('TokenUtils Library deployed at:', tokenUtilsAddress);
+        if (debug) console2.log('TokenUtils Library deployed at:', tokenUtilsAddress);
 
         // Verify deployment
         require(tokenUtilsAddress.code.length != 0, TokenUtilsDeployment_Failed());
