@@ -144,11 +144,10 @@ contract AssetsRegistryTest is BaseTest {
         assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress);
     }
 
-    function test_cannotRegisterAssetWithoutPlans() public {
+    function test_canRegisterAssetWithoutPlans() public {
         uint256[] memory emptyPlans = new uint256[](0);
 
         vm.prank(owner);
-        vm.expectPartialRevert(IAsset.NotPlansAttached.selector);
 
         assetsRegistry.register('test-did', URL, emptyPlans);
     }
