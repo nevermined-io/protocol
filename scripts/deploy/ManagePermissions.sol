@@ -51,10 +51,7 @@ contract ManagePermissions is Script, DeployConfig {
 
         vm.startBroadcast(owner);
 
-        // Configure role admins
-        _configureRoleAdmins(accessManager);
-
-        // Grant upgrader role and configure upgrade role
+        // Grant and configure upgrader role
         _grantUpgraderRole(upgrader, accessManager);
         _configureUpgradeRole(
             toArray(
@@ -68,32 +65,25 @@ contract ManagePermissions is Script, DeployConfig {
             accessManager
         );
 
-        // Grant governor role and configure governor role
+        // Grant and configure governor role
         _grantGovernorRole(governor, accessManager);
         _configureGovernorRole(accessManager, nvmConfig);
 
-        // Grant deposit role and configure deposit role
+        // Grant and configure deposit role
         _grantDepositRole(lockPaymentCondition, accessManager);
         _configureDepositRole(paymentsVault, accessManager);
 
-        // Grant withdraw role and configure withdraw role
+        // Grant and configure withdraw role
         _grantWithdrawRole(distributePaymentsCondition, accessManager);
         _configureWithdrawRole(paymentsVault, accessManager);
 
+        // Grant and configure template roles
+        _grantTemplateRoles(toArray(address(fixedPaymentTemplate), address(fiatPaymentTemplate)), accessManager);
         _configureTemplateRoles(
             agreementsStore, distributePaymentsCondition, fiatSettlementCondition, lockPaymentCondition, accessManager
         );
-        _configureConditionStatusUpdaterRole(agreementsStore, accessManager);
-        _configureCreditsBurnerRole(nftCredits, nftExpirableCredits, accessManager);
-        _configureCreditsMinterRole(nftCredits, nftExpirableCredits, accessManager);
 
-        vm.stopBroadcast();
-
-        vm.startBroadcast(governor);
-
-        // Grant template roles
-        _grantTemplateRoles(toArray(address(fixedPaymentTemplate), address(fiatPaymentTemplate)), accessManager);
-        // Grant condition status updater role
+        // Grant and configure condition status updater role
         _grantConditionStatusUpdaterRole(
             toArray(
                 address(lockPaymentCondition),
@@ -103,6 +93,8 @@ contract ManagePermissions is Script, DeployConfig {
             ),
             accessManager
         );
+        _configureConditionStatusUpdaterRole(agreementsStore, accessManager);
+
         // Grant condition role
         _grantConditionRole(
             toArray(
@@ -113,6 +105,13 @@ contract ManagePermissions is Script, DeployConfig {
             ),
             accessManager
         );
+
+        // Configure credits burner and minter roles
+        _configureCreditsBurnerRole(nftCredits, nftExpirableCredits, accessManager);
+        _configureCreditsMinterRole(nftCredits, nftExpirableCredits, accessManager);
+
+        // Transfer role admins to governor
+        _configureRoleAdmins(accessManager);
 
         vm.stopBroadcast();
 
