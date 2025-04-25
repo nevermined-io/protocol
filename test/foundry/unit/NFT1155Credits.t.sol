@@ -63,7 +63,7 @@ contract NFT1155CreditsTest is BaseTest {
         uint256 planId = _createPlan();
 
         vm.prank(unauthorized);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRole.selector);
         nftCredits.mint(receiver, planId, 1, '');
     }
 

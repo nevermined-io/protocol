@@ -13,6 +13,7 @@ import {MockERC20} from '../../../contracts/test/MockERC20.sol';
 import {PaymentsVaultV2} from '../../../contracts/mock/PaymentsVaultV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract PaymentsVaultTest is BaseTest {
     address public depositor;
@@ -58,7 +59,7 @@ contract PaymentsVaultTest is BaseTest {
         vm.deal(withdrawer, depositAmount);
 
         vm.prank(withdrawer);
-        vm.expectPartialRevert(IVault.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         paymentsVault.depositNativeToken{value: depositAmount}();
     }
 
@@ -75,9 +76,9 @@ contract PaymentsVaultTest is BaseTest {
         uint256 receiverBalanceBefore = address(receiver).balance;
 
         // Withdraw using distributePaymentsCondition which has WITHDRAW_ROLE
-        vm.prank(address(distributePaymentsCondition));
         vm.expectEmit(true, true, true, true);
         emit IVault.WithdrawNativeToken(address(distributePaymentsCondition), receiver, withdrawAmount);
+        vm.prank(address(distributePaymentsCondition));
         paymentsVault.withdrawNativeToken(withdrawAmount, receiver);
 
         // Verify vault balance
@@ -98,7 +99,7 @@ contract PaymentsVaultTest is BaseTest {
 
         // Try to withdraw as non-withdrawer
         vm.prank(depositor);
-        vm.expectPartialRevert(IVault.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         paymentsVault.withdrawNativeToken(withdrawAmount, receiver);
     }
 
@@ -130,7 +131,7 @@ contract PaymentsVaultTest is BaseTest {
         uint256 depositAmount = 100 * 10 ** 18;
 
         vm.prank(withdrawer);
-        vm.expectPartialRevert(IVault.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         paymentsVault.depositERC20(address(mockERC20), depositAmount, withdrawer);
     }
 

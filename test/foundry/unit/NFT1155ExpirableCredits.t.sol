@@ -9,6 +9,8 @@ import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
 import '../../../contracts/common/Roles.sol';
+
+import {INFT1155} from '../../../contracts/interfaces/INFT1155.sol';
 import {NFT1155ExpirableCreditsV2} from '../../../contracts/mock/NFT1155ExpirableCreditsV2.sol';
 import {NFT1155ExpirableCredits} from '../../../contracts/token/NFT1155ExpirableCredits.sol';
 import {BaseTest} from '../common/BaseTest.sol';
@@ -64,7 +66,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
     function test_mint_unauthorized() public {
         vm.prank(unauthorized);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRole.selector);
         nftExpirableCredits.mint(receiver, planId, 1, '');
     }
 
@@ -288,7 +290,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Try to mint batch as unauthorized account
         vm.prank(unauthorized);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRole.selector);
         nftExpirableCredits.mintBatch(receiver, ids, amounts, durations, '');
     }
 

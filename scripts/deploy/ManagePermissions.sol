@@ -51,13 +51,11 @@ contract ManagePermissions is Script, DeployConfig {
 
         vm.startBroadcast(owner);
 
+        // Configure role admins
+        _configureRoleAdmins(accessManager);
+
+        // Grant upgrader role and configure upgrade role
         _grantUpgraderRole(upgrader, accessManager);
-        _grantGovernorRole(governor, accessManager);
-        _grantDepositRole(lockPaymentCondition, accessManager);
-        _grantWithdrawRole(distributePaymentsCondition, accessManager);
-        _configureDepositRole(paymentsVault, accessManager);
-        _configureTemplateRoles(agreementsStore, distributePaymentsCondition, fiatSettlementCondition, accessManager);
-        _configureConditionStatusUpdaterRole(agreementsStore, accessManager);
         _configureUpgradeRole(
             toArray(
                 address(nvmConfig),
@@ -69,16 +67,34 @@ contract ManagePermissions is Script, DeployConfig {
             ),
             accessManager
         );
+
+        // Grant governor role and configure governor role
+        _grantGovernorRole(governor, accessManager);
+        _configureGovernorRole(accessManager, nvmConfig);
+
+        // Grant deposit role and configure deposit role
+        _grantDepositRole(lockPaymentCondition, accessManager);
+        _configureDepositRole(paymentsVault, accessManager);
+
+        // Grant withdraw role and configure withdraw role
+        _grantWithdrawRole(distributePaymentsCondition, accessManager);
+        _configureWithdrawRole(paymentsVault, accessManager);
+
+        _configureTemplateRoles(
+            agreementsStore, distributePaymentsCondition, fiatSettlementCondition, lockPaymentCondition, accessManager
+        );
+        _configureConditionStatusUpdaterRole(agreementsStore, accessManager);
         _configureCreditsBurnerRole(nftCredits, nftExpirableCredits, accessManager);
         _configureCreditsMinterRole(nftCredits, nftExpirableCredits, accessManager);
-        _configureRoleAdmins(accessManager);
 
         vm.stopBroadcast();
 
         vm.startBroadcast(governor);
 
+        // Grant template roles
         _grantTemplateRoles(toArray(address(fixedPaymentTemplate), address(fiatPaymentTemplate)), accessManager);
-        _grantConditionRole(
+        // Grant condition status updater role
+        _grantConditionStatusUpdaterRole(
             toArray(
                 address(lockPaymentCondition),
                 address(transferCreditsCondition),
@@ -87,7 +103,8 @@ contract ManagePermissions is Script, DeployConfig {
             ),
             accessManager
         );
-        _grantConditionStatusUpdaterRole(
+        // Grant condition role
+        _grantConditionRole(
             toArray(
                 address(lockPaymentCondition),
                 address(transferCreditsCondition),
@@ -200,7 +217,7 @@ contract ManagePermissions is Script, DeployConfig {
         );
     }
 
-    function _configureWithdrawRole(address paymentsVault, AccessManager accessManager) internal {
+    function _configureWithdrawRole(PaymentsVault paymentsVault, AccessManager accessManager) internal {
         console2.log('Setting Withdraw Role for setters in PaymentsVault');
 
         accessManager.setTargetFunctionRole(
@@ -214,8 +231,11 @@ contract ManagePermissions is Script, DeployConfig {
         AgreementsStore agreementsStore,
         DistributePaymentsCondition distributePaymentsCondition,
         FiatSettlementCondition fiatSettlementCondition,
+        LockPaymentCondition lockPaymentCondition,
         AccessManager accessManager
     ) internal {
+        console2.log('Setting Template role for fulfill() in condition contracts');
+
         accessManager.setTargetFunctionRole(
             address(agreementsStore), toArray(AgreementsStore.register.selector), CONTRACT_TEMPLATE_ROLE
         );
@@ -227,11 +247,16 @@ contract ManagePermissions is Script, DeployConfig {
         accessManager.setTargetFunctionRole(
             address(fiatSettlementCondition), toArray(FiatSettlementCondition.fulfill.selector), CONTRACT_TEMPLATE_ROLE
         );
+        accessManager.setTargetFunctionRole(
+            address(lockPaymentCondition), toArray(LockPaymentCondition.fulfill.selector), CONTRACT_TEMPLATE_ROLE
+        );
     }
 
     function _configureConditionStatusUpdaterRole(AgreementsStore agreementsStore, AccessManager accessManager)
         internal
     {
+        console2.log('Setting Condition Status Updater Role for updateConditionStatus() in AgreementsStore');
+
         accessManager.setTargetFunctionRole(
             address(agreementsStore),
             toArray(AgreementsStore.updateConditionStatus.selector),
@@ -244,6 +269,8 @@ contract ManagePermissions is Script, DeployConfig {
         NFT1155ExpirableCredits nftExpirableCredits,
         AccessManager accessManager
     ) internal {
+        console2.log('Setting Credits Minter Role for mintBatch() in NFT1155Credits and NFT1155ExpirableCredits');
+
         accessManager.setTargetFunctionRole(
             address(nftCredits), toArray(NFT1155Credits.mintBatch.selector), CREDITS_MINTER_ROLE
         );
@@ -257,6 +284,10 @@ contract ManagePermissions is Script, DeployConfig {
         NFT1155ExpirableCredits nftExpirableCredits,
         AccessManager accessManager
     ) internal {
+        console2.log(
+            'Setting Credits Burner Role for burnBatch() and burn() in NFT1155Credits and NFT1155ExpirableCredits'
+        );
+
         accessManager.setTargetFunctionRole(
             address(nftCredits),
             toArray(NFT1155Credits.burnBatch.selector, NFT1155Credits.burn.selector),

@@ -52,6 +52,12 @@ interface IAgreement {
     error ConditionPreconditionFailed(bytes32 agreementId, bytes32 conditionId);
 
     /**
+     * @notice Error thrown when the caller does not have the required role to perform the operation
+     * @param caller The address of the caller
+     */
+    error OnlyTemplateOrConditionRole(address caller);
+
+    /**
      * @title ConditionState
      * @notice Enum representing the possible states of a condition within an agreement
      * @dev The state transitions typically follow Uninitialized -> Unfulfilled -> Fulfilled,

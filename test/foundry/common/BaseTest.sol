@@ -4,31 +4,33 @@
 pragma solidity ^0.8.28;
 
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
-
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
-
-import {DeployAll, DeployedContracts} from '../../../scripts/deploy/DeployAll.sol';
-import {ManagePermissions} from '../../../scripts/deploy/ManagePermissions.sol';
 
 import {PaymentsVault} from '../../../contracts/PaymentsVault.sol';
 import {AgreementsStore} from '../../../contracts/agreements/AgreementsStore.sol';
-
 import {FiatPaymentTemplate} from '../../../contracts/agreements/FiatPaymentTemplate.sol';
 import {FixedPaymentTemplate} from '../../../contracts/agreements/FixedPaymentTemplate.sol';
-
 import '../../../contracts/common/Roles.sol';
 import {DistributePaymentsCondition} from '../../../contracts/conditions/DistributePaymentsCondition.sol';
 import {FiatSettlementCondition} from '../../../contracts/conditions/FiatSettlementCondition.sol';
 import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
-import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+import {AgreementsStoreV2} from '../../../contracts/mock/AgreementsStoreV2.sol';
+import {AssetsRegistryV2} from '../../../contracts/mock/AssetsRegistryV2.sol';
+import {NFT1155CreditsV2} from '../../../contracts/mock/NFT1155CreditsV2.sol';
+import {NFT1155ExpirableCreditsV2} from '../../../contracts/mock/NFT1155ExpirableCreditsV2.sol';
+import {NVMConfigV2} from '../../../contracts/mock/NVMConfigV2.sol';
+import {PaymentsVaultV2} from '../../../contracts/mock/PaymentsVaultV2.sol';
 import {NFT1155Credits} from '../../../contracts/token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../../../contracts/token/NFT1155ExpirableCredits.sol';
+import {DeployAll, DeployedContracts} from '../../../scripts/deploy/DeployAll.sol';
+import {ManagePermissions} from '../../../scripts/deploy/ManagePermissions.sol';
 import {ToArrayUtils} from './ToArrayUtils.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
 import {Test} from 'forge-std/Test.sol';
@@ -60,6 +62,28 @@ abstract contract BaseTest is Test, ToArrayUtils {
 
     function setUp() public virtual {
         _deployContracts();
+
+        // Setup the roles for v2 initializations
+        vm.startPrank(owner);
+        accessManager.setTargetFunctionRole(
+            address(nvmConfig), toArray(NVMConfigV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(agreementsStore), toArray(AgreementsStoreV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(nftCredits), toArray(NFT1155CreditsV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(nftExpirableCredits), toArray(NFT1155ExpirableCreditsV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(paymentsVault), toArray(PaymentsVaultV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(assetsRegistry), toArray(AssetsRegistryV2.initializeV2.selector), GOVERNOR_ROLE
+        );
+        vm.stopPrank();
     }
 
     function _deployContracts() internal virtual {
@@ -113,6 +137,16 @@ abstract contract BaseTest is Test, ToArrayUtils {
         accessManager.grantRole(CONTRACT_TEMPLATE_ROLE, _caller, 0);
     }
 
+    function _grantConditionRole(address _caller) internal virtual {
+        vm.prank(governor);
+        accessManager.grantRole(CONTRACT_CONDITION_ROLE, _caller, 0);
+    }
+
+    function _grantConditionStatusUpdaterRole(address _caller) internal virtual {
+        vm.prank(governor);
+        accessManager.grantRole(UPDATE_CONDITION_STATUS_ROLE, _caller, 0);
+    }
+
     function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {
         bytes32[] memory conditionIds = new bytes32[](1);
         IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
@@ -122,6 +156,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
 
         _grantTemplateRole(address(this));
         bytes32 agreementId = keccak256('123');
+
         agreementsStore.register(agreementId, _caller, _planId, conditionIds, conditionStates, new bytes[](0));
         return agreementId;
     }

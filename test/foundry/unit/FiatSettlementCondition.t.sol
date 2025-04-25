@@ -40,7 +40,7 @@ contract FiatSettlementConditionTest is BaseTest {
         _grantTemplateRole(address(this));
 
         bytes32 agreementId = _createAgreement(address(this), 1);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectPartialRevert(IFiatSettlement.InvalidRole.selector);
         fiatSettlementCondition.fulfill(bytes32(0), agreementId, 1, address(this), new bytes[](0));
     }
 
@@ -57,14 +57,12 @@ contract FiatSettlementConditionTest is BaseTest {
         address caller = address(1);
         _grantTemplateRole(address(this));
         _grantRole(FIAT_SETTLEMENT_ROLE, caller);
-        _grantRole(CONTRACT_CONDITION_ROLE, address(fiatSettlementCondition));
+        _grantConditionRole(address(fiatSettlementCondition));
 
         uint256 planId = _createPlan();
 
-        vm.startPrank(caller);
         bytes32 agreementId = _createAgreement(caller, planId);
 
         fiatSettlementCondition.fulfill(keccak256('abc'), agreementId, planId, caller, new bytes[](0));
-        vm.stopPrank();
     }
 }

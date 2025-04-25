@@ -9,6 +9,8 @@ import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {NVMConfigV2} from '../../../contracts/mock/NVMConfigV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+
+import {GOVERNOR_ROLE} from '../../../contracts/common/Roles.sol';
 import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract NVMConfigTest is BaseTest {

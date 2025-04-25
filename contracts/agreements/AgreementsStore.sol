@@ -3,11 +3,11 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.28;
 
+import {CONTRACT_CONDITION_ROLE, CONTRACT_TEMPLATE_ROLE} from '../common/Roles.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
-
 /**
  * @title AgreementsStore
  * @author Nevermined
@@ -19,6 +19,7 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
  *      pattern for upgrade safety and implements access controls to ensure only authorized
  *      contracts can modify agreement data.
  */
+
 contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
 
@@ -86,11 +87,14 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
      * @dev Emits ConditionUpdated event on successful update
      * @dev The agreement must exist and contain the specified condition
      */
-    function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state)
-        external
-        restricted
-    {
+    function updateConditionStatus(bytes32 _agreementId, bytes32 _conditionId, ConditionState _state) external {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
+
+        {
+            (bool hasTemplateRole,) = IAccessManager(authority()).hasRole(CONTRACT_TEMPLATE_ROLE, msg.sender);
+            (bool hasConditionRole,) = IAccessManager(authority()).hasRole(CONTRACT_CONDITION_ROLE, msg.sender);
+            require(hasTemplateRole || hasConditionRole, OnlyTemplateOrConditionRole(msg.sender));
+        }
 
         IAgreement.Agreement storage agreement = $.agreements[_agreementId];
         if (agreement.lastUpdated == 0) {
