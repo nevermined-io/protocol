@@ -120,6 +120,11 @@ export class FoundryTools {
       deploymentJson.contracts.FiatPaymentTemplate,
       'artifacts/contracts/agreements',
     )
+    const accessManager = await this.getContractInstance(
+      'AccessManager',
+      deploymentJson.contracts.AccessManager,
+      'artifacts/@openzeppelin/contracts/access/manager',
+    )
     return {
       nvmConfig,
       assetsRegistry,
@@ -133,6 +138,7 @@ export class FoundryTools {
       fiatSettlementCondition,
       fixedPaymentTemplate,
       fiatPaymentTemplate,
+      accessManager,
     }
   }
 

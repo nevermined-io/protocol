@@ -106,25 +106,27 @@ abstract contract BaseTest is Test, ToArrayUtils {
         distributePaymentsCondition = deployed.distributePaymentsCondition;
         fiatSettlementCondition = deployed.fiatSettlementCondition;
 
+        ManagePermissions.Config memory config = ManagePermissions.Config({
+            owner: owner,
+            upgrader: upgrader,
+            governor: governor,
+            nvmConfig: nvmConfig,
+            assetsRegistry: assetsRegistry,
+            agreementsStore: agreementsStore,
+            paymentsVault: paymentsVault,
+            nftCredits: nftCredits,
+            nftExpirableCredits: nftExpirableCredits,
+            lockPaymentCondition: lockPaymentCondition,
+            distributePaymentsCondition: distributePaymentsCondition,
+            transferCreditsCondition: transferCreditsCondition,
+            fiatSettlementCondition: fiatSettlementCondition,
+            fixedPaymentTemplate: fixedPaymentTemplate,
+            fiatPaymentTemplate: fiatPaymentTemplate,
+            accessManager: accessManager
+        });
+
         // Grant permissions
-        new ManagePermissions().run(
-            owner,
-            upgrader,
-            governor,
-            nvmConfig,
-            assetsRegistry,
-            agreementsStore,
-            paymentsVault,
-            nftCredits,
-            nftExpirableCredits,
-            lockPaymentCondition,
-            distributePaymentsCondition,
-            transferCreditsCondition,
-            fiatSettlementCondition,
-            fixedPaymentTemplate,
-            fiatPaymentTemplate,
-            accessManager
-        );
+        new ManagePermissions().run(config);
     }
 
     function _grantRole(uint64 role, address _caller) internal virtual {

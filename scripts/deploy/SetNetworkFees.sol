@@ -11,17 +11,20 @@ import {console2} from 'forge-std/console2.sol';
  * @dev Must be executed with the governor's mnemonic index
  */
 contract SetNetworkFees is Script, DeployConfig {
-    function run(address governorAddress, address nvmConfigAddress) public {
-        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
-        // This must be the governor account
-        vm.startBroadcast(governorAddress);
+    function run() public {
+        string memory addressesJson = vm.envOr('DEPLOYMENT_ADDRESSES_JSON', string('./deployments/latest.json'));
+        string memory json = vm.readFile(addressesJson);
+        if (debug) console2.log(json);
+
+        address governorAddress = vm.parseJsonAddress(json, '$.governor');
+        NVMConfig nvmConfig = NVMConfig(vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
 
         address feeReceiver = vm.envOr('NVM_FEE_RECEIVER', governorAddress);
         uint256 feeAmount = vm.envOr('NVM_FEE_AMOUNT', uint256(10000));
 
-        // Get NVMConfig instance
-        NVMConfig nvmConfig = NVMConfig(nvmConfigAddress);
-
+        // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
+        // This must be the governor account
+        vm.startBroadcast(governorAddress);
         // Set network fees (requires governor role)
         nvmConfig.setNetworkFees(feeAmount, feeReceiver);
 

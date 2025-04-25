@@ -29,89 +29,101 @@ import {console2} from 'lib/forge-std/src/console2.sol';
 contract ManagePermissions is Script, DeployConfig {
     uint32 UPGRADE_DELAY = 7 days;
 
-    function run(
-        address owner,
-        address upgrader,
-        address governor,
-        NVMConfig nvmConfig,
-        AssetsRegistry assetsRegistry,
-        AgreementsStore agreementsStore,
-        PaymentsVault paymentsVault,
-        NFT1155Credits nftCredits,
-        NFT1155ExpirableCredits nftExpirableCredits,
-        LockPaymentCondition lockPaymentCondition,
-        DistributePaymentsCondition distributePaymentsCondition,
-        TransferCreditsCondition transferCreditsCondition,
-        FiatSettlementCondition fiatSettlementCondition,
-        FixedPaymentTemplate fixedPaymentTemplate,
-        FiatPaymentTemplate fiatPaymentTemplate,
-        AccessManager accessManager
-    ) public {
+    struct Config {
+        address owner;
+        address upgrader;
+        address governor;
+        NVMConfig nvmConfig;
+        AssetsRegistry assetsRegistry;
+        AgreementsStore agreementsStore;
+        PaymentsVault paymentsVault;
+        NFT1155Credits nftCredits;
+        NFT1155ExpirableCredits nftExpirableCredits;
+        LockPaymentCondition lockPaymentCondition;
+        DistributePaymentsCondition distributePaymentsCondition;
+        TransferCreditsCondition transferCreditsCondition;
+        FiatSettlementCondition fiatSettlementCondition;
+        FixedPaymentTemplate fixedPaymentTemplate;
+        FiatPaymentTemplate fiatPaymentTemplate;
+        AccessManager accessManager;
+    }
+
+    function run(Config memory config) public {
         console2.log('Managing permissions for contracts...');
 
-        vm.startBroadcast(owner);
+        vm.startBroadcast(config.owner);
 
         // Grant and configure upgrader role
-        _grantUpgraderRole(upgrader, accessManager);
+        _grantUpgraderRole(config.upgrader, config.accessManager);
         _configureUpgradeRole(
             toArray(
-                address(nvmConfig),
-                address(agreementsStore),
-                address(assetsRegistry),
-                address(paymentsVault),
-                address(nftCredits),
-                address(nftExpirableCredits)
+                address(config.nvmConfig),
+                address(config.agreementsStore),
+                address(config.assetsRegistry),
+                address(config.paymentsVault),
+                address(config.nftCredits),
+                address(config.nftExpirableCredits)
             ),
-            accessManager
+            config.accessManager
         );
 
         // Grant and configure governor role
-        _grantGovernorRole(governor, accessManager);
-        _configureGovernorRole(accessManager, nvmConfig);
+        _grantGovernorRole(config.governor, config.accessManager);
+        _configureGovernorRole(config.accessManager, config.nvmConfig);
 
         // Grant and configure deposit role
-        _grantDepositRole(lockPaymentCondition, accessManager);
-        _configureDepositRole(paymentsVault, accessManager);
+        _grantDepositRole(config.lockPaymentCondition, config.accessManager);
+        _configureDepositRole(config.paymentsVault, config.accessManager);
 
         // Grant and configure withdraw role
-        _grantWithdrawRole(distributePaymentsCondition, accessManager);
-        _configureWithdrawRole(paymentsVault, accessManager);
+        _grantWithdrawRole(config.distributePaymentsCondition, config.accessManager);
+        _configureWithdrawRole(config.paymentsVault, config.accessManager);
 
         // Grant and configure template roles
-        _grantTemplateRoles(toArray(address(fixedPaymentTemplate), address(fiatPaymentTemplate)), accessManager);
+        _grantTemplateRoles(
+            toArray(address(config.fixedPaymentTemplate), address(config.fiatPaymentTemplate)), config.accessManager
+        );
         _configureTemplateRoles(
-            agreementsStore, distributePaymentsCondition, fiatSettlementCondition, lockPaymentCondition, accessManager
+            config.agreementsStore,
+            config.distributePaymentsCondition,
+            config.fiatSettlementCondition,
+            config.lockPaymentCondition,
+            config.transferCreditsCondition,
+            config.accessManager
         );
 
         // Grant and configure condition status updater role
         _grantConditionStatusUpdaterRole(
             toArray(
-                address(lockPaymentCondition),
-                address(transferCreditsCondition),
-                address(distributePaymentsCondition),
-                address(fiatSettlementCondition)
+                address(config.lockPaymentCondition),
+                address(config.transferCreditsCondition),
+                address(config.distributePaymentsCondition),
+                address(config.fiatSettlementCondition)
             ),
-            accessManager
+            config.accessManager
         );
-        _configureConditionStatusUpdaterRole(agreementsStore, accessManager);
+        _configureConditionStatusUpdaterRole(config.agreementsStore, config.accessManager);
 
         // Grant condition role
         _grantConditionRole(
             toArray(
-                address(lockPaymentCondition),
-                address(transferCreditsCondition),
-                address(distributePaymentsCondition),
-                address(fiatSettlementCondition)
+                address(config.lockPaymentCondition),
+                address(config.transferCreditsCondition),
+                address(config.distributePaymentsCondition),
+                address(config.fiatSettlementCondition)
             ),
-            accessManager
+            config.accessManager
         );
 
-        // Configure credits burner and minter roles
-        _configureCreditsBurnerRole(nftCredits, nftExpirableCredits, accessManager);
-        _configureCreditsMinterRole(nftCredits, nftExpirableCredits, accessManager);
+        // Grant and configure credits minter role
+        _grantCreditsMinterRole(config.transferCreditsCondition, config.accessManager);
+        _configureCreditsMinterRole(config.nftCredits, config.nftExpirableCredits, config.accessManager);
+
+        // Configure credits burner role
+        _configureCreditsBurnerRole(config.nftCredits, config.nftExpirableCredits, config.accessManager);
 
         // Transfer role admins to governor
-        _configureRoleAdmins(accessManager);
+        _configureRoleAdmins(config.accessManager);
 
         vm.stopBroadcast();
 
@@ -185,6 +197,14 @@ contract ManagePermissions is Script, DeployConfig {
         }
     }
 
+    function _grantCreditsMinterRole(TransferCreditsCondition transferCreditsCondition, AccessManager accessManager)
+        internal
+    {
+        console2.log('Granting credits minter role to transfer credits condition ', address(transferCreditsCondition));
+
+        accessManager.grantRole(CREDITS_MINTER_ROLE, address(transferCreditsCondition), 0);
+    }
+
     function _configureUpgradeRole(address[] memory contracts, AccessManager accessManager) internal {
         for (uint256 i = 0; i < contracts.length; i++) {
             console2.log('Setting Upgrade Role for contract ', contracts[i]);
@@ -231,6 +251,7 @@ contract ManagePermissions is Script, DeployConfig {
         DistributePaymentsCondition distributePaymentsCondition,
         FiatSettlementCondition fiatSettlementCondition,
         LockPaymentCondition lockPaymentCondition,
+        TransferCreditsCondition transferCreditsCondition,
         AccessManager accessManager
     ) internal {
         console2.log('Setting Template role for fulfill() in condition contracts');
@@ -248,6 +269,11 @@ contract ManagePermissions is Script, DeployConfig {
         );
         accessManager.setTargetFunctionRole(
             address(lockPaymentCondition), toArray(LockPaymentCondition.fulfill.selector), CONTRACT_TEMPLATE_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(transferCreditsCondition),
+            toArray(TransferCreditsCondition.fulfill.selector),
+            CONTRACT_TEMPLATE_ROLE
         );
     }
 

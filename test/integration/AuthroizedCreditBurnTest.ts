@@ -25,6 +25,7 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
   let paymentsVault
   let fixedPaymentTemplate
   let agreementsStore
+  let accessManager
   let did: any
   let planId: bigint
   let owner: any
@@ -57,6 +58,7 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
     lockPaymentCondition = _deployment.lockPaymentCondition
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
+    accessManager = _deployment.accessManager
 
     owner = wallets[0]
     alice = wallets[3]
@@ -76,9 +78,9 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
       account: owner.account,
     })
 
-    // Grant CREDITS_BURNER_ROLE to creditsBurnerWallet
-    await nvmConfig.write.grantRole(
-      [await nftCredits.read.CREDITS_BURNER_ROLE(), creditsBurnerWallet.account?.address],
+    const CREDITS_BURNER_ROLE = 16934877136143260882n
+    await accessManager.write.grantRole(
+      [CREDITS_BURNER_ROLE, creditsBurnerWallet.account?.address, 0],
       {
         account: owner.account,
       },
