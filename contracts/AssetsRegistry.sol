@@ -23,9 +23,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     bytes32 private constant ASSETS_REGISTRY_STORAGE_LOCATION =
         0x6c9566430157c5ec4491fdbbed7bf67f82d06a6dee70d9aaa3ede461d7d98900;
 
-    /// @notice Role identifier for registry owners who have administrative privileges
-    bytes32 public constant OWNER_ROLE = keccak256('REGISTRY_OWNER');
-
     /// @custom:storage-location erc7201:nevermined.assetsregistry.storage
     struct AssetsRegistryStorage {
         /// @notice Configuration contract that stores system-wide parameters

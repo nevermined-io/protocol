@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract UpgradeContract is Script {
     function run(address nvmConfigAddress, bytes32 contractName, address newImplementation) public {

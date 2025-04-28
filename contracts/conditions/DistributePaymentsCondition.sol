@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {IVault} from '../interfaces/IVault.sol';
 
 import {TokenUtils} from '../utils/TokenUtils.sol';
@@ -39,7 +38,6 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
 
     /// @custom:storage-location erc7201:nevermined.distributepaymentscondition.storage
     struct DistributePaymentsConditionStorage {
-        INVMConfig nvmConfig;
         IAsset assetsRegistry;
         IAgreement agreementStore;
         IVault vault;
@@ -47,7 +45,6 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
 
     /**
      * @notice Initializes the DistributePaymentsCondition contract with required dependencies
-     * @param _nvmConfigAddress Address of the NVMConfig contract for global configuration settings
      * @param _authority Address of the AccessManager contract for role-based access control
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
      * @param _agreementStoreAddress Address of the AgreementsStore contract for managing agreement state
@@ -55,7 +52,6 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
      * @dev Sets up storage references and initializes the access management system
      */
     function initialize(
-        INVMConfig _nvmConfigAddress,
         IAccessManager _authority,
         IAsset _assetsRegistryAddress,
         IAgreement _agreementStoreAddress,
@@ -64,7 +60,6 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         DistributePaymentsConditionStorage storage $ = _getDistributePaymentsConditionStorage();
 
-        $.nvmConfig = _nvmConfigAddress;
         $.assetsRegistry = _assetsRegistryAddress;
         $.agreementStore = _agreementStoreAddress;
         $.vault = _vaultAddress;
@@ -91,11 +86,8 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         uint256 _planId,
         bytes32 _lockCondition,
         bytes32 _releaseCondition
-    ) external payable nonReentrant {
+    ) external payable nonReentrant restricted {
         DistributePaymentsConditionStorage storage $ = _getDistributePaymentsConditionStorage();
-
-        // Validate if the account calling this function is a registered template
-        if (!$.nvmConfig.isTemplate(msg.sender)) revert INVMConfig.OnlyTemplate(msg.sender);
 
         IAgreement.Agreement memory agreement = $.agreementStore.getAgreement(_agreementId);
         if (agreement.lastUpdated == 0) revert IAgreement.AgreementNotFound(_agreementId);

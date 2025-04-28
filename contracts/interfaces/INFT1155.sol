@@ -50,6 +50,10 @@ interface INFT1155 {
     /// @param from The address of the account that is getting the credits burned
     error InvalidCreditsBurnProof(address signer, address from);
 
+    /// @param role The role that is invalid
+    /// @param sender The address of the account that is getting the role
+    error InvalidRole(address sender, uint64 role);
+
     /// Returns the next nonce for the given sender and keyspace
     /// @param _sender The address of the account
     /// @param _keyspace The keyspaces for which to generate the nonce

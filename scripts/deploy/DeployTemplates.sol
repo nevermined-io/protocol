@@ -16,14 +16,14 @@ import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract DeployTemplates is DeployConfig, Create2DeployUtils {
     error FixedPaymentTemplateDeployment_InvalidAuthority(address authority);
     error FiatPaymentTemplateDeployment_InvalidAuthority(address authority);
     error InvalidSalt();
-    
+
     function run(
         address ownerAddress,
         INVMConfig nvmConfigAddress,

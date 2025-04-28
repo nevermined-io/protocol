@@ -24,12 +24,8 @@ contract PaymentsVaultV2 is PaymentsVault {
      * @notice New function to initialize the version
      * @param _version The version string to set
      */
-    function initializeV2(string memory _version) external {
-        PaymentsVaultV2Storage storage $ = _getPaymentsVaultV2Storage();
-        if (!_getPaymentsVaultStorage().nvmConfig.isGovernor(msg.sender)) {
-            revert InvalidRole(msg.sender, DEPOSITOR_ROLE);
-        }
-        $.version = _version;
+    function initializeV2(string memory _version) external restricted {
+        _getPaymentsVaultV2Storage().version = _version;
     }
 
     /**
@@ -37,8 +33,7 @@ contract PaymentsVaultV2 is PaymentsVault {
      * @return The current version string
      */
     function getVersion() external view returns (string memory) {
-        PaymentsVaultV2Storage storage $ = _getPaymentsVaultV2Storage();
-        return $.version;
+        return _getPaymentsVaultV2Storage().version;
     }
 
     function _getPaymentsVaultV2Storage() internal pure returns (PaymentsVaultV2Storage storage $) {

@@ -9,8 +9,8 @@ import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
     error NFT1155CreditsDeployment_InvalidAuthority(address authority);
@@ -18,7 +18,6 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
     error InvalidSalt();
 
     function run(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         address ownerAddress,
         IAsset assetsRegistryAddress,
@@ -34,7 +33,6 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
 
         if (debug) {
             console2.log('Deploying NFT Contracts with:');
-            console2.log('\tNVMConfig:', address(nvmConfigAddress));
             console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
             console2.log('\tAccessManager:', address(accessManagerAddress));
             console2.log('\tOwner:', ownerAddress);
@@ -43,17 +41,12 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
         vm.startBroadcast(ownerAddress);
 
         // Deploy NFT1155Credits
-        NFT1155Credits nftCredits = deployNFT1155Credits(
-            nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, nftCreditsSalt, revertIfAlreadyDeployed
-        );
+        NFT1155Credits nftCredits =
+            deployNFT1155Credits(accessManagerAddress, assetsRegistryAddress, nftCreditsSalt, revertIfAlreadyDeployed);
 
         // Deploy NFT1155ExpirableCredits
         NFT1155ExpirableCredits nftExpirableCredits = deployNFT1155ExpirableCredits(
-            nvmConfigAddress,
-            accessManagerAddress,
-            assetsRegistryAddress,
-            nftExpirableCreditsSalt,
-            revertIfAlreadyDeployed
+            accessManagerAddress, assetsRegistryAddress, nftExpirableCreditsSalt, revertIfAlreadyDeployed
         );
 
         vm.stopBroadcast();
@@ -62,7 +55,6 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
     }
 
     function deployNFT1155Credits(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         UpgradeableContractDeploySalt memory nftCreditsSalt,
@@ -81,8 +73,7 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
         // Deploy NFT1155Credits Proxy
         if (debug) console2.log('Deploying NFT1155Credits Proxy');
         bytes memory nftCreditsInitData = abi.encodeCall(
-            NFT1155Credits.initialize,
-            (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, 'Nevermined Credits', 'NVMC')
+            NFT1155Credits.initialize, (accessManagerAddress, assetsRegistryAddress, 'Nevermined Credits', 'NVMC')
         );
         (address nftCreditsProxy,) = deployWithSanityChecks(
             nftCreditsSalt.proxySalt,
@@ -100,7 +91,6 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
     }
 
     function deployNFT1155ExpirableCredits(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         UpgradeableContractDeploySalt memory nftExpirableCreditsSalt,
@@ -116,13 +106,15 @@ contract DeployNFTContracts is DeployConfig, Create2DeployUtils {
             type(NFT1155ExpirableCredits).creationCode,
             revertIfAlreadyDeployed
         );
-        if (debug) console2.log('NFT1155ExpirableCredits Implementation deployed at:', address(nftExpirableCreditsImpl));
+        if (debug) {
+            console2.log('NFT1155ExpirableCredits Implementation deployed at:', address(nftExpirableCreditsImpl));
+        }
 
         // Deploy NFT1155ExpirableCredits Proxy
         if (debug) console2.log('Deploying NFT1155ExpirableCredits Proxy');
         bytes memory nftExpirableCreditsInitData = abi.encodeCall(
             NFT1155ExpirableCredits.initialize,
-            (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, 'Nevermined Expirable Credits', 'NVMEC')
+            (accessManagerAddress, assetsRegistryAddress, 'Nevermined Expirable Credits', 'NVMEC')
         );
         (address nftExpirableCreditsProxy,) = deployWithSanityChecks(
             nftExpirableCreditsSalt.proxySalt,

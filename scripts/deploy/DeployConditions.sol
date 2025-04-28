@@ -8,7 +8,6 @@ import {TransferCreditsCondition} from '../../contracts/conditions/TransferCredi
 
 import {IAgreement} from '../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../contracts/interfaces/IAsset.sol';
-import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
 import {IVault} from '../../contracts/interfaces/IVault.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
@@ -26,7 +25,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
 
     function run(
         address ownerAddress,
-        INVMConfig nvmConfigAddress,
         IAsset assetsRegistryAddress,
         IAgreement agreementsStoreAddress,
         IVault paymentsVaultAddress,
@@ -56,18 +54,16 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
         if (debug) {
             console2.log('Deploying Conditions with:');
             console2.log('\tOwner:', ownerAddress);
-            console2.log('\tNVMConfig:', address(nvmConfigAddress));
             console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
             console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
             console2.log('\tPaymentsVault:', address(paymentsVaultAddress));
             console2.log('\tAccessManager:', address(accessManagerAddress));
         }
-        
+
         vm.startBroadcast(ownerAddress);
 
         // Deploy LockPaymentCondition
         lockPaymentCondition = deployLockPaymentCondition(
-            nvmConfigAddress,
             accessManagerAddress,
             assetsRegistryAddress,
             agreementsStoreAddress,
@@ -78,7 +74,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
 
         // Deploy TransferCreditsCondition
         transferCreditsCondition = deployTransferCreditsCondition(
-            nvmConfigAddress,
             accessManagerAddress,
             assetsRegistryAddress,
             agreementsStoreAddress,
@@ -88,7 +83,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
 
         // Deploy DistributePaymentsCondition
         distributePaymentsCondition = deployDistributePaymentsCondition(
-            nvmConfigAddress,
             accessManagerAddress,
             assetsRegistryAddress,
             agreementsStoreAddress,
@@ -99,7 +93,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
 
         // Deploy FiatSettlementCondition
         fiatSettlementCondition = deployFiatSettlementCondition(
-            nvmConfigAddress,
             accessManagerAddress,
             assetsRegistryAddress,
             agreementsStoreAddress,
@@ -113,7 +106,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
     }
 
     function deployLockPaymentCondition(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         IAgreement agreementsStoreAddress,
@@ -137,13 +129,7 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
         if (debug) console2.log('Deploying LockPaymentCondition Proxy');
         bytes memory lockPaymentConditionInitData = abi.encodeCall(
             LockPaymentCondition.initialize,
-            (
-                nvmConfigAddress,
-                accessManagerAddress,
-                assetsRegistryAddress,
-                agreementsStoreAddress,
-                paymentsVaultAddress
-            )
+            (accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress, paymentsVaultAddress)
         );
         (address lockPaymentConditionProxy,) = deployWithSanityChecks(
             lockPaymentConditionSalt.proxySalt,
@@ -161,7 +147,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
     }
 
     function deployTransferCreditsCondition(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         IAgreement agreementsStoreAddress,
@@ -178,13 +163,14 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
             type(TransferCreditsCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        if (debug) console2.log('TransferCreditsCondition Implementation deployed at:', address(transferCreditsConditionImpl));
+        if (debug) {
+            console2.log('TransferCreditsCondition Implementation deployed at:', address(transferCreditsConditionImpl));
+        }
 
         // Deploy TransferCreditsCondition Proxy
         if (debug) console2.log('Deploying TransferCreditsCondition Proxy');
         bytes memory transferCreditsConditionInitData = abi.encodeCall(
-            TransferCreditsCondition.initialize,
-            (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
+            TransferCreditsCondition.initialize, (accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
         );
         (address transferCreditsConditionProxy,) = deployWithSanityChecks(
             transferCreditsConditionSalt.proxySalt,
@@ -202,7 +188,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
     }
 
     function deployDistributePaymentsCondition(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         IAgreement agreementsStoreAddress,
@@ -220,21 +205,17 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
             type(DistributePaymentsCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        if (debug) console2.log(
-            'DistributePaymentsCondition Implementation deployed at:', address(distributePaymentsConditionImpl)
-        );
+        if (debug) {
+            console2.log(
+                'DistributePaymentsCondition Implementation deployed at:', address(distributePaymentsConditionImpl)
+            );
+        }
 
         // Deploy DistributePaymentsCondition Proxy
         if (debug) console2.log('Deploying DistributePaymentsCondition Proxy');
         bytes memory distributePaymentsConditionInitData = abi.encodeCall(
             DistributePaymentsCondition.initialize,
-            (
-                nvmConfigAddress,
-                accessManagerAddress,
-                assetsRegistryAddress,
-                agreementsStoreAddress,
-                paymentsVaultAddress
-            )
+            (accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress, paymentsVaultAddress)
         );
         (address distributePaymentsConditionProxy,) = deployWithSanityChecks(
             distributePaymentsConditionSalt.proxySalt,
@@ -252,7 +233,6 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
     }
 
     function deployFiatSettlementCondition(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         IAsset assetsRegistryAddress,
         IAgreement agreementsStoreAddress,
@@ -269,13 +249,14 @@ contract DeployConditions is DeployConfig, Create2DeployUtils {
             type(FiatSettlementCondition).creationCode,
             revertIfAlreadyDeployed
         );
-        if (debug) console2.log('FiatSettlementCondition Implementation deployed at:', address(fiatSettlementConditionImpl));
+        if (debug) {
+            console2.log('FiatSettlementCondition Implementation deployed at:', address(fiatSettlementConditionImpl));
+        }
 
         // Deploy FiatSettlementCondition Proxy
         if (debug) console2.log('Deploying FiatSettlementCondition Proxy');
         bytes memory fiatSettlementConditionInitData = abi.encodeCall(
-            FiatSettlementCondition.initialize,
-            (nvmConfigAddress, accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
+            FiatSettlementCondition.initialize, (accessManagerAddress, assetsRegistryAddress, agreementsStoreAddress)
         );
         (address fiatSettlementConditionProxy,) = deployWithSanityChecks(
             fiatSettlementConditionSalt.proxySalt,

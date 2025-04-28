@@ -21,6 +21,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
   let paymentsVault
   let fiatPaymentTemplate
   let agreementsStore
+  let accessManager
   let did: any
   let planId: bigint
   let owner: any
@@ -51,6 +52,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
     fiatSettlementCondition = _deployment.fiatSettlementCondition
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
+    accessManager = _deployment.accessManager
 
     owner = wallets[0]
     alice = wallets[3]
@@ -59,9 +61,9 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
     publicClient = foundryTools.getPublicClient()
     walletClient = foundryTools.getWalletClient()
 
-    const FIAT_SETTLEMENT_ROLE = await fiatSettlementCondition.read.FIAT_SETTLEMENT_ROLE()
+    const FIAT_SETTLEMENT_ROLE = 3860893312041324254n
 
-    await nvmConfig.write.grantRole([FIAT_SETTLEMENT_ROLE, fiatOracle.account.address], {
+    await accessManager.write.grantRole([FIAT_SETTLEMENT_ROLE, fiatOracle.account.address, 0], {
       account: owner.account,
     })
 

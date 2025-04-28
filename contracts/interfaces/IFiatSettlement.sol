@@ -27,4 +27,12 @@ interface IFiatSettlement {
      * @param priceType The actual price type of the plan (expected to be FIXED_FIAT_PRICE)
      */
     error OnlyPlanWithFiatPrice(uint256 planId, IAsset.PriceType priceType);
+
+    /**
+     * @notice Error thrown when an invalid role is provided
+     * @dev The role must be a valid role for the contract
+     * @param addr The address that was provided
+     * @param expectedRole The expected role that was provided
+     */
+    error InvalidRole(address addr, uint64 expectedRole);
 }

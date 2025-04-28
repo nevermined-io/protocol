@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.28;
 
-import {Script} from 'forge-std/Script.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
 
 contract DeployConfig is Script {
     address public owner;

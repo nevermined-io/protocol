@@ -8,17 +8,20 @@ import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
+import '../../../contracts/common/Roles.sol';
+
+import {INFT1155} from '../../../contracts/interfaces/INFT1155.sol';
 import {NFT1155ExpirableCreditsV2} from '../../../contracts/mock/NFT1155ExpirableCreditsV2.sol';
 import {NFT1155ExpirableCredits} from '../../../contracts/token/NFT1155ExpirableCredits.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract NFT1155ExpirableCreditsTest is BaseTest {
     address public minter;
     address public burner;
     address public receiver;
     address public unauthorized;
-    bytes32 public CREDITS_BURNER_ROLE;
     uint256 public planId;
     uint256 public planId2;
 
@@ -31,16 +34,11 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         receiver = makeAddr('receiver');
         unauthorized = makeAddr('unauthorized');
 
-        // Get role constants from the contract
-        CREDITS_BURNER_ROLE = nftExpirableCredits.CREDITS_BURNER_ROLE();
-
         // Grant necessary roles for testing
-        vm.startPrank(owner);
-        nvmConfig.grantRole(nftExpirableCredits.CREDITS_MINTER_ROLE(), address(this));
-        nvmConfig.grantRole(nftExpirableCredits.CREDITS_MINTER_ROLE(), minter);
-        nvmConfig.grantRole(nftExpirableCredits.CREDITS_BURNER_ROLE(), address(this));
-        nvmConfig.grantRole(nftExpirableCredits.CREDITS_BURNER_ROLE(), burner);
-        vm.stopPrank();
+        _grantRole(CREDITS_MINTER_ROLE, address(this));
+        _grantRole(CREDITS_MINTER_ROLE, minter);
+        _grantRole(CREDITS_BURNER_ROLE, address(this));
+        _grantRole(CREDITS_BURNER_ROLE, burner);
 
         // Create expirable credits plans for testing
         planId = _createExpirablePlan(1, 10);
@@ -68,7 +66,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
     function test_mint_unauthorized() public {
         vm.prank(unauthorized);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRole.selector);
         nftExpirableCredits.mint(receiver, planId, 1, '');
     }
 
@@ -180,7 +178,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Try to burn as unauthorized account
         vm.prank(unauthorized);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         nftExpirableCredits.burn(receiver, planId, 1, 0, '');
     }
 
@@ -228,7 +226,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Try to burn batch as unauthorized account
         vm.prank(unauthorized);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         nftExpirableCredits.burnBatch(receiver, ids, amounts, 0, '');
     }
 
@@ -292,7 +290,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Try to mint batch as unauthorized account
         vm.prank(unauthorized);
-        vm.expectPartialRevert(INVMConfig.InvalidRole.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRole.selector);
         nftExpirableCredits.mintBatch(receiver, ids, amounts, durations, '');
     }
 

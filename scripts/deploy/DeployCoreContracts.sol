@@ -13,8 +13,8 @@ import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {ERC1967Proxy} from '@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     error AccessManagerDeployment_InvalidAuthority(address authority);
@@ -22,7 +22,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     error AgreementsStoreDeployment_InvalidAuthority(address authority);
     error PaymentsVaultDeployment_InvalidAuthority(address authority);
     error InvalidSalt();
-    
+
     function run(
         INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
@@ -38,14 +38,14 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
                 && paymentsVaultSalt.implementationSalt != bytes32(0),
             InvalidSalt()
         );
-        
+
         if (debug) {
             console2.log('Deploying Core Contracts with:');
             console2.log('\tNVMConfig:', address(nvmConfigAddress));
             console2.log('\tAccessManager:', address(accessManagerAddress));
             console2.log('\tOwner:', ownerAddress);
         }
-        
+
         vm.startBroadcast(ownerAddress);
 
         // Deploy AssetsRegistry
@@ -53,12 +53,10 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
             deployAssetsRegistry(nvmConfigAddress, accessManagerAddress, assetsRegistrySalt, revertIfAlreadyDeployed);
 
         // Deploy AgreementsStore
-        agreementsStore =
-            deployAgreementsStore(nvmConfigAddress, accessManagerAddress, agreementsStoreSalt, revertIfAlreadyDeployed);
+        agreementsStore = deployAgreementsStore(accessManagerAddress, agreementsStoreSalt, revertIfAlreadyDeployed);
 
         // Deploy PaymentsVault
-        paymentsVault =
-            deployPaymentsVault(nvmConfigAddress, accessManagerAddress, paymentsVaultSalt, revertIfAlreadyDeployed);
+        paymentsVault = deployPaymentsVault(accessManagerAddress, paymentsVaultSalt, revertIfAlreadyDeployed);
 
         vm.stopBroadcast();
 
@@ -101,7 +99,6 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     }
 
     function deployAgreementsStore(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         UpgradeableContractDeploySalt memory agreementsStoreSalt,
         bool revertIfAlreadyDeployed
@@ -118,8 +115,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
 
         // Deploy Agreements Store Proxy
         if (debug) console2.log('Deploying AgreementsStore Proxy');
-        bytes memory agreementsStoreInitData =
-            abi.encodeCall(AgreementsStore.initialize, (nvmConfigAddress, accessManagerAddress));
+        bytes memory agreementsStoreInitData = abi.encodeCall(AgreementsStore.initialize, (accessManagerAddress));
         (address agreementsStoreProxy,) = deployWithSanityChecks(
             agreementsStoreSalt.proxySalt,
             getERC1967ProxyCreationCode(address(agreementsStoreImpl), agreementsStoreInitData),
@@ -136,7 +132,6 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     }
 
     function deployPaymentsVault(
-        INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
         UpgradeableContractDeploySalt memory paymentsVaultSalt,
         bool revertIfAlreadyDeployed
@@ -153,8 +148,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
 
         // Deploy PaymentsVault Proxy
         if (debug) console2.log('Deploying PaymentsVault Proxy');
-        bytes memory paymentsVaultInitData =
-            abi.encodeCall(PaymentsVault.initialize, (nvmConfigAddress, accessManagerAddress));
+        bytes memory paymentsVaultInitData = abi.encodeCall(PaymentsVault.initialize, (accessManagerAddress));
         (address paymentsVaultProxy,) = deployWithSanityChecks(
             paymentsVaultSalt.proxySalt,
             getERC1967ProxyCreationCode(address(paymentsVaultImpl), paymentsVaultInitData),
