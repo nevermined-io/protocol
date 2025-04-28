@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 
 import {IAsset} from '../interfaces/IAsset.sol';
 import {CREDITS_BURN_PROOF_TYPEHASH, INFT1155} from '../interfaces/INFT1155.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {EIP712Upgradeable} from '@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol';
