@@ -5,10 +5,7 @@
 > 💧 Smart Contracts implementation of Nevermined in Solidity
 > [nevermined.io](https://nevermined.io)
 
-[![GitHub license](https://img.shields.io/github/license/nevermined-io/contracts-exp.svg)](https://github.com/nevermined-io/contracts-exp/blob/main/LICENSE)
-[![npm](https://img.shields.io/npm/v/@nevermined-io/contracts)](https://www.npmjs.com/package/@nevermined-io/contracts)
-[![Build Status](https://github.com/nevermined-io/contracts-exp/workflows/Build/badge.svg)](https://github.com/nevermined-io/contracts-exp/actions)
-[![Documentation Status](https://readthedocs.io/projects/nevermined-docs/badge/?version=latest)](https://docs.nevermined.io/)
+[![Build and Tests](https://github.com/nevermined-io/contracts-exp/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/nevermined-io/contracts-exp/actions/workflows/build.yml)
 
 ## Table of Contents
 
