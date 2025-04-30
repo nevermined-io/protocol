@@ -24,64 +24,66 @@ contract DeployTemplates is DeployConfig, Create2DeployUtils {
     error FiatPaymentTemplateDeployment_InvalidAuthority(address authority);
     error InvalidSalt();
 
-    function run(
-        address ownerAddress,
-        INVMConfig nvmConfigAddress,
-        IAsset assetsRegistryAddress,
-        AgreementsStore agreementsStoreAddress,
-        LockPaymentCondition lockPaymentConditionAddress,
-        TransferCreditsCondition transferCreditsConditionAddress,
-        DistributePaymentsCondition distributePaymentsConditionAddress,
-        FiatSettlementCondition fiatSettlementConditionAddress,
-        IAccessManager accessManagerAddress,
-        UpgradeableContractDeploySalt memory fixedPaymentTemplateSalt,
-        UpgradeableContractDeploySalt memory fiatPaymentTemplateSalt,
-        bool revertIfAlreadyDeployed
-    ) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
+    struct DeployTemplatesParams {
+        address ownerAddress;
+        INVMConfig nvmConfigAddress;
+        IAsset assetsRegistryAddress;
+        AgreementsStore agreementsStoreAddress;
+        LockPaymentCondition lockPaymentConditionAddress;
+        TransferCreditsCondition transferCreditsConditionAddress;
+        DistributePaymentsCondition distributePaymentsConditionAddress;
+        FiatSettlementCondition fiatSettlementConditionAddress;
+        IAccessManager accessManagerAddress;
+        UpgradeableContractDeploySalt fixedPaymentTemplateSalt;
+        UpgradeableContractDeploySalt fiatPaymentTemplateSalt;
+        bool revertIfAlreadyDeployed;
+    }
+
+    function run(DeployTemplatesParams memory params) public returns (FixedPaymentTemplate, FiatPaymentTemplate) {
         // Check for zero salts
         require(
-            fixedPaymentTemplateSalt.implementationSalt != bytes32(0)
-                && fiatPaymentTemplateSalt.implementationSalt != bytes32(0),
+            params.fixedPaymentTemplateSalt.implementationSalt != bytes32(0)
+                && params.fiatPaymentTemplateSalt.implementationSalt != bytes32(0),
             InvalidSalt()
         );
 
         if (debug) {
             console2.log('Deploying Templates with:');
-            console2.log('\tOwner:', ownerAddress);
-            console2.log('\tNVMConfig:', address(nvmConfigAddress));
-            console2.log('\tAssetsRegistry:', address(assetsRegistryAddress));
-            console2.log('\tAgreementsStore:', address(agreementsStoreAddress));
-            console2.log('\tLockPaymentCondition:', address(lockPaymentConditionAddress));
-            console2.log('\tTransferCreditsCondition:', address(transferCreditsConditionAddress));
-            console2.log('\tDistributePaymentsCondition:', address(distributePaymentsConditionAddress));
-            console2.log('\tFiatSettlementCondition:', address(fiatSettlementConditionAddress));
-            console2.log('\tAccessManager:', address(accessManagerAddress));
+            console2.log('\tOwner:', params.ownerAddress);
+            console2.log('\tNVMConfig:', address(params.nvmConfigAddress));
+            console2.log('\tAssetsRegistry:', address(params.assetsRegistryAddress));
+            console2.log('\tAgreementsStore:', address(params.agreementsStoreAddress));
+            console2.log('\tLockPaymentCondition:', address(params.lockPaymentConditionAddress));
+            console2.log('\tTransferCreditsCondition:', address(params.transferCreditsConditionAddress));
+            console2.log('\tDistributePaymentsCondition:', address(params.distributePaymentsConditionAddress));
+            console2.log('\tFiatSettlementCondition:', address(params.fiatSettlementConditionAddress));
+            console2.log('\tAccessManager:', address(params.accessManagerAddress));
         }
-        vm.startBroadcast(ownerAddress);
+        vm.startBroadcast(params.ownerAddress);
 
         // Deploy FixedPaymentTemplate
         FixedPaymentTemplate fixedPaymentTemplate = deployFixedPaymentTemplate(
-            nvmConfigAddress,
-            accessManagerAddress,
-            assetsRegistryAddress,
-            agreementsStoreAddress,
-            lockPaymentConditionAddress,
-            transferCreditsConditionAddress,
-            distributePaymentsConditionAddress,
-            fixedPaymentTemplateSalt,
-            revertIfAlreadyDeployed
+            params.nvmConfigAddress,
+            params.accessManagerAddress,
+            params.assetsRegistryAddress,
+            params.agreementsStoreAddress,
+            params.lockPaymentConditionAddress,
+            params.transferCreditsConditionAddress,
+            params.distributePaymentsConditionAddress,
+            params.fixedPaymentTemplateSalt,
+            params.revertIfAlreadyDeployed
         );
 
         // Deploy FiatPaymentTemplate
         FiatPaymentTemplate fiatPaymentTemplate = deployFiatPaymentTemplate(
-            nvmConfigAddress,
-            accessManagerAddress,
-            assetsRegistryAddress,
-            agreementsStoreAddress,
-            fiatSettlementConditionAddress,
-            transferCreditsConditionAddress,
-            fiatPaymentTemplateSalt,
-            revertIfAlreadyDeployed
+            params.nvmConfigAddress,
+            params.accessManagerAddress,
+            params.assetsRegistryAddress,
+            params.agreementsStoreAddress,
+            params.fiatSettlementConditionAddress,
+            params.transferCreditsConditionAddress,
+            params.fiatPaymentTemplateSalt,
+            params.revertIfAlreadyDeployed
         );
 
         vm.stopBroadcast();
