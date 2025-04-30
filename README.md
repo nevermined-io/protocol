@@ -1,6 +1,6 @@
 [![banner](https://raw.githubusercontent.com/nevermined-io/assets/main/images/logo/banner_logo.png)](https://nevermined.io)
 
-# Nevermined Smart Contracts v2
+# Nevermined Protocol
 
 > 💧 Smart Contracts implementation of Nevermined in Solidity
 > [nevermined.io](https://nevermined.io)
@@ -9,7 +9,7 @@
 
 ## Table of Contents
 
-- [Nevermined Smart Contracts v2](#nevermined-smart-contracts-v2)
+- [Nevermined Protocol](#nevermined-protocol)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
     - [Key Features](#key-features)
