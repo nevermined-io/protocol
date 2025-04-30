@@ -117,15 +117,3 @@ Depending on the plan configuration the credits can be redeemed in different way
 The protocol is intended to be fully decentralized, with as low as possible centralization points. Because the protocol governs off-chain interactions (AI Agents are typically off-chain software), each different flow supported by the protocol is designed to minimize centralized dependencies.
 
 Access control to core functions is restricted to Templates and Condition Smart Contracts of the protocol. The full list of roles and permissions is defined in the `contracts/common/Roles.sol` contract.
-
-### Libraries
-
-The protocol uses OpenZeppelin libraries for the implementation of the Smart Contracts. The main external functionalities integrated via OpenZeppeling libraries are:
-
-- `AccessManager`: AccessManager is a central contract to store the permissions of a system. See <https://docs.openzeppelin.com/contracts/5.x/api/access#AccessManager>
-- `ReentrancyGuardTransientUpgradeable`: It is used to protect against reentrancy attacks. See <https://docs.openzeppelin.com/contracts/5.x/api/utils#ReentrancyGuardTransient>
-- `ERC1155Upgradeable`: For the implementation of the ERC1155 standard. See <https://docs.openzeppelin.com/contracts/5.x/api/token/erc1155#ERC1155>
-- `ECDSA`: For the validation of signatures. See <https://docs.openzeppelin.com/contracts/5.x/api/utils#ECDSA>
-- `UUPSUpgradeable`: For the implementation of the UUPS upgradeable pattern. See <https://docs.openzeppelin.com/contracts/5.x/api/proxy#UUPSUpgradeable>
-
-The contracts use **Foundry** for the implementation of the Smart Contracts.
