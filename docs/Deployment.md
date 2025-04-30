@@ -57,17 +57,14 @@ anvil
 2. Deploy all contracts:
 
 ```bash
-mkdir -p deployments
-forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics "$OWNER_MNEMONIC" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify
-
+yarn deploy:local:install
 ```
 
 3. Configure the contracts and Set network fees (requires governor role):
 
 ```bash
-# Set network fees using the governor account
-forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics "$GOVERNOR_MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS
-
+yarn deploy:local:config:permissions
+yarn deploy:local:config:fees
 ```
 
 ### Understanding Mnemonic-Based Deployment
@@ -84,7 +81,6 @@ The deployment scripts use Foundry's mnemonic-based key derivation system:
 
 4. The `msg.sender` in the script will be the address derived from your mnemonic and index.
 
-5. **Important**: Some operations like setting network fees require the governor role. These must be executed in separate steps using the governor's mnemonic index.
 
 ## Contract Verification
 
@@ -106,6 +102,9 @@ forge verify-contract <PAYMENTS_VAULT_ADDRESS> PaymentsVault --chain base-sepoli
 # Verify NFT1155Credits
 forge verify-contract <NFT1155_CREDITS_ADDRESS> NFT1155Credits --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
 
+# Verify NFT1155ExpirableCredits
+forge verify-contract <NFT1155_EXPIRABLE_CREDITS_ADDRESS> NFT1155ExpirableCredits --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
+
 # Verify LockPaymentCondition
 forge verify-contract <LOCK_PAYMENT_CONDITION_ADDRESS> LockPaymentCondition --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
 
@@ -117,6 +116,9 @@ forge verify-contract <DISTRIBUTE_PAYMENTS_CONDITION_ADDRESS> DistributePayments
 
 # Verify FixedPaymentTemplate
 forge verify-contract <FIXED_PAYMENT_TEMPLATE_ADDRESS> FixedPaymentTemplate --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
+
+# Verify FiatPaymentTemplate
+forge verify-contract <FIAT_PAYMENT_TEMPLATE_ADDRESS> FiatPaymentTemplate --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
 ## Contract Upgrades
