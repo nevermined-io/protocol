@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 
 import {CONTRACT_CONDITION_ROLE, CONTRACT_TEMPLATE_ROLE} from '../common/Roles.sol';
 import {IAgreement} from '../interfaces/IAgreement.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 /**

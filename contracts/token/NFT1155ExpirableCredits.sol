@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 
 import {CREDITS_BURNER_ROLE, CREDITS_MINTER_ROLE} from '../common/Roles.sol';
 import {IAsset} from '../interfaces/IAsset.sol';
-import {INVMConfig} from '../interfaces/INVMConfig.sol';
 import {NFT1155Base} from './NFT1155Base.sol';
 import {ERC1155Upgradeable} from '@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
