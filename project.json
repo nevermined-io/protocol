@@ -1,6 +1,6 @@
 {
-  "name": "contracts-exp",
+  "name": "protocol",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "sourceRoot": "lib/contracts-exp/src",
+  "sourceRoot": "packages/protocol/src",
   "projectType": "library"
 }
