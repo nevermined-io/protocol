@@ -172,13 +172,11 @@ The project includes several scripts to help with development:
 ### Building and Compiling
 
 ```bash
-# Clean the Hardhat environment
-yarn clean
+# Install dependencies
+yarn install
 
 # Compile contracts
 yarn compile
-# or
-yarn build
 ```
 
 ### Testing
