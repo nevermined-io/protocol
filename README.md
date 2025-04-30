@@ -46,6 +46,7 @@
 Nevermined Smart Contracts form the core of the Nevermined protocol, enabling secure asset registration, access control, and payment management in a decentralized environment. This protocol facilitates the entire lifecycle of digital assets, from registration and pricing to access management and payment processing.
 
 The Nevermined protocol allows users to:
+
 - Register digital assets with flexible pricing models
 - Set up various subscription and one-time payment plans
 - Manage access rights through NFT-based credit systems
