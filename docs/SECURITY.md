@@ -1,5 +1,10 @@
 # Smart Contracts Security
 
+## Roles and Responsibilities
+
+<img src="images/Roles_1.png" alt="Roles and Responsibilities" width="800"/>
+<img src="images/Roles_2.png" alt="Roles and Responsibilities" width="800"/>
+
 ## Solidity Compiler
 
 The protocol uses the latest stable version of the Solidity compiler. The code is written in Solidity 0.8.x, which includes several improvements and security features over previous versions.
