@@ -203,23 +203,33 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       const creditsConfig = createCreditsConfig()
 
       // Register asset with unsupported price type
-      const didSeed = generateId()
-      const newDid = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
+      // const didSeed = generateId()
+      // const newDid = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
 
-      await assetsRegistry.write.registerAssetAndPlan(
-        [
-          didSeed,
-          'https://nevermined.io',
-          unsupportedPriceConfig,
-          creditsConfig,
-          nftCredits.address,
-        ],
-        { account: alice.account },
+      // await assetsRegistry.write.registerAssetAndPlan(
+      //   [
+      //     didSeed,
+      //     'https://nevermined.io',
+      //     unsupportedPriceConfig,
+      //     creditsConfig,
+      //     nftCredits.address,
+      //   ],
+      //   { account: alice.account },
+      // )
+
+      const result = await registerAssetAndPlan(
+        assetsRegistry,
+        unsupportedPriceConfig,
+        creditsConfig,
+        alice,
+        nftCredits.address,
       )
 
+      const newDid = result.did
+      const newPlanId = result.planId
       // Get the new plan ID
-      const asset = await assetsRegistry.read.getAsset([newDid])
-      const newPlanId = asset.plans[0]
+      // const asset = await assetsRegistry.read.getAsset([newDid])
+      // const newPlanId = asset.plans[0]
 
       console.log('New Plan ID:', newPlanId)
       console.log('New DID:', newDid)
