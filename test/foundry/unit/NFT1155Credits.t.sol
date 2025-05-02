@@ -308,18 +308,23 @@ contract NFT1155CreditsTest is BaseTest {
 
         // Mint credits for both plans
         uint256[] memory ids = new uint256[](2);
-        uint256[] memory amounts = new uint256[](2);
-        ids[0] = planId1;
-        ids[1] = planId2;
-        amounts[0] = 100;
-        amounts[1] = 200;
-        nftCredits.mintBatch(receiver, ids, amounts, '');
+        {
+            uint256[] memory amounts = new uint256[](2);
+            ids[0] = planId1;
+            ids[1] = planId2;
+            amounts[0] = 100;
+            amounts[1] = 200;
+            nftCredits.mintBatch(receiver, ids, amounts, '');
+        }
 
         // Get the next nonce for the keyspace
-        uint256[] memory keyspaces = new uint256[](1);
-        keyspaces[0] = 0;
-        uint256[] memory nonces = nftCredits.nextNonce(receiver, keyspaces);
-        uint256 nonce = nonces[0];
+        uint256 nonce;
+        {
+            uint256[] memory keyspaces = new uint256[](1);
+            keyspaces[0] = 0;
+            uint256[] memory nonces = nftCredits.nextNonce(receiver, keyspaces);
+            nonce = nonces[0];
+        }
 
         // Create the proof data
         uint256[] memory planIds = new uint256[](2);
