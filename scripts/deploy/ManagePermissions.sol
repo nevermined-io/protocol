@@ -70,6 +70,7 @@ contract ManagePermissions is Script, DeployConfig {
         // Grant and configure governor role
         _grantGovernorRole(config.governor, config.accessManager);
         _configureGovernorRole(config.accessManager, config.nvmConfig);
+        _grantInfraAdminRole(config.governor, config.accessManager); // we grant the infra admin role to the governor
 
         // Grant and configure deposit role
         _grantDepositRole(config.lockPaymentCondition, config.accessManager);
@@ -161,6 +162,12 @@ contract ManagePermissions is Script, DeployConfig {
         console2.log('Granting governor role to governor ', governor);
 
         accessManager.grantRole(GOVERNOR_ROLE, governor, 0);
+    }
+
+    function _grantInfraAdminRole(address roleReceiver, AccessManager accessManager) internal {
+        console2.log('Granting infra admin role to ', roleReceiver);
+
+        accessManager.grantRole(NVM_INFRA_ADMIN_ROLE, roleReceiver, 0);
     }
 
     function _grantUpgraderRole(address upgrader, AccessManager accessManager) internal {
