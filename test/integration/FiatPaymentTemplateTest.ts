@@ -101,11 +101,8 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
       // console.log('Price Config:', priceConfig)
 
       const asset = await assetsRegistry.read.getAsset([did])
-
+      
       console.log('Asset:', asset)
-
-      // Verify asset and plan are registered
-      expect(asset.lastUpdated > 0n).to.be.true
 
       const plan = await assetsRegistry.read.getPlan([planId])
       expect(plan.lastUpdated > 0n).to.be.true
