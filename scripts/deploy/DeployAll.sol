@@ -24,7 +24,6 @@ import {DeployCoreContracts} from './DeployCoreContracts.sol';
 import {DeployLibraries} from './DeployLibraries.sol';
 import {DeployNFTContracts} from './DeployNFTContracts.sol';
 import {DeployNVMConfig} from './DeployNVMConfig.sol';
-
 import {DeployTemplates} from './DeployTemplates.sol';
 
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
@@ -139,50 +138,33 @@ contract DeployAll is Script, DeployConfig {
         address ownerAddress = vm.envOr('OWNER_ADDRESS', msg.sender);
         address governorAddress = vm.envOr('GOVERNOR_ADDRESS', msg.sender);
 
-        string memory packageJson = vm.envOr('PACKAGE_JSON', string('./package.json'));
-        string memory version = vm.parseJsonString(vm.readFile(packageJson), '$.version');
         bool revertIfAlreadyDeployed = vm.envOr('REVERT_IF_ALREADY_DEPLOYED', true);
-
-        string memory outputJsonPath = vm.envOr(
-            'DEPLOYMENT_ADDRESSES_JSON',
-            string(abi.encodePacked('./deployments/deployment-v', version, '-', vm.toString(block.chainid), '.json'))
-        );
 
         if (debug) {
             console2.log('Deploying all contracts with addresses:');
             console2.log('\tOwner:', ownerAddress);
             console2.log('\tGovernor:', governorAddress);
-            console2.log('Version: ', version);
         }
-
-        // Load the deployment scripts
-        DeployAccessManager deployAccessManager = new DeployAccessManager();
-        DeployNVMConfig deployNVMConfig = new DeployNVMConfig();
-        DeployLibraries deployLibraries = new DeployLibraries();
-        DeployCoreContracts deployCoreContracts = new DeployCoreContracts();
-        DeployNFTContracts deployNFTContracts = new DeployNFTContracts();
-        DeployConditions deployConditions = new DeployConditions();
-        DeployTemplates deployTemplates = new DeployTemplates();
 
         // Execute the deployments in order
         // 1. Deploy AccessManager
-        deployed.accessManager = deployAccessManager.run(
+        deployed.accessManager = new DeployAccessManager().run(
             ownerAddress, deploymentSalt[type(AccessManager).name].implementationSalt, revertIfAlreadyDeployed
         );
 
         // 2. Deploy NVMConfig
-        deployed.nvmConfig = deployNVMConfig.run(
+        deployed.nvmConfig = new DeployNVMConfig().run(
             ownerAddress, deployed.accessManager, deploymentSalt[type(NVMConfig).name], revertIfAlreadyDeployed
         );
         if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
 
         // 3. Deploy Libraries
         deployed.tokenUtils =
-            deployLibraries.run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
+            new DeployLibraries().run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
         if (debug) console2.log('TokenUtils deployed at:', deployed.tokenUtils);
 
         // 4. Deploy Core Contracts
-        (deployed.assetsRegistry, deployed.agreementsStore, deployed.paymentsVault) = deployCoreContracts.run(
+        (deployed.assetsRegistry, deployed.agreementsStore, deployed.paymentsVault) = new DeployCoreContracts().run(
             deployed.nvmConfig,
             deployed.accessManager,
             ownerAddress,
@@ -197,7 +179,7 @@ contract DeployAll is Script, DeployConfig {
             console2.log('PaymentsVault deployed at:', address(deployed.paymentsVault));
         }
         // 5. Deploy NFT Contracts
-        (deployed.nftCredits, deployed.nftExpirableCredits) = deployNFTContracts.run(
+        (deployed.nftCredits, deployed.nftExpirableCredits) = new DeployNFTContracts().run(
             deployed.accessManager,
             ownerAddress,
             deployed.assetsRegistry,
@@ -214,7 +196,7 @@ contract DeployAll is Script, DeployConfig {
             deployed.transferCreditsCondition,
             deployed.distributePaymentsCondition,
             deployed.fiatSettlementCondition
-        ) = deployConditions.run(
+        ) = new DeployConditions().run(
             ownerAddress,
             deployed.assetsRegistry,
             deployed.agreementsStore,
@@ -234,24 +216,33 @@ contract DeployAll is Script, DeployConfig {
         }
 
         // 7. Deploy Templates
-        (deployed.fixedPaymentTemplate, deployed.fiatPaymentTemplate) = deployTemplates.run(
-            ownerAddress,
-            deployed.nvmConfig,
-            deployed.assetsRegistry,
-            deployed.agreementsStore,
-            deployed.lockPaymentCondition,
-            deployed.transferCreditsCondition,
-            deployed.distributePaymentsCondition,
-            deployed.fiatSettlementCondition,
-            deployed.accessManager,
-            deploymentSalt[type(FixedPaymentTemplate).name],
-            deploymentSalt[type(FiatPaymentTemplate).name],
-            revertIfAlreadyDeployed
+        (deployed.fixedPaymentTemplate, deployed.fiatPaymentTemplate) = new DeployTemplates().run(
+            DeployTemplates.DeployTemplatesParams({
+                ownerAddress: ownerAddress,
+                nvmConfigAddress: deployed.nvmConfig,
+                assetsRegistryAddress: deployed.assetsRegistry,
+                agreementsStoreAddress: deployed.agreementsStore,
+                lockPaymentConditionAddress: deployed.lockPaymentCondition,
+                transferCreditsConditionAddress: deployed.transferCreditsCondition,
+                distributePaymentsConditionAddress: deployed.distributePaymentsCondition,
+                fiatSettlementConditionAddress: deployed.fiatSettlementCondition,
+                accessManagerAddress: deployed.accessManager,
+                fixedPaymentTemplateSalt: deploymentSalt[type(FixedPaymentTemplate).name],
+                fiatPaymentTemplateSalt: deploymentSalt[type(FiatPaymentTemplate).name],
+                revertIfAlreadyDeployed: revertIfAlreadyDeployed
+            })
         );
         if (debug) console2.log('FixedPaymentTemplate deployed at:', address(deployed.fixedPaymentTemplate));
         if (debug) console2.log('FiatPaymentTemplate deployed at:', address(deployed.fiatPaymentTemplate));
 
         // Build JSON with the deployment information
+        string memory packageJson = vm.envOr('PACKAGE_JSON', string('./package.json'));
+        string memory version = vm.parseJsonString(vm.readFile(packageJson), '$.version');
+        string memory outputJsonPath = vm.envOr(
+            'DEPLOYMENT_ADDRESSES_JSON',
+            string(abi.encodePacked('./deployments/deployment-v', version, '-', vm.toString(block.chainid), '.json'))
+        );
+
         string memory rootJsonKey = 'root';
         string memory jsonContent = vm.serializeString(rootJsonKey, 'version', version);
         jsonContent = vm.serializeAddress(rootJsonKey, 'owner', ownerAddress);
