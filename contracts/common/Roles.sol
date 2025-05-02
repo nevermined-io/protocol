@@ -53,3 +53,7 @@ uint64 constant CREDITS_BURNER_ROLE = uint64(16934877136143260882);
 /// @dev Role for transferring credits
 /// @dev uint64(uint256(keccak256(abi.encode('CREDITS_TRANSFER_ROLE'))));
 uint64 constant CREDITS_TRANSFER_ROLE = uint64(11914029060103770296);
+
+/// @dev Role for backend nvm infrastructure management
+/// @dev uint64(uint256(keccak256(abi.encode('NVM_INFRA_ADMIN'))));
+uint64 constant NVM_INFRA_ADMIN_ROLE = uint64(7924818820658164977);
