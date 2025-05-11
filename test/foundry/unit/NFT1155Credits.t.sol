@@ -380,4 +380,33 @@ contract NFT1155CreditsTest is BaseTest {
 
         assertEq(nft1155CreditsV2.getVersion(), newVersion);
     }
+
+    function test_balanceOfBatch_allZero() public view {
+        address[] memory owners = new address[](2);
+        uint256[] memory ids = new uint256[](2);
+        owners[0] = owner;
+        owners[1] = receiver;
+        ids[0] = 1;
+        ids[1] = 2;
+        uint256[] memory balances = nftCredits.balanceOfBatch(owners, ids);
+        assertEq(balances[0], 0);
+        assertEq(balances[1], 0);
+    }
+
+    function test_balanceOfBatch_mixed() public {
+        _grantRole(CREDITS_MINTER_ROLE, address(this));
+        uint256 planId1 = _createPlan();
+        uint256 planId2 = _createPlanWithAmount(2);
+        nftCredits.mint(owner, planId1, 3, '');
+        // receiver/planId2 not minted
+        address[] memory owners = new address[](2);
+        uint256[] memory ids = new uint256[](2);
+        owners[0] = owner;
+        owners[1] = receiver;
+        ids[0] = planId1;
+        ids[1] = planId2;
+        uint256[] memory balances = nftCredits.balanceOfBatch(owners, ids);
+        assertEq(balances[0], 3);
+        assertEq(balances[1], 0);
+    }
 }

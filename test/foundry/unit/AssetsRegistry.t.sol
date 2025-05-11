@@ -12,6 +12,8 @@ import {AssetsRegistryV2} from '../../../contracts/mock/AssetsRegistryV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
+import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
+
 contract AssetsRegistryTest is BaseTest {
     bytes32 public testDid;
     string constant URL = 'https://nevermined.io';
@@ -236,6 +238,57 @@ contract AssetsRegistryTest is BaseTest {
         assertEq(asset.plans[1], anotherPlan);
     }
 
+    function test_addPlanToAsset_noChangeIfPlanAlreadyInAsset() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        // Get initial state
+        IAsset.DIDAsset memory initialAsset = assetsRegistry.getAsset(did);
+        uint256 initialPlanCount = initialAsset.plans.length;
+        uint256[] memory initialPlans = initialAsset.plans;
+
+        // Try to add the same plan again
+        assetsRegistry.addPlanToAsset(did, planId);
+
+        // Get final state
+        IAsset.DIDAsset memory finalAsset = assetsRegistry.getAsset(did);
+        uint256 finalPlanCount = finalAsset.plans.length;
+        uint256[] memory finalPlans = finalAsset.plans;
+
+        // Verify no changes occurred
+        assertEq(finalPlanCount, initialPlanCount, 'Plan count should not change');
+        assertEq(finalPlans[0], initialPlans[0], 'Plan ID should remain the same');
+    }
+
+    function test_addPlanToAsset_noChangeIfPlanAlreadyInAsset_multiplePlans() public {
+        // Register an asset first
+        uint256 planId1 = _createPlan();
+        uint256 planId2 = _createPlan(999);
+        bytes32 did = _registerAsset(planId1);
+
+        // Add second plan
+        assetsRegistry.addPlanToAsset(did, planId2);
+
+        // Get initial state
+        IAsset.DIDAsset memory initialAsset = assetsRegistry.getAsset(did);
+        uint256 initialPlanCount = initialAsset.plans.length;
+        uint256[] memory initialPlans = initialAsset.plans;
+
+        // Try to add the first plan again
+        assetsRegistry.addPlanToAsset(did, planId1);
+
+        // Get final state
+        IAsset.DIDAsset memory finalAsset = assetsRegistry.getAsset(did);
+        uint256 finalPlanCount = finalAsset.plans.length;
+        uint256[] memory finalPlans = finalAsset.plans;
+
+        // Verify no changes occurred
+        assertEq(finalPlanCount, initialPlanCount, 'Plan count should not change');
+        assertEq(finalPlans[0], initialPlans[0], 'First plan ID should remain the same');
+        assertEq(finalPlans[1], initialPlans[1], 'Second plan ID should remain the same');
+    }
+
     function test_removePlanFromAsset_assetNotFound() public {
         vm.expectPartialRevert(IAsset.AssetNotFound.selector);
         assetsRegistry.removePlanFromAsset(bytes32(0), 1);
@@ -357,5 +410,378 @@ contract AssetsRegistryTest is BaseTest {
         assetsRegistryV2.initializeV2(newVersion);
 
         assertEq(assetsRegistryV2.getVersion(), newVersion);
+    }
+
+    function test_createPlan_revertIfPlanAlreadyRegistered() public {
+        // Create a plan first
+        uint256 planId = _createPlan(0);
+
+        // Try to create the same plan again
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = address(this);
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanAlreadyRegistered.selector, planId));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0);
+    }
+
+    function test_createPlan_revertIfInvalidNFTAddress() public {
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0)
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        // Use a non-NFT1155 contract address
+        address nonNFTAddress = address(this);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.InvalidNFTAddress.selector, nonNFTAddress));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nonNFTAddress, 0);
+    }
+
+    function test_createPlan_revertIfNeverminedFeesNotIncluded() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0)
+        });
+        // Set amounts and receivers without including Nevermined fees
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = address(1);
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        // Use NFT1155Credits contract
+        address nftAddress = address(nftCredits);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAsset.NeverminedFeesNotIncluded.selector, priceConfig.amounts, priceConfig.receivers
+            )
+        );
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+    }
+
+    function test_createPlan_successWithNeverminedFees() public {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = owner;
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        // Use NFT1155Credits contract
+        address nftAddress = address(nftCredits);
+
+        // Should not revert
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+    }
+
+    function test_createPlan_successWithNonFixedPrice() public {
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE, // Not FIXED_PRICE
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0)
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        // Use NFT1155Credits contract
+        address nftAddress = address(nftCredits);
+
+        // Should not revert even without Nevermined fees since it's not FIXED_PRICE
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+    }
+
+    function test_assetExists() public {
+        // Initially asset should not exist
+        assertFalse(assetsRegistry.assetExists(testDid));
+
+        // Register an asset
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        // Now asset should exist
+        assertTrue(assetsRegistry.assetExists(did));
+    }
+
+    function test_registerAsset_revertIfInvalidURL() public {
+        uint256 planId = _createPlan();
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = planId;
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.InvalidURL.selector, ''));
+        assetsRegistry.register('', '', planIds);
+    }
+
+    function test_registerAsset_revertIfDIDAlreadyRegistered() public {
+        uint256 planId = _createPlan();
+        uint256[] memory planIds = new uint256[](1);
+        planIds[0] = planId;
+
+        // Register asset first time
+        bytes32 did = assetsRegistry.hashDID('test-did', owner);
+        vm.prank(owner);
+        assetsRegistry.register('test-did', URL, planIds);
+
+        // Try to register same asset again
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.DIDAlreadyRegistered.selector, did));
+        assetsRegistry.register('test-did', URL, planIds);
+    }
+
+    function test_createPlan_revertIfPriceConfigInvalidAmountsOrReceivers() public {
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](2), // Different length arrays
+            receivers: new address[](1),
+            contractAddress: address(0)
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.amounts[1] = 200;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false
+        });
+
+        vm.expectRevert(IAsset.PriceConfigInvalidAmountsOrReceivers.selector);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0);
+    }
+
+    function test_addPlanToAsset_revertIfPlanNotFound() public {
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        // Try to add non-existent plan
+        uint256 nonExistentPlanId = 999;
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanNotFound.selector, nonExistentPlanId));
+        assetsRegistry.addPlanToAsset(did, nonExistentPlanId);
+    }
+
+    function test_removePlanFromAsset_revertIfPlanNotInAsset() public {
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        // Try to remove a plan that wasn't added to the asset
+        uint256 otherPlanId = _createPlan(999);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanNotInAsset.selector, did, otherPlanId));
+        assetsRegistry.removePlanFromAsset(did, otherPlanId);
+    }
+
+    function test_removePlanFromAsset_revertIfAssetNotFound() public {
+        uint256 planId = _createPlan();
+        bytes32 nonExistentDid = keccak256(abi.encodePacked('non-existent'));
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.AssetNotFound.selector, nonExistentDid));
+        assetsRegistry.removePlanFromAsset(nonExistentDid, planId);
+    }
+
+    function test_addFeesToPaymentsDistribution_revertIfMultipleFeeReceivers() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+
+        uint256[] memory amounts = new uint256[](2);
+        address[] memory receivers = new address[](2);
+
+        // Set up two receivers with the same address as nvmFeeReceiver
+        amounts[0] = 1000;
+        amounts[1] = 2000;
+        receivers[0] = nvmFeeReceiver;
+        receivers[1] = nvmFeeReceiver;
+
+        vm.expectRevert(IAsset.MultipleFeeReceiversIncluded.selector);
+        assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
+    }
+
+    function test_assetExists_revertIfAssetNotFound() public view {
+        bytes32 nonExistentDid = keccak256(abi.encodePacked('non-existent'));
+        assertFalse(assetsRegistry.assetExists(nonExistentDid));
+    }
+
+    function test_replacePlansForAsset_revertIfPlanNotFound() public {
+        // Register an asset first
+        uint256 planId = _createPlan();
+        bytes32 did = _registerAsset(planId);
+
+        // Create array with non-existent plan
+        uint256[] memory newPlans = new uint256[](2);
+        newPlans[0] = planId;
+        newPlans[1] = 999; // Non-existent plan
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanNotFound.selector, 999));
+        assetsRegistry.replacePlansForAsset(did, newPlans);
+    }
+
+    function test_transferPlanOwnership_revertIfPlanNotFound() public {
+        uint256 nonExistentPlanId = 999;
+        address newOwner = makeAddr('newOwner');
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanNotFound.selector, nonExistentPlanId));
+        assetsRegistry.transferPlanOwnership(nonExistentPlanId, newOwner);
+    }
+
+    function test_transferAssetOwnership_revertIfAssetNotFound() public {
+        bytes32 nonExistentDid = keccak256(abi.encodePacked('non-existent'));
+        address newOwner = makeAddr('newOwner');
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.AssetNotFound.selector, nonExistentDid));
+        assetsRegistry.transferAssetOwnership(nonExistentDid, newOwner);
+    }
+
+    function test_addFeesToPaymentsDistribution_whenFeesNotIncluded() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+
+        uint256[] memory amounts = new uint256[](2);
+        address[] memory receivers = new address[](2);
+
+        // Set up receivers without nvmFeeReceiver
+        amounts[0] = 1000;
+        amounts[1] = 2000;
+        receivers[0] = address(1);
+        receivers[1] = address(2);
+
+        (uint256[] memory newAmounts, address[] memory newReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
+
+        // Verify that fees were added
+        assertEq(newAmounts.length, amounts.length + 1, 'Should add one more amount for fees');
+        assertEq(newReceivers.length, receivers.length + 1, 'Should add one more receiver for fees');
+
+        // Verify that the last receiver is the nvmFeeReceiver
+        assertEq(newReceivers[newReceivers.length - 1], nvmFeeReceiver, 'Last receiver should be nvmFeeReceiver');
+
+        // Verify that the amounts are correctly distributed
+        uint256 totalOriginalAmount = amounts[0] + amounts[1];
+        uint256 feeAmount = (totalOriginalAmount * 100000) / 1000000; // 10% fee
+        assertEq(newAmounts[newAmounts.length - 1], feeAmount, 'Fee amount should be correct');
+
+        // Verify that the original amounts are preserved
+        for (uint256 i = 0; i < amounts.length; i++) {
+            assertEq(newAmounts[i], amounts[i], 'Original amounts should be preserved');
+            assertEq(newReceivers[i], receivers[i], 'Original receivers should be preserved');
+        }
+    }
+
+    function test_areNeverminedFeesIncluded_feeReceiverIncludedButAmountTooLow() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver); // 10% fee
+
+        uint256[] memory amounts = new uint256[](2);
+        address[] memory receivers = new address[](2);
+
+        // Set up receivers with nvmFeeReceiver but incorrect amount
+        amounts[0] = 1000;
+        amounts[1] = 50; // Too low fee amount (should be 100 for 10% of 1000)
+        receivers[0] = address(1);
+        receivers[1] = nvmFeeReceiver;
+
+        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(amounts, receivers);
+        assertFalse(areFeesIncluded, 'Fees should not be considered included when amount is too low');
+    }
+
+    function test_areNeverminedFeesIncluded_feeReceiverIncludedButAmountTooHigh() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver); // 10% fee
+
+        uint256[] memory amounts = new uint256[](2);
+        address[] memory receivers = new address[](2);
+
+        // Set up receivers with nvmFeeReceiver but incorrect amount
+        amounts[0] = 1000;
+        amounts[1] = 200; // Too high fee amount (should be 100 for 10% of 1000)
+        receivers[0] = address(1);
+        receivers[1] = nvmFeeReceiver;
+
+        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(amounts, receivers);
+        assertFalse(areFeesIncluded, 'Fees should not be considered included when amount is too high');
     }
 }

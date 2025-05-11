@@ -55,13 +55,6 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
     error UnsupportedPriceTypeOption(IAsset.PriceType priceType);
 
     /**
-     * @notice The payment distribution configuration is invalid
-     * @param amounts Array of payment amounts that doesn't match receivers
-     * @param receivers Array of payment receivers that doesn't match amounts
-     */
-    error IncorrectPaymentDistribution(uint256[] amounts, address[] receivers);
-
-    /**
      * @notice Initializes the LockPaymentCondition contract with required dependencies
      * @param _authority Address of the AccessManager contract for role-based access control
      * @param _assetsRegistryAddress Address of the AssetsRegistry contract for accessing plan information
@@ -110,14 +103,14 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
             revert IAgreement.AgreementNotFound(_agreementId);
         }
 
+        if ($.agreementStore.getConditionState(_agreementId, _conditionId) == IAgreement.ConditionState.Fulfilled) {
+            revert IAgreement.ConditionAlreadyFulfilled(_agreementId, _conditionId);
+        }
+
         // Check if the plan config (token, amount) is correct
         IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
 
         if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
-            // Check if the lengths of amounts and receivers are the same
-            if (plan.price.amounts.length != plan.price.receivers.length) {
-                revert IncorrectPaymentDistribution(plan.price.amounts, plan.price.receivers);
-            }
             // Check if the amounts and receivers include the Nevermined fees
             if (!$.assetsRegistry.areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers)) {
                 revert IAsset.NeverminedFeesNotIncluded(plan.price.amounts, plan.price.receivers);
@@ -133,11 +126,6 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
                     }
                     $.vault.depositNativeToken{value: amountToTransfer}();
                 } else {
-                    // ERC20 deposit
-                    // Transfer tokens from sender to vault using TokenUtils
-                    TokenUtils.transferERC20(
-                        _senderAddress, address($.vault), plan.price.tokenAddress, amountToTransfer
-                    );
                     // Record the deposit in the vault
                     $.vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
                 }

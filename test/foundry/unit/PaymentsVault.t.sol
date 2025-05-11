@@ -103,6 +103,24 @@ contract PaymentsVaultTest is BaseTest {
         paymentsVault.withdrawNativeToken(withdrawAmount, receiver);
     }
 
+    function test_withdrawNativeToken_failedToSend() public {
+        uint256 depositAmount = 0.1 ether;
+        uint256 withdrawAmount = 0.05 ether;
+
+        // First deposit
+        vm.deal(address(lockPaymentCondition), depositAmount);
+        vm.prank(address(lockPaymentCondition));
+        paymentsVault.depositNativeToken{value: depositAmount}();
+
+        // Create a contract that can't receive ETH
+        address nonPayableContract = address(new MockERC20('Test', 'TEST'));
+
+        // Try to withdraw to non-payable contract
+        vm.prank(address(distributePaymentsCondition));
+        vm.expectRevert(IVault.FailedToSendNativeToken.selector);
+        paymentsVault.withdrawNativeToken(withdrawAmount, nonPayableContract);
+    }
+
     function test_depositERC20() public {
         uint256 depositAmount = 100 * 10 ** 18;
 
@@ -112,10 +130,6 @@ contract PaymentsVaultTest is BaseTest {
         // Approve tokens first
         vm.prank(address(lockPaymentCondition));
         mockERC20.approve(address(paymentsVault), depositAmount);
-
-        // Transfer tokens to vault first (since depositERC20 only emits event)
-        vm.prank(address(lockPaymentCondition));
-        mockERC20.transfer(address(paymentsVault), depositAmount);
 
         // Deposit (this only emits event, doesn't actually transfer)
         vm.prank(address(lockPaymentCondition));
@@ -217,5 +231,49 @@ contract PaymentsVaultTest is BaseTest {
         paymentsVaultV2.initializeV2(newVersion);
 
         assertEq(paymentsVaultV2.getVersion(), newVersion);
+    }
+
+    function test_withdrawERC20() public {
+        uint256 depositAmount = 100 * 10 ** 18;
+        uint256 withdrawAmount = 50 * 10 ** 18;
+
+        // First deposit
+        mockERC20.mint(address(lockPaymentCondition), depositAmount);
+        vm.prank(address(lockPaymentCondition));
+        mockERC20.approve(address(paymentsVault), depositAmount);
+        vm.prank(address(lockPaymentCondition));
+        paymentsVault.depositERC20(address(mockERC20), depositAmount, address(lockPaymentCondition));
+
+        // Get receiver balance before
+        uint256 receiverBalanceBefore = mockERC20.balanceOf(receiver);
+
+        // Withdraw using distributePaymentsCondition which has WITHDRAW_ROLE
+        vm.expectEmit(true, true, true, true);
+        emit IVault.WithdrawERC20(address(mockERC20), address(distributePaymentsCondition), receiver, withdrawAmount);
+        vm.prank(address(distributePaymentsCondition));
+        paymentsVault.withdrawERC20(address(mockERC20), withdrawAmount, receiver);
+
+        // Verify vault balance
+        assertEq(mockERC20.balanceOf(address(paymentsVault)), depositAmount - withdrawAmount);
+
+        // Verify receiver balance
+        assertEq(mockERC20.balanceOf(receiver) - receiverBalanceBefore, withdrawAmount);
+    }
+
+    function test_withdrawERC20_onlyWithdrawer() public {
+        uint256 depositAmount = 100 * 10 ** 18;
+        uint256 withdrawAmount = 50 * 10 ** 18;
+
+        // First deposit
+        mockERC20.mint(address(lockPaymentCondition), depositAmount);
+        vm.prank(address(lockPaymentCondition));
+        mockERC20.approve(address(paymentsVault), depositAmount);
+        vm.prank(address(lockPaymentCondition));
+        paymentsVault.depositERC20(address(mockERC20), depositAmount, address(lockPaymentCondition));
+
+        // Try to withdraw as non-withdrawer
+        vm.prank(depositor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        paymentsVault.withdrawERC20(address(mockERC20), withdrawAmount, receiver);
     }
 }

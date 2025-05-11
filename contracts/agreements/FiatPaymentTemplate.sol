@@ -96,6 +96,7 @@ contract FiatPaymentTemplate is BaseTemplate {
         // Validate inputs
         if (_seed == bytes32(0)) revert InvalidSeed(_seed);
         if (_planId == 0) revert InvalidPlanId(_planId);
+        if (_creditsReceiver == address(0)) revert InvalidReceiver(_creditsReceiver);
 
         // Check if the Plan is registered in the AssetsRegistry
         if (!$.assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
@@ -165,11 +166,13 @@ contract FiatPaymentTemplate is BaseTemplate {
         bytes32 _fiatSettlementCondition,
         address _receiverAddress
     ) internal {
-        bytes32[] memory _requiredConditons = new bytes32[](1);
+        bytes32[] memory _requiredConditions = new bytes32[](1);
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
 
-        _requiredConditons[0] = _fiatSettlementCondition;
-        $.transferCondition.fulfill(_conditionId, _agreementId, _planId, _requiredConditons, _receiverAddress);
+        // GAS - Is the required condition fullfil check even needed? If fiat settlement fails, the transaction will revert
+        // cc - @aaitor
+        _requiredConditions[0] = _fiatSettlementCondition;
+        $.transferCondition.fulfill(_conditionId, _agreementId, _planId, _requiredConditions, _receiverAddress);
     }
 
     /**

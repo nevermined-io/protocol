@@ -31,4 +31,11 @@ interface ITemplate {
      * @param planId The invalid plan ID being used in the agreement
      */
     error InvalidPlanId(uint256 planId);
+
+    /**
+     * @notice Error thrown when an invalid receiver address is provided in an agreement creation process
+     * @dev The receiver address must be a valid address
+     * @param receiver The invalid receiver address being used in the agreement
+     */
+    error InvalidReceiver(address receiver);
 }

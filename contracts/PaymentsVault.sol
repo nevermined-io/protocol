@@ -5,15 +5,14 @@ pragma solidity ^0.8.28;
 
 import {IVault} from './interfaces/IVault.sol';
 
+import {DEPOSITOR_ROLE, WITHDRAW_ROLE} from './common/Roles.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {ReentrancyGuardTransientUpgradeable} from
     '@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol';
-
 import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
-
-import {DEPOSITOR_ROLE, WITHDRAW_ROLE} from './common/Roles.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import {SafeERC20} from '@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol';
 
 /**
  * @title PaymentsVault
@@ -35,6 +34,8 @@ import {IERC20} from '@openzeppelin/contracts/token/ERC20/IERC20.sol';
  * - WITHDRAW_ROLE: Allows withdrawing tokens from the vault
  */
 contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessManagedUUPSUpgradeable {
+    using SafeERC20 for IERC20;
+
     /**
      * @notice Initializes the PaymentsVault contract
      * @param _authority Address of the AccessManager contract handling permissions
@@ -77,17 +78,15 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
      * @param _receiver Address to receive the withdrawn tokens
      * @dev Caller must have WITHDRAW_ROLE to call this function
      * @dev Emits WithdrawNativeToken event on successful withdrawal
-     * @dev Follows checks-effects-interactions pattern for security
      */
     function withdrawNativeToken(uint256 _amount, address _receiver) external nonReentrant restricted {
-        // Emit event before external call to follow checks-effects-interactions pattern
-        emit WithdrawNativeToken(msg.sender, _receiver, _amount);
-
         // Skip transfer if amount is 0
         if (_amount > 0) {
             (bool sent,) = _receiver.call{value: _amount}('');
             if (!sent) revert FailedToSendNativeToken();
         }
+
+        emit WithdrawNativeToken(msg.sender, _receiver, _amount);
     }
 
     /**
@@ -104,6 +103,7 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
         nonReentrant
         restricted
     {
+        IERC20(_erc20TokenAddress).safeTransferFrom(_from, address(this), _amount);
         emit ReceivedERC20(_erc20TokenAddress, _from, _amount);
     }
 
@@ -114,22 +114,18 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
      * @param _receiver Address to receive the withdrawn tokens
      * @dev Caller must have WITHDRAW_ROLE to call this function
      * @dev Emits WithdrawERC20 event on successful withdrawal
-     * @dev Follows checks-effects-interactions pattern for security
      */
     function withdrawERC20(address _erc20TokenAddress, uint256 _amount, address _receiver)
         external
         nonReentrant
         restricted
     {
-        // Emit event before external call to follow checks-effects-interactions pattern
-        emit WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);
-
         // Skip transfer if amount is 0
         if (_amount > 0) {
-            IERC20 token = IERC20(_erc20TokenAddress);
-            // Use transfer instead of transferFrom since we're sending from our own balance
-            token.transfer(_receiver, _amount);
+            IERC20(_erc20TokenAddress).safeTransfer(_receiver, _amount);
         }
+
+        emit WithdrawERC20(_erc20TokenAddress, msg.sender, _receiver, _amount);
     }
 
     /**
