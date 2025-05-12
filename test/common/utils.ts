@@ -243,3 +243,12 @@ export async function signCreditsBurnProof(
 
   return signature
 }
+
+/**
+ * Sleep for a given number of milliseconds
+ * @param ms The number of milliseconds to sleep
+ * @returns A promise that resolves after the specified time
+ */
+export async function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
