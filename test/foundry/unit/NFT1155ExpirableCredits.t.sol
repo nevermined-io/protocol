@@ -335,4 +335,74 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         // Verify the version was set correctly
         assertEq(nft1155ExpirableCreditsV2.getVersion(), newVersion);
     }
+
+    function test_whenWasMinted_returnsTimestamps() public {
+        // Mint credits with different timestamps
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 1, 10, '');
+        vm.warp(block.timestamp + 5);
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 2, 20, '');
+
+        uint256[] memory timestamps = nftExpirableCredits.whenWasMinted(receiver, planId);
+        // Should have at least two entries
+        assertGt(timestamps.length, 1);
+        assertGt(timestamps[1], timestamps[0]);
+    }
+
+    function test_getMintedEntries_returnsCorrectEntries() public {
+        // Mint and burn credits
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 3, 10, '');
+        vm.prank(burner);
+        nftExpirableCredits.burn(receiver, planId, 1, 0, '');
+        NFT1155ExpirableCredits.MintedCredits[] memory entries = nftExpirableCredits.getMintedEntries(receiver, planId);
+        // Should have at least two entries: one mint, one burn
+        assertGt(entries.length, 1);
+        assertTrue(entries[0].isMintOps);
+        assertFalse(entries[1].isMintOps);
+        assertEq(entries[0].amountMinted, 3);
+        assertEq(entries[1].amountMinted, 1);
+    }
+
+    function test_mintBatch_invalidLength_reverts() public {
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory values = new uint256[](1); // Mismatched length
+        uint256[] memory durations = new uint256[](2);
+        ids[0] = planId;
+        ids[1] = planId2;
+        durations[0] = 10;
+        durations[1] = 20;
+        vm.prank(minter);
+        vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidLength.selector, ids.length, values.length));
+        nftExpirableCredits.mintBatch(receiver, ids, values, durations, '');
+    }
+
+    function test_mintBatch_invalidLengthDurations_reverts() public {
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory values = new uint256[](2);
+        uint256[] memory durations = new uint256[](1); // Mismatched length
+        ids[0] = planId;
+        ids[1] = planId2;
+        values[0] = 1;
+        values[1] = 2;
+        vm.prank(minter);
+        vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidLength.selector, ids.length, durations.length));
+        nftExpirableCredits.mintBatch(receiver, ids, values, durations, '');
+    }
+
+    function test_burnBatch_invalidLength_reverts() public {
+        // Mint credits for both plans
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 10, 0, '');
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId2, 10, 0, '');
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory values = new uint256[](1); // Mismatched length
+        ids[0] = planId;
+        ids[1] = planId2;
+        vm.prank(burner);
+        vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidLength.selector, ids.length, values.length));
+        nftExpirableCredits.burnBatch(receiver, ids, values, 0, '');
+    }
 }

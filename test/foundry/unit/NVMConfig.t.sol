@@ -124,4 +124,132 @@ contract NVMConfigTest is BaseTest {
         address feeReceiver = nvmConfig.getFeeReceiver();
         assertEq(feeReceiver, owner);
     }
+
+    function test_getFeeDenominator() public view {
+        uint256 denominator = nvmConfig.getFeeDenominator();
+        assertEq(denominator, 1000000);
+    }
+
+    function test_parameterExists() public {
+        bytes32 paramName = keccak256('testParam');
+
+        // Initially parameter should not exist
+        assertFalse(nvmConfig.parameterExists(paramName));
+
+        // Set parameter
+        vm.prank(governor);
+        nvmConfig.setParameter(paramName, abi.encodePacked('testValue'));
+
+        // Now parameter should exist
+        assertTrue(nvmConfig.parameterExists(paramName));
+
+        // Disable parameter
+        vm.prank(governor);
+        nvmConfig.disableParameter(paramName);
+
+        // Parameter should no longer exist
+        assertFalse(nvmConfig.parameterExists(paramName));
+    }
+
+    function test_disableParameter() public {
+        bytes32 paramName = keccak256('testParam');
+        bytes memory paramValue = abi.encodePacked('testValue');
+
+        // Set parameter first
+        vm.prank(governor);
+        nvmConfig.setParameter(paramName, paramValue);
+
+        // Disable parameter
+        vm.prank(governor);
+        vm.expectEmit(true, true, true, true);
+        emit INVMConfig.NeverminedConfigChange(governor, paramName, paramValue);
+        nvmConfig.disableParameter(paramName);
+
+        // Verify parameter is disabled
+        (bytes memory value, bool isActive,) = nvmConfig.getParameter(paramName);
+        assertFalse(isActive);
+        assertEq(keccak256(value), keccak256(paramValue));
+    }
+
+    function test_disableParameter_onlyGovernor() public {
+        bytes32 paramName = keccak256('testParam');
+        bytes memory paramValue = abi.encodePacked('testValue');
+
+        // Set parameter first
+        vm.prank(governor);
+        nvmConfig.setParameter(paramName, paramValue);
+
+        // Try to disable parameter as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        nvmConfig.disableParameter(paramName);
+    }
+
+    function test_disableParameter_nonexistent() public {
+        bytes32 paramName = keccak256('nonexistentParam');
+
+        // Try to disable non-existent parameter
+        vm.prank(governor);
+        nvmConfig.disableParameter(paramName);
+
+        // Verify parameter still doesn't exist
+        assertFalse(nvmConfig.parameterExists(paramName));
+    }
+
+    function test_getNetworkFee_accessControl() public {
+        // View function, no access control needed
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        uint256 fee = nvmConfig.getNetworkFee();
+        assertEq(fee, 100);
+    }
+
+    function test_getFeeReceiver_accessControl() public {
+        // View function, no access control needed
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        address receiver = nvmConfig.getFeeReceiver();
+        assertEq(receiver, owner);
+    }
+
+    function test_getFeeDenominator_accessControl() public {
+        // Pure function, no access control needed
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        uint256 denominator = nvmConfig.getFeeDenominator();
+        assertEq(denominator, 1000000);
+    }
+
+    function test_getParameter_accessControl() public {
+        // View function, no access control needed
+        bytes32 paramName = keccak256('testParam');
+        bytes memory paramValue = abi.encodePacked('testValue');
+
+        // Set parameter first
+        vm.prank(governor);
+        nvmConfig.setParameter(paramName, paramValue);
+
+        // Read parameter as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        (bytes memory value, bool isActive,) = nvmConfig.getParameter(paramName);
+        assertTrue(isActive);
+        assertEq(keccak256(value), keccak256(paramValue));
+    }
+
+    function test_parameterExists_accessControl() public {
+        // View function, no access control needed
+        bytes32 paramName = keccak256('testParam');
+        bytes memory paramValue = abi.encodePacked('testValue');
+
+        // Set parameter first
+        vm.prank(governor);
+        nvmConfig.setParameter(paramName, paramValue);
+
+        // Check parameter existence as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        assertTrue(nvmConfig.parameterExists(paramName));
+    }
 }

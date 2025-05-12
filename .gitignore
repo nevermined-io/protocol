@@ -28,3 +28,5 @@ broadcast/
 # Local Deployments
 deployments/*-hardhat.json
 deployments/*-31337.json
+
+lcov.info

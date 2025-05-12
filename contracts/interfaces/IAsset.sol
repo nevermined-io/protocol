@@ -342,6 +342,23 @@ interface IAsset {
      */
     error PlanNotInAsset(bytes32 did, uint256 planId);
 
+    /**
+     * @notice Error thrown when an invalid URL is provided
+     * @param url The invalid URL
+     */
+    error InvalidURL(string url);
+
+    /**
+     * @notice Error thrown when multiple fee receivers are included in a payment distribution
+     * @dev Only one fee receiver is allowed in a payment distribution
+     */
+    error MultipleFeeReceiversIncluded();
+
+    /**
+     * @notice Error thrown when the payment distribution amounts and receivers are not compatible
+     */
+    error PriceConfigInvalidAmountsOrReceivers();
+
     /* FUNCTIONS */
 
     /**

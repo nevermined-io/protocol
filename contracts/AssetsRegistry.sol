@@ -7,7 +7,7 @@ import {IAsset} from './interfaces/IAsset.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
-import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
+import {ERC165Checker} from '@openzeppelin/contracts/utils/introspection/ERC165Checker.sol';
 
 /**
  * @title AssetsRegistry
@@ -87,6 +87,10 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      */
     function register(bytes32 _didSeed, string memory _url, uint256[] memory _plans) public virtual {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if (bytes(_url).length == 0) {
+            revert InvalidURL(_url);
+        }
 
         bytes32 did = hashDID(_didSeed, msg.sender);
         if ($.assets[did].owner != address(0x0)) {
@@ -181,6 +185,10 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     ) internal {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
+        if (_priceConfig.amounts.length != _priceConfig.receivers.length) {
+            revert PriceConfigInvalidAmountsOrReceivers();
+        }
+
         uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner, _nonce);
         if ($.plans[planId].lastUpdated != 0) {
             revert PlanAlreadyRegistered(planId);
@@ -192,7 +200,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
         if (
             _priceConfig.priceType == IAsset.PriceType.FIXED_PRICE
-                && !this.areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)
+                && !areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)
         ) {
             revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
         }
@@ -441,13 +449,15 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @dev Returns true if fees are not required (fee is zero or no receiver is specified)
      */
     function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
-        external
+        public
         view
         returns (bool)
     {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+        uint256 networkFee = $.nvmConfig.getNetworkFee();
+        address feeReceiver = $.nvmConfig.getFeeReceiver();
 
-        if ($.nvmConfig.getNetworkFee() == 0 || $.nvmConfig.getFeeReceiver() == address(0)) return true;
+        if (networkFee == 0 || feeReceiver == address(0)) return true;
 
         uint256 totalAmount = 0;
         uint256 amountsLength = _amounts.length;
@@ -461,11 +471,14 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
         bool _feeReceiverIncluded = false;
         uint256 _receiverIndex = 0;
-        address feeReceiver = $.nvmConfig.getFeeReceiver();
         uint256 receiversLength = _receivers.length;
 
         for (uint256 i = 0; i < receiversLength; i++) {
             if (_receivers[i] == feeReceiver) {
+                if (_feeReceiverIncluded) {
+                    revert MultipleFeeReceiversIncluded();
+                }
+
                 _feeReceiverIncluded = true;
                 _receiverIndex = i;
             }
@@ -473,8 +486,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         if (!_feeReceiverIncluded) return false;
 
         // Return if fee calculation is correct
-        return _calculateFeeAmount($.nvmConfig.getNetworkFee(), totalAmount, $.nvmConfig.getFeeDenominator())
-            == _amounts[_receiverIndex];
+        return _calculateFeeAmount(networkFee, totalAmount, $.nvmConfig.getFeeDenominator()) == _amounts[_receiverIndex];
     }
 
     /**
@@ -493,7 +505,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
         // If the fees are already added we don't need to do anything
-        if (this.areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
+        if (areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
 
         uint256 totalAmount = 0;
         uint256 amountsLength = _amounts.length;
@@ -551,12 +563,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @dev Uses the ERC-165 interface detection standard to check for ERC-1155 support
      */
     function _isNFT1155Contract(address _nftAddress) internal view returns (bool) {
-        if (!(_nftAddress.code.length > 0)) return false;
-        try IERC165(_nftAddress).supportsInterface(0xd9b67a26) returns (bool supported) {
-            return supported;
-        } catch {
-            return false;
-        }
+        return ERC165Checker.supportsInterface(_nftAddress, 0xd9b67a26);
     }
 
     /**

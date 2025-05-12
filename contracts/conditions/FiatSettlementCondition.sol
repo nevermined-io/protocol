@@ -101,6 +101,10 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
             revert OnlyPlanWithFiatPrice(_planId, plan.price.priceType);
         }
 
+        if ($.agreementStore.getConditionState(_agreementId, _conditionId) == IAgreement.ConditionState.Fulfilled) {
+            revert IAgreement.ConditionAlreadyFulfilled(_agreementId, _conditionId);
+        }
+
         // Check if the params are valid
         if (!_areSettlementParamsValid(_params)) revert InvalidSettlementParams(_params);
 
@@ -115,6 +119,7 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
      */
     function _areSettlementParamsValid(bytes[] memory /*_params*/ ) internal pure returns (bool) {
         // TODO: Implement some level of params validation
+        // cc - @aaitor I don't think if we've accounted for this in the planning
         return true;
     }
 

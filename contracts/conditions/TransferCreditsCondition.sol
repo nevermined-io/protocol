@@ -83,6 +83,10 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
     ) external payable nonReentrant restricted {
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 
+        if ($.agreementStore.getConditionState(_agreementId, _conditionId) == IAgreement.ConditionState.Fulfilled) {
+            revert IAgreement.ConditionAlreadyFulfilled(_agreementId, _conditionId);
+        }
+
         // Check if the required conditions (LockPayment) are already fulfilled
         if (!$.agreementStore.areConditionsFulfilled(_agreementId, _conditionId, _requiredConditions)) {
             revert IAgreement.ConditionPreconditionFailed(_agreementId, _conditionId);

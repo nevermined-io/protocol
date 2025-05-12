@@ -60,16 +60,6 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
          * @dev Maps parameter names (as bytes32) to their corresponding ParamEntry
          */
         mapping(bytes32 => ParamEntry) configParams;
-        /**
-         * @notice Registry of contract addresses in the Nevermined ecosystem
-         * @dev Maps contract identifiers (as bytes32) to their deployed addresses
-         */
-        mapping(bytes32 => address) contractsRegistry;
-        /**
-         * @notice Tracks the latest version of each registered contract
-         * @dev Maps contract identifiers to their version numbers
-         */
-        mapping(bytes32 => uint256) contractsLatestVersion;
         /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
         /**
          * @notice The fee charged by Nevermined for using the Service Agreements
@@ -112,7 +102,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
-        if (_networkFee < 0 || _networkFee > 1000000) {
+        if (_networkFee > 1000000) {
             revert InvalidNetworkFee(_networkFee);
         }
 

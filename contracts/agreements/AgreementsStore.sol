@@ -7,6 +7,7 @@ import {CONTRACT_CONDITION_ROLE, CONTRACT_TEMPLATE_ROLE} from '../common/Roles.s
 import {IAgreement} from '../interfaces/IAgreement.sol';
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
+
 /**
  * @title AgreementsStore
  * @author Nevermined
@@ -18,7 +19,6 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
  *      pattern for upgrade safety and implements access controls to ensure only authorized
  *      contracts can modify agreement data.
  */
-
 contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('AgreementsStore');
 
@@ -66,6 +66,11 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         if ($.agreements[_agreementId].lastUpdated != 0) {
             revert AgreementAlreadyRegistered(_agreementId);
         }
+
+        if (_conditionIds.length != _conditionStates.length) {
+            revert InvalidConditionIdsAndStatesLength();
+        }
+
         $.agreements[_agreementId] = IAgreement.Agreement({
             planId: _planId,
             agreementCreator: _agreementCreator,
@@ -90,9 +95,12 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         AgreementsStoreStorage storage $ = _getAgreementsStoreStorage();
 
         {
-            (bool hasTemplateRole,) = IAccessManager(authority()).hasRole(CONTRACT_TEMPLATE_ROLE, msg.sender);
-            (bool hasConditionRole,) = IAccessManager(authority()).hasRole(CONTRACT_CONDITION_ROLE, msg.sender);
-            require(hasTemplateRole || hasConditionRole, OnlyTemplateOrConditionRole(msg.sender));
+            IAccessManager accessManager = IAccessManager(authority());
+            (bool hasTemplateRole,) = accessManager.hasRole(CONTRACT_TEMPLATE_ROLE, msg.sender);
+            if (!hasTemplateRole) {
+                (bool hasConditionRole,) = accessManager.hasRole(CONTRACT_CONDITION_ROLE, msg.sender);
+                require(hasConditionRole, OnlyTemplateOrConditionRole(msg.sender));
+            }
         }
 
         IAgreement.Agreement storage agreement = $.agreements[_agreementId];
@@ -176,6 +184,9 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
         if (agreement.lastUpdated == 0) {
             revert AgreementNotFound(_agreementId);
         }
+
+        // GAS - seems like agreement.conditionStates should be a mapping(conditionId => conditionState) instead?
+        // cc @aaitor
 
         uint256 numChecksPassed = 0;
         for (uint256 i = 0; i < agreement.conditionStates.length; i++) {

@@ -189,7 +189,7 @@ contract LockPaymentConditionTest is BaseTest {
         mockERC20.mint(user, totalAmount);
 
         vm.prank(user);
-        mockERC20.approve(address(lockPaymentCondition), totalAmount);
+        mockERC20.approve(address(paymentsVault), totalAmount);
 
         // Fulfill condition with ERC20 token
         vm.prank(template);
@@ -230,21 +230,18 @@ contract LockPaymentConditionTest is BaseTest {
         lockPaymentCondition.fulfill{value: totalAmount - 1}(conditionId, agreementId, planId, user);
     }
 
-    function test_revert_unsupportedPriceType() public {
+    function test_revert_unsupportedPriceType_FIXED_FIAT_PRICE() public {
         // Create price config with FIXED_FIAT_PRICE
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = 100;
         address[] memory receivers = new address[](1);
         receivers[0] = receiver;
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
-            priceType: IAsset.PriceType.FIXED_FIAT_PRICE, // Unsupported price type
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: finalAmounts,
-            receivers: finalReceivers,
+            amounts: amounts,
+            receivers: receivers,
             contractAddress: address(0)
         });
 
@@ -260,15 +257,13 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Register new asset and plan
         bytes32 didSeed = bytes32(uint256(5));
-
         vm.prank(address(this));
         assetsRegistry.registerAssetAndPlan(
             didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
         );
 
         // Get the plan ID
-        uint256 fiatPlanId =
-            uint256(assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this)));
+        uint256 fiatPlanId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(6));
@@ -297,6 +292,201 @@ contract LockPaymentConditionTest is BaseTest {
 
         vm.prank(template);
         lockPaymentCondition.fulfill(fiatConditionId, fiatAgreementId, fiatPlanId, user);
+    }
+
+    function test_revert_unsupportedPriceType_SMART_CONTRACT_PRICE() public {
+        // Create price config with SMART_CONTRACT_PRICE
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+        address[] memory receivers = new address[](1);
+        receivers[0] = receiver;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.SMART_CONTRACT_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_OWNER,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 100,
+            proofRequired: false
+        });
+
+        // Register new asset and plan
+        bytes32 didSeed = bytes32(uint256(7));
+        vm.prank(address(this));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
+
+        // Get the plan ID
+        uint256 contractPlanId =
+            assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+
+        // Create agreement
+        bytes32 agreementSeed = bytes32(uint256(8));
+        bytes32 contractAgreementId = agreementsStore.hashAgreementId(agreementSeed, user);
+
+        // Hash condition ID
+        bytes32 contractName = lockPaymentCondition.NVM_CONTRACT_NAME();
+        bytes32 contractConditionId = lockPaymentCondition.hashConditionId(contractAgreementId, contractName);
+
+        // Register agreement with the condition
+        bytes32[] memory conditionIds = new bytes32[](1);
+        conditionIds[0] = contractConditionId;
+
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+        conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+        vm.prank(template);
+        agreementsStore.register(
+            contractAgreementId, user, contractPlanId, conditionIds, conditionStates, new bytes[](0)
+        );
+
+        // Try to fulfill condition with SMART_CONTRACT_PRICE
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LockPaymentCondition.UnsupportedPriceTypeOption.selector, IAsset.PriceType.SMART_CONTRACT_PRICE
+            )
+        );
+
+        vm.prank(template);
+        lockPaymentCondition.fulfill(contractConditionId, contractAgreementId, contractPlanId, user);
+    }
+
+    function test_revert_unsupportedPriceType_InvalidType() public {
+        // Create price config with invalid price type
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+        address[] memory receivers = new address[](1);
+        receivers[0] = receiver;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType(2), // Using 2 as an invalid type since it's not defined in the enum
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_OWNER,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 100,
+            proofRequired: false
+        });
+
+        // Register new asset and plan
+        bytes32 didSeed = bytes32(uint256(9));
+        vm.prank(address(this));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
+
+        // Get the plan ID
+        uint256 invalidPlanId =
+            assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+
+        // Create agreement
+        bytes32 agreementSeed = bytes32(uint256(10));
+        bytes32 invalidAgreementId = agreementsStore.hashAgreementId(agreementSeed, user);
+
+        // Hash condition ID
+        bytes32 contractName = lockPaymentCondition.NVM_CONTRACT_NAME();
+        bytes32 invalidConditionId = lockPaymentCondition.hashConditionId(invalidAgreementId, contractName);
+
+        // Register agreement with the condition
+        bytes32[] memory conditionIds = new bytes32[](1);
+        conditionIds[0] = invalidConditionId;
+
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+        conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+        vm.prank(template);
+        agreementsStore.register(invalidAgreementId, user, invalidPlanId, conditionIds, conditionStates, new bytes[](0));
+
+        // Try to fulfill condition with invalid price type
+        vm.expectRevert(
+            abi.encodeWithSelector(LockPaymentCondition.UnsupportedPriceTypeOption.selector, IAsset.PriceType(2))
+        );
+
+        vm.prank(template);
+        lockPaymentCondition.fulfill(invalidConditionId, invalidAgreementId, invalidPlanId, user);
+    }
+
+    function test_revert_neverminedFeesNotIncluded() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setNetworkFees(100000, nvmFeeReceiver); // 10% fee
+
+        // Create price config without Nevermined fees
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+        address[] memory receivers = new address[](1);
+        receivers[0] = receiver; // Not including nvmFeeReceiver
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0)
+        });
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_OWNER,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 100,
+            proofRequired: false
+        });
+
+        // Register new asset and plan
+        bytes32 didSeed = bytes32(uint256(9));
+        vm.prank(address(this));
+        assetsRegistry.registerAssetAndPlan(
+            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
+        );
+
+        // Get the plan ID
+        uint256 newPlanId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+
+        // Create agreement
+        bytes32 agreementSeed = bytes32(uint256(10));
+        bytes32 newAgreementId = agreementsStore.hashAgreementId(agreementSeed, user);
+
+        // Hash condition ID
+        bytes32 contractName = lockPaymentCondition.NVM_CONTRACT_NAME();
+        bytes32 newConditionId = lockPaymentCondition.hashConditionId(newAgreementId, contractName);
+
+        // Register agreement with the condition
+        bytes32[] memory conditionIds = new bytes32[](1);
+        conditionIds[0] = newConditionId;
+
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+        conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+        vm.prank(template);
+        agreementsStore.register(newAgreementId, user, newPlanId, conditionIds, conditionStates, new bytes[](0));
+
+        // Try to fulfill condition without Nevermined fees
+        vm.expectRevert(abi.encodeWithSelector(IAsset.NeverminedFeesNotIncluded.selector, amounts, receivers));
+        vm.deal(template, 100);
+
+        vm.prank(template);
+        lockPaymentCondition.fulfill{value: 100}(newConditionId, newAgreementId, newPlanId, user);
     }
 
     // Helper function to calculate the total amount from an array of amounts

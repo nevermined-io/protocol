@@ -9,6 +9,7 @@ import {
   registerAssetAndPlan,
   createCreditsBurnProof,
   signCreditsBurnProof,
+  sleep,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 import { FoundryTools } from '../common/FoundryTools'
@@ -127,8 +128,13 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
       did = result.did
       planId = result.planId
 
+      await sleep(2000)
+      
       const asset = await assetsRegistry.read.getAsset([did])
-
+      
+      console.log(' **** Result:', result)
+      console.log(' **** Asset:', asset)
+      
       // Verify asset and plan are registered
       expect(asset.lastUpdated > 0n).to.be.true
 

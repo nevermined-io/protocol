@@ -105,6 +105,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
         transferCreditsCondition = deployed.transferCreditsCondition;
         distributePaymentsCondition = deployed.distributePaymentsCondition;
         fiatSettlementCondition = deployed.fiatSettlementCondition;
+        fixedPaymentTemplate = deployed.fixedPaymentTemplate;
+        fiatPaymentTemplate = deployed.fiatPaymentTemplate;
 
         ManagePermissions.Config memory config = ManagePermissions.Config({
             owner: owner,
@@ -142,11 +144,6 @@ abstract contract BaseTest is Test, ToArrayUtils {
     function _grantConditionRole(address _caller) internal virtual {
         vm.prank(governor);
         accessManager.grantRole(CONTRACT_CONDITION_ROLE, _caller, 0);
-    }
-
-    function _grantConditionStatusUpdaterRole(address _caller) internal virtual {
-        vm.prank(governor);
-        accessManager.grantRole(UPDATE_CONDITION_STATUS_ROLE, _caller, 0);
     }
 
     function _createAgreement(address _caller, uint256 _planId) internal virtual returns (bytes32) {

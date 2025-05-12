@@ -58,6 +58,18 @@ interface IAgreement {
     error OnlyTemplateOrConditionRole(address caller);
 
     /**
+     * @notice Error thrown when the length of the conditionIds and conditionStates arrays are not the same
+     */
+    error InvalidConditionIdsAndStatesLength();
+
+    /**
+     * @notice Error thrown when a condition has already been fulfilled
+     * @param agreementId The identifier of the agreement
+     * @param conditionId The identifier of the condition that has already been fulfilled
+     */
+    error ConditionAlreadyFulfilled(bytes32 agreementId, bytes32 conditionId);
+
+    /**
      * @title ConditionState
      * @notice Enum representing the possible states of a condition within an agreement
      * @dev The state transitions typically follow Uninitialized -> Unfulfilled -> Fulfilled,
@@ -104,8 +116,6 @@ interface IAgreement {
          * @notice Array of states for each condition in the conditionIds array
          */
         ConditionState[] conditionStates;
-        // uint256[] timeLocks;
-        // uint256[] timeOuts;
         /**
          * @notice Array of encoded parameters for each condition
          */

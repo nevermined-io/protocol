@@ -7,6 +7,7 @@ import {
   createPriceConfig,
   createCreditsConfig,
   registerAssetAndPlan,
+  sleep,
 } from '../common/utils'
 import { zeroAddress } from 'viem'
 import { FoundryTools } from '../common/FoundryTools'
@@ -221,10 +222,13 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       did = result.did
       planId = result.planId
 
+      await sleep(2000)
       asset = await assetsRegistry.read.getAsset([did])
       // planId = asset.plans[0]
 
-      console.log(asset)
+      console.log(' ++++ Result:', result)
+      console.log(' ++++ Asset:', asset)
+
       // Verify asset and plan are registered
       expect(asset.lastUpdated > 0n).to.be.true
     })

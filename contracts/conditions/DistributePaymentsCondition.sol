@@ -92,6 +92,10 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
         IAgreement.Agreement memory agreement = $.agreementStore.getAgreement(_agreementId);
         if (agreement.lastUpdated == 0) revert IAgreement.AgreementNotFound(_agreementId);
 
+        if ($.agreementStore.getConditionState(_agreementId, _conditionId) == IAgreement.ConditionState.Fulfilled) {
+            revert IAgreement.ConditionAlreadyFulfilled(_agreementId, _conditionId);
+        }
+
         // Check if the plan credits config is correct
         IAsset.Plan memory plan = $.assetsRegistry.getPlan(_planId);
 
