@@ -14,6 +14,7 @@ import { Chain } from 'viem/chains'
 
 // UPGRADE_ROLE from contracts/common/Roles.sol
 const UPGRADE_ROLE = 16061234310146353691n
+const UPGRADE_DELAY_BUFFER = 60n // seconds
 
 dotenv.config({ path: '.env.upgrades' })
 
@@ -111,7 +112,7 @@ async function initiateContractUpgrade() {
   console.log(`Retrieved upgrade delay for Safe: ${upgradeDelay} seconds`)
 
   const currentTime = BigInt(Math.floor(Date.now() / 1000))
-  const upgradeTime = currentTime + upgradeDelay
+  const upgradeTime = currentTime + upgradeDelay + UPGRADE_DELAY_BUFFER
 
   console.log(
     `Scheduling upgrade for proxy ${process.env.PROXY_ADDRESS} to implementation ${process.env.NEW_IMPLEMENTATION_ADDRESS}`,
