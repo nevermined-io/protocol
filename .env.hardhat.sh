@@ -1,5 +1,6 @@
 export RPC_URL="http://localhost:8545"
 
+export CONTRACTS_DEPLOYMENT_VERSION="1.0.0"
 export OWNER_MNEMONIC="test test test test test test test test test test test junk"
 export OWNER_INDEX=0
 export OWNER_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
