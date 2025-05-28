@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {TokenUtils} from '../../contracts/utils/TokenUtils.sol';
 import {DeployConfig} from './DeployConfig.sol';
@@ -11,7 +11,7 @@ import {console2} from 'forge-std/console2.sol';
 contract DeployLibraries is DeployConfig, Create2DeployUtils {
     error TokenUtilsDeployment_Failed();
     error InvalidSalt();
-    
+
     function run(
         address ownerAddress,
         UpgradeableContractDeploySalt memory tokenUtilsSalt,
@@ -21,7 +21,7 @@ contract DeployLibraries is DeployConfig, Create2DeployUtils {
             console2.log('Deploying Libraries with:');
             console2.log('\tOwner:', ownerAddress);
         }
-        
+
         // Check for zero salt
         require(tokenUtilsSalt.implementationSalt != bytes32(0), InvalidSalt());
 

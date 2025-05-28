@@ -1,7 +1,7 @@
 /// Copyright 2025 Nevermined AG.
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 function toArray(address a) pure returns (address[] memory array) {
     array = new address[](1);

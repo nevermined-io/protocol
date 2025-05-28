@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {DistributePaymentsCondition} from '../../contracts/conditions/DistributePaymentsCondition.sol';
 import {FiatSettlementCondition} from '../../contracts/conditions/FiatSettlementCondition.sol';
