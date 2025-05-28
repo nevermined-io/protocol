@@ -16,6 +16,7 @@ import {FiatSettlementCondition} from '../../../contracts/conditions/FiatSettlem
 import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
 
+import {OneTimeCreatorHook} from '../../../contracts/hooks/OneTimeCreatorHook.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {AgreementsStoreV2} from '../../../contracts/mock/AgreementsStoreV2.sol';
@@ -59,6 +60,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
     FiatSettlementCondition fiatSettlementCondition;
     FixedPaymentTemplate fixedPaymentTemplate;
     FiatPaymentTemplate fiatPaymentTemplate;
+    OneTimeCreatorHook oneTimeCreatorHook;
 
     function setUp() public virtual {
         _deployContracts();
@@ -108,6 +110,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
         fiatSettlementCondition = deployed.fiatSettlementCondition;
         fixedPaymentTemplate = deployed.fixedPaymentTemplate;
         fiatPaymentTemplate = deployed.fiatPaymentTemplate;
+        oneTimeCreatorHook = deployed.oneTimeCreatorHook;
 
         ManagePermissions.Config memory config = ManagePermissions.Config({
             owner: owner,
@@ -125,6 +128,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
             fiatSettlementCondition: fiatSettlementCondition,
             fixedPaymentTemplate: fixedPaymentTemplate,
             fiatPaymentTemplate: fiatPaymentTemplate,
+            oneTimeCreatorHook: oneTimeCreatorHook,
             accessManager: accessManager
         });
 

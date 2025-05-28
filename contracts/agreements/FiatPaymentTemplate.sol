@@ -39,13 +39,13 @@ contract FiatPaymentTemplate is BaseTemplate {
     struct FiatPaymentTemplateStorage {
         /// @notice Reference to the NVMConfig contract for system configuration
         INVMConfig nvmConfig;
-        /// @notice Reference to the AssetsRegistry contract for plan information
-        IAsset assetsRegistry;
         // Conditions required to execute this template
         /// @notice Condition that handles fiat settlement verification by authorized oracles
         FiatSettlementCondition fiatSettlementCondition;
         /// @notice Condition that handles transferring credits after payment is settled
         TransferCreditsCondition transferCondition;
+        /// @notice Reference to the AgreementsStore contract for managing agreements
+        AgreementsStore agreementStore;
     }
 
     /**
@@ -66,14 +66,15 @@ contract FiatPaymentTemplate is BaseTemplate {
         FiatSettlementCondition _fiatSettlementConditionAddress,
         TransferCreditsCondition _transferCondtionAddress
     ) external initializer {
+        __BaseTemplate_init(_assetsRegistryAddress);
+        __AccessManagedUUPSUpgradeable_init(address(_authority));
+
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
 
         $.nvmConfig = _nvmConfigAddress;
-        $.assetsRegistry = _assetsRegistryAddress;
-        _getBaseTemplateStorage().agreementStore = _agreementStoreAddress;
         $.fiatSettlementCondition = _fiatSettlementConditionAddress;
         $.transferCondition = _transferCondtionAddress;
-        __AccessManagedUUPSUpgradeable_init(address(_authority));
+        $.agreementStore = _agreementStoreAddress;
     }
 
     /**
@@ -91,7 +92,6 @@ contract FiatPaymentTemplate is BaseTemplate {
         external
     {
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
-        BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
 
         // Validate inputs
         if (_seed == bytes32(0)) revert InvalidSeed(_seed);
@@ -99,14 +99,14 @@ contract FiatPaymentTemplate is BaseTemplate {
         if (_creditsReceiver == address(0)) revert InvalidReceiver(_creditsReceiver);
 
         // Check if the Plan is registered in the AssetsRegistry
-        if (!$.assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
+        if (!_getBaseTemplateStorage().assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
         // Calculate agreementId
         bytes32 agreementId =
             keccak256(abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _planId, _creditsReceiver, _params));
 
         // Check if the agreement is already registered
-        IAgreement.Agreement memory agreement = $bt.agreementStore.getAgreement(agreementId);
+        IAgreement.Agreement memory agreement = $.agreementStore.getAgreement(agreementId);
 
         if (agreement.lastUpdated != 0) {
             revert IAgreement.AgreementAlreadyRegistered(agreementId);
@@ -118,13 +118,19 @@ contract FiatPaymentTemplate is BaseTemplate {
             $.fiatSettlementCondition.hashConditionId(agreementId, $.fiatSettlementCondition.NVM_CONTRACT_NAME());
         conditionIds[1] = $.transferCondition.hashConditionId(agreementId, $.transferCondition.NVM_CONTRACT_NAME());
 
-        $bt.agreementStore.register(
-            agreementId, msg.sender, _planId, conditionIds, new IAgreement.ConditionState[](2), _params
-        );
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](2);
+
+        // Execute before hooks
+        _executeBeforeHooks(_planId, agreementId, msg.sender, conditionIds, conditionStates, _params);
+
+        $.agreementStore.register(agreementId, msg.sender, _planId, conditionIds, conditionStates, _params);
 
         // Register fiat settlement
         _fiatSettlement(conditionIds[0], agreementId, _planId, msg.sender, _params);
         _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], _creditsReceiver);
+
+        // Execute after hooks
+        _executeAfterHooks(_planId, agreementId, msg.sender, conditionIds, _params);
     }
 
     /**

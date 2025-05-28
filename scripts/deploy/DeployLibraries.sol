@@ -2,11 +2,12 @@
 pragma solidity ^0.8.30;
 
 import {TokenUtils} from '../../contracts/utils/TokenUtils.sol';
+
+import {Script} from '../../lib/forge-std/src/Script.sol';
+import {console2} from '../../lib/forge-std/src/console2.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
 
 contract DeployLibraries is DeployConfig, Create2DeployUtils {
     error TokenUtilsDeployment_Failed();
