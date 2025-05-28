@@ -54,82 +54,84 @@ contract DeployAll is Script, DeployConfig {
 
     constructor() {
         //// Set the deployment salts ////
+        string memory version = vm.envString('CONTRACTS_DEPLOYMENT_VERSION');
+        console2.log('Contracts deployment version:', version);
 
         // AccessManager
         deploymentSalt[type(AccessManager).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('ACCESS_MANAGER_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('ACCESS_MANAGER_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('ACCESS_MANAGER_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('ACCESS_MANAGER_PROXY_', version))
         });
 
         // NVMConfig
         deploymentSalt[type(NVMConfig).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('NVM_CONFIG_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('NVM_CONFIG_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('NVM_CONFIG_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('NVM_CONFIG_PROXY_', version))
         });
 
         // TokenUtils
         deploymentSalt[type(TokenUtils).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('TOKEN_UTILS_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('TOKEN_UTILS_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('TOKEN_UTILS_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('TOKEN_UTILS_PROXY_', version))
         });
 
         // Core Contracts
         deploymentSalt[type(AssetsRegistry).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('ASSETS_REGISTRY_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('ASSETS_REGISTRY_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('ASSETS_REGISTRY_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('ASSETS_REGISTRY_PROXY_', version))
         });
 
         deploymentSalt[type(AgreementsStore).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('AGREEMENTS_STORE_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('AGREEMENTS_STORE_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('AGREEMENTS_STORE_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('AGREEMENTS_STORE_PROXY_', version))
         });
 
         deploymentSalt[type(PaymentsVault).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('PAYMENTS_VAULT_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('PAYMENTS_VAULT_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('PAYMENTS_VAULT_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('PAYMENTS_VAULT_PROXY_', version))
         });
 
         // NFT Contracts
         deploymentSalt[type(NFT1155Credits).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('NFT1155_CREDITS_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('NFT1155_CREDITS_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('NFT1155_CREDITS_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('NFT1155_CREDITS_PROXY_', version))
         });
 
         deploymentSalt[type(NFT1155ExpirableCredits).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('NFT1155_EXPIRABLE_CREDITS_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('NFT1155_EXPIRABLE_CREDITS_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('NFT1155_EXPIRABLE_CREDITS_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('NFT1155_EXPIRABLE_CREDITS_PROXY_', version))
         });
 
         // Conditions
         deploymentSalt[type(LockPaymentCondition).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('LOCK_PAYMENT_CONDITION_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('LOCK_PAYMENT_CONDITION_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('LOCK_PAYMENT_CONDITION_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('LOCK_PAYMENT_CONDITION_PROXY_', version))
         });
 
         deploymentSalt[type(TransferCreditsCondition).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('TRANSFER_CREDITS_CONDITION_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('TRANSFER_CREDITS_CONDITION_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('TRANSFER_CREDITS_CONDITION_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('TRANSFER_CREDITS_CONDITION_PROXY_', version))
         });
 
         deploymentSalt[type(DistributePaymentsCondition).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('DISTRIBUTE_PAYMENTS_CONDITION_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('DISTRIBUTE_PAYMENTS_CONDITION_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('DISTRIBUTE_PAYMENTS_CONDITION_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('DISTRIBUTE_PAYMENTS_CONDITION_PROXY_', version))
         });
 
         deploymentSalt[type(FiatSettlementCondition).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('FIAT_SETTLEMENT_CONDITION_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('FIAT_SETTLEMENT_CONDITION_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('FIAT_SETTLEMENT_CONDITION_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('FIAT_SETTLEMENT_CONDITION_PROXY_', version))
         });
 
         // Templates
         deploymentSalt[type(FixedPaymentTemplate).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('FIXED_PAYMENT_TEMPLATE_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('FIXED_PAYMENT_TEMPLATE_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('FIXED_PAYMENT_TEMPLATE_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('FIXED_PAYMENT_TEMPLATE_PROXY_', version))
         });
 
         deploymentSalt[type(FiatPaymentTemplate).name] = UpgradeableContractDeploySalt({
-            implementationSalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_IMPL_1')),
-            proxySalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_PROXY_1'))
+            implementationSalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_PROXY_', version))
         });
     }
 

@@ -27,7 +27,7 @@ import {Script} from 'lib/forge-std/src/Script.sol';
 import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract ManagePermissions is Script, DeployConfig {
-    uint32 UPGRADE_DELAY = 7 days;
+    uint32 UPGRADE_DELAY = 1 days;
 
     struct Config {
         address owner;
