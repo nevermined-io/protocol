@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {IAccessManagedUUPSUpgradeable} from '../interfaces/IAccessManagedUUPSUpgradeable.sol';
 import {AccessManagedUpgradeable} from '@openzeppelin/contracts-upgradeable/access/manager/AccessManagedUpgradeable.sol';

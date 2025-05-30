@@ -1,8 +1,11 @@
 // Copyright 2025 Nevermined AG.
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
+import {IAgreement} from '../interfaces/IAgreement.sol';
+import {IAsset} from '../interfaces/IAsset.sol';
+import {IHook} from '../interfaces/IHook.sol';
 import {ITemplate} from '../interfaces/ITemplate.sol';
 
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
@@ -29,10 +32,13 @@ abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
 
     /// @custom:storage-location erc7201:nevermined.basetemplate.storage
     struct BaseTemplateStorage {
-        /// @notice Reference to the AgreementsStore contract for managing agreements
-        AgreementsStore agreementStore;
-        /// @notice Address of the AssetsRegistry contract for referencing digital assets
-        address assetsRegistryAddress;
+        /// @notice Reference to the AssetsRegistry contract
+        IAsset assetsRegistry;
+    }
+
+    function __BaseTemplate_init(IAsset _assetsRegistryAddress) internal onlyInitializing {
+        BaseTemplateStorage storage $ = _getBaseTemplateStorage();
+        $.assetsRegistry = _assetsRegistryAddress;
     }
 
     /**
@@ -44,6 +50,56 @@ abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             $.slot := BASE_TEMPLATE_STORAGE_LOCATION
+        }
+    }
+
+    /**
+     * @notice Executes all before hooks for a plan
+     * @param _planId The ID of the plan
+     * @param _agreementId The ID of the agreement being created
+     * @param _creator The address of the agreement creator
+     * @param _conditionIds Array of condition IDs for the agreement
+     * @param _conditionStates Array of condition states for the agreement
+     * @param _params Additional parameters for the agreement
+     */
+    function _executeBeforeHooks(
+        uint256 _planId,
+        bytes32 _agreementId,
+        address _creator,
+        bytes32[] memory _conditionIds,
+        IAgreement.ConditionState[] memory _conditionStates,
+        bytes[] memory _params
+    ) internal {
+        BaseTemplateStorage storage $ = _getBaseTemplateStorage();
+        IHook[] memory hooks = $.assetsRegistry.getPlanHooks(_planId);
+
+        for (uint256 i = 0; i < hooks.length; i++) {
+            hooks[i].beforeAgreementRegistered(
+                _agreementId, _creator, _planId, _conditionIds, _conditionStates, _params
+            );
+        }
+    }
+
+    /**
+     * @notice Executes all after hooks for a plan
+     * @param _planId The ID of the plan
+     * @param _agreementId The ID of the agreement that was created
+     * @param _creator The address of the agreement creator
+     * @param _conditionIds Array of condition IDs for the agreement
+     * @param _params Additional parameters for the agreement
+     */
+    function _executeAfterHooks(
+        uint256 _planId,
+        bytes32 _agreementId,
+        address _creator,
+        bytes32[] memory _conditionIds,
+        bytes[] memory _params
+    ) internal {
+        BaseTemplateStorage storage $ = _getBaseTemplateStorage();
+        IHook[] memory hooks = $.assetsRegistry.getPlanHooks(_planId);
+
+        for (uint256 i = 0; i < hooks.length; i++) {
+            hooks[i].afterAgreementCreated(_agreementId, _creator, _planId, _conditionIds, _params);
         }
     }
 }

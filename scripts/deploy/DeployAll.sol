@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {AssetsRegistry} from '../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
@@ -32,6 +32,9 @@ import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManage
 import {Script} from 'lib/forge-std/src/Script.sol';
 import {console2} from 'lib/forge-std/src/console2.sol';
 
+import {OneTimeCreatorHook} from '../../contracts/hooks/OneTimeCreatorHook.sol';
+import {DeployHooks} from './DeployHooks.sol';
+
 struct DeployedContracts {
     AccessManager accessManager;
     NVMConfig nvmConfig;
@@ -47,6 +50,7 @@ struct DeployedContracts {
     FiatSettlementCondition fiatSettlementCondition;
     FixedPaymentTemplate fixedPaymentTemplate;
     FiatPaymentTemplate fiatPaymentTemplate;
+    OneTimeCreatorHook oneTimeCreatorHook;
 }
 
 contract DeployAll is Script, DeployConfig {
@@ -61,6 +65,12 @@ contract DeployAll is Script, DeployConfig {
         deploymentSalt[type(AccessManager).name] = UpgradeableContractDeploySalt({
             implementationSalt: keccak256(abi.encodePacked('ACCESS_MANAGER_IMPL_', version)),
             proxySalt: keccak256(abi.encodePacked('ACCESS_MANAGER_PROXY_', version))
+        });
+
+        // OneTimeCreatorHook
+        deploymentSalt[type(OneTimeCreatorHook).name] = UpgradeableContractDeploySalt({
+            implementationSalt: keccak256(abi.encodePacked('ONE_TIME_CREATOR_HOOK_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('ONE_TIME_CREATOR_HOOK_PROXY_', version))
         });
 
         // NVMConfig
@@ -153,6 +163,17 @@ contract DeployAll is Script, DeployConfig {
         deployed.accessManager = new DeployAccessManager().run(
             ownerAddress, deploymentSalt[type(AccessManager).name].implementationSalt, revertIfAlreadyDeployed
         );
+
+        // Deploy OneTimeCreatorHook using DeployHooks
+        deployed.oneTimeCreatorHook = new DeployHooks().run(
+            DeployHooks.DeployHooksParams({
+                ownerAddress: ownerAddress,
+                accessManagerAddress: deployed.accessManager,
+                oneTimeCreatorHookSalt: deploymentSalt[type(OneTimeCreatorHook).name],
+                revertIfAlreadyDeployed: revertIfAlreadyDeployed
+            })
+        );
+        if (debug) console2.log('OneTimeCreatorHook deployed at:', address(deployed.oneTimeCreatorHook));
 
         // 2. Deploy NVMConfig
         deployed.nvmConfig = new DeployNVMConfig().run(
@@ -291,6 +312,8 @@ contract DeployAll is Script, DeployConfig {
         );
         contractJsonContent =
             vm.serializeAddress(contractJsonKey, type(FiatPaymentTemplate).name, address(deployed.fiatPaymentTemplate));
+        contractJsonContent =
+            vm.serializeAddress(contractJsonKey, type(OneTimeCreatorHook).name, address(deployed.oneTimeCreatorHook));
 
         // Combine all JSON parts
         jsonContent = vm.serializeString(rootJsonKey, contractJsonKey, contractJsonContent);

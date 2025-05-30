@@ -1,9 +1,10 @@
 // Copyright 2025 Nevermined AG.
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {IAsset} from './interfaces/IAsset.sol';
+import {IHook} from './interfaces/IHook.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
@@ -31,6 +32,8 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => DIDAsset) assets;
         /// @notice The mapping of the plans registered in the contract
         mapping(uint256 => Plan) plans;
+        /// @notice Mapping of plan ID to array of hook contracts
+        mapping(uint256 => IHook[]) planHooks;
     }
 
     /**
@@ -113,13 +116,112 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
      * @param _nftAddress Address of the NFT contract implementing the credits
-     * @dev Uses a default nonce of 0 for plan ID generation
+     * @param _hooks Array of hook contracts to be called during agreement creation
+     * @param _nonce Optional nonce to ensure unique plan IDs when using identical configurations
+     * @return planId The ID of the created plan
+     * @dev The nonce allows creating multiple plans with the same parameters but different identifiers
      * @dev Will revert if the NFT address is invalid or Nevermined fees aren't properly included for fixed price plans
      */
+    function _createPlan(
+        PriceConfig memory _priceConfig,
+        CreditsConfig memory _creditsConfig,
+        address _nftAddress,
+        IHook[] memory _hooks,
+        uint256 _nonce
+    ) internal returns (uint256) {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if (_priceConfig.amounts.length != _priceConfig.receivers.length) {
+            revert PriceConfigInvalidAmountsOrReceivers();
+        }
+
+        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender, _nonce);
+        if ($.plans[planId].lastUpdated != 0) {
+            revert PlanAlreadyRegistered(planId);
+        }
+
+        if (!_isNFT1155Contract(_nftAddress)) {
+            revert InvalidNFTAddress(_nftAddress);
+        }
+
+        // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
+        if (
+            _priceConfig.priceType == IAsset.PriceType.FIXED_PRICE
+                && !areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)
+        ) {
+            revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
+        }
+
+        $.plans[planId] = Plan({
+            owner: msg.sender,
+            price: _priceConfig,
+            credits: _creditsConfig,
+            nftAddress: _nftAddress,
+            lastUpdated: block.timestamp
+        });
+
+        // Store hooks for this plan
+        for (uint256 i = 0; i < _hooks.length; i++) {
+            $.planHooks[planId].push(_hooks[i]);
+        }
+
+        emit PlanRegistered(planId, msg.sender);
+        return planId;
+    }
+
+    /**
+     * @notice Creates a new pricing plan with specified configuration
+     * @param _priceConfig Configuration for the plan's pricing model
+     * @param _creditsConfig Configuration for the credits granted by the plan
+     * @param _nftAddress Address of the NFT contract implementing the credits
+     * @param _hooks Array of hook contracts to be called during agreement creation
+     * @return planId The ID of the created plan
+     * @dev Uses a default nonce of 0 for plan ID generation
+     */
+    function createPlanWithHooks(
+        PriceConfig memory _priceConfig,
+        CreditsConfig memory _creditsConfig,
+        address _nftAddress,
+        IHook[] calldata _hooks
+    ) public returns (uint256) {
+        IHook[] memory hooks = _hooks;
+        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, hooks, 0);
+    }
+
+    /**
+     * @notice Creates a new pricing plan with specified configuration
+     * @param _priceConfig Configuration for the plan's pricing model
+     * @param _creditsConfig Configuration for the credits granted by the plan
+     * @param _nftAddress Address of the NFT contract implementing the credits
+     * @param _hooks Array of hook contracts to be called during agreement creation
+     * @param _nonce Optional nonce to ensure unique plan IDs
+     * @return planId The ID of the created plan
+     */
+    function createPlanWithHooks(
+        PriceConfig memory _priceConfig,
+        CreditsConfig memory _creditsConfig,
+        address _nftAddress,
+        IHook[] calldata _hooks,
+        uint256 _nonce
+    ) public returns (uint256) {
+        IHook[] memory hooks = _hooks;
+        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, hooks, _nonce);
+    }
+
+    /**
+     * @notice Creates a new pricing plan with specified configuration
+     * @param _priceConfig Configuration for the plan's pricing model
+     * @param _creditsConfig Configuration for the credits granted by the plan
+     * @param _nftAddress Address of the NFT contract implementing the credits
+     * @return planId The ID of the created plan
+     * @dev Uses a default nonce of 0 and no hooks
+     */
     function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)
-        external
+        public
+        returns (uint256)
     {
-        _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
+        IHook[] memory emptyHooks = new IHook[](0);
+        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, 0);
     }
 
     /**
@@ -127,16 +229,18 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
      * @param _nftAddress Address of the NFT contract implementing the credits
-     * @param _nonce Optional nonce to ensure unique plan IDs when using identical configurations
-     * @dev The nonce allows creating multiple plans with the same parameters but different identifiers
+     * @param _nonce Optional nonce to ensure unique plan IDs
+     * @return planId The ID of the created plan
+     * @dev Uses no hooks
      */
     function createPlan(
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
         address _nftAddress,
         uint256 _nonce
-    ) external {
-        _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, _nonce);
+    ) public returns (uint256) {
+        IHook[] memory emptyHooks = new IHook[](0);
+        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, _nonce);
     }
 
     /**
@@ -157,62 +261,14 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         address _nftAddress
     ) external {
         uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
-        if (!this.planExists(planId)) {
-            _createPlan(msg.sender, _priceConfig, _creditsConfig, _nftAddress, 0);
+        if (!planExists(planId)) {
+            IHook[] memory emptyHooks = new IHook[](0);
+            _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, 0);
         }
 
         uint256[] memory _assetPlans = new uint256[](1);
         _assetPlans[0] = planId;
         register(_didSeed, _url, _assetPlans);
-    }
-
-    /**
-     * @notice Internal function to create a new pricing plan
-     * @param _owner Address that will own the plan
-     * @param _priceConfig Configuration for the plan's pricing model
-     * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
-     * @param _nonce Optional nonce to ensure unique plan IDs
-     * @dev Validates that the NFT contract implements ERC-1155 and that fees are properly included
-     * @dev Emits PlanRegistered event on successful creation
-     */
-    function _createPlan(
-        address _owner,
-        PriceConfig memory _priceConfig,
-        CreditsConfig memory _creditsConfig,
-        address _nftAddress,
-        uint256 _nonce
-    ) internal {
-        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
-
-        if (_priceConfig.amounts.length != _priceConfig.receivers.length) {
-            revert PriceConfigInvalidAmountsOrReceivers();
-        }
-
-        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _owner, _nonce);
-        if ($.plans[planId].lastUpdated != 0) {
-            revert PlanAlreadyRegistered(planId);
-        }
-
-        if (!_isNFT1155Contract(_nftAddress)) {
-            revert InvalidNFTAddress(_nftAddress);
-        }
-        // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
-        if (
-            _priceConfig.priceType == IAsset.PriceType.FIXED_PRICE
-                && !areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)
-        ) {
-            revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
-        }
-
-        $.plans[planId] = Plan({
-            owner: _owner,
-            price: _priceConfig,
-            credits: _creditsConfig,
-            nftAddress: _nftAddress,
-            lastUpdated: block.timestamp
-        });
-        emit PlanRegistered(planId, _owner);
     }
 
     /**
@@ -231,8 +287,18 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @return Boolean indicating whether the plan exists
      * @dev A plan exists if it has been registered and has a non-zero lastUpdated timestamp
      */
-    function planExists(uint256 _planId) external view returns (bool) {
+    function planExists(uint256 _planId) public view returns (bool) {
         return _getAssetsRegistryStorage().plans[_planId].lastUpdated != 0;
+    }
+
+    /**
+     * @notice Internal function to check if an address is the owner of a plan
+     * @param _planId The ID of the plan to check
+     * @param _address The address to check
+     * @return bool True if the address is the plan owner
+     */
+    function _isPlanOwner(uint256 _planId, address _address) internal view returns (bool) {
+        return _getAssetsRegistryStorage().plans[_planId].owner == _address;
     }
 
     /**
@@ -574,6 +640,38 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     function _getAssetsRegistryStorage() internal pure returns (AssetsRegistryStorage storage $) {
         assembly ("memory-safe") {
             $.slot := ASSETS_REGISTRY_STORAGE_LOCATION
+        }
+    }
+
+    /**
+     * @notice Gets the hooks associated with a plan
+     * @param _planId The ID of the plan
+     * @return Array of hook contracts
+     */
+    function getPlanHooks(uint256 _planId) external view returns (IHook[] memory) {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+        return $.planHooks[_planId];
+    }
+
+    /**
+     * @notice Sets the hooks for a plan
+     * @param _planId The ID of the plan
+     * @param _hooks Array of hook contracts
+     * @dev Only callable by the plan owner or authorized roles
+     */
+    function setPlanHooks(uint256 _planId, IHook[] calldata _hooks) external {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        // Verify plan exists and caller has permission
+        if (!planExists(_planId)) revert PlanNotFound(_planId);
+        if (!_isPlanOwner(_planId, msg.sender)) revert NotPlanOwner(_planId, msg.sender, $.plans[_planId].owner);
+
+        // Clear existing hooks
+        delete $.planHooks[_planId];
+
+        // Set new hooks
+        for (uint256 i = 0; i < _hooks.length; i++) {
+            $.planHooks[_planId].push(_hooks[i]);
         }
     }
 }

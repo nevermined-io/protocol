@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {DeployConfig} from './DeployConfig.sol';
 import {ManagePermissions} from './ManagePermissions.sol';
@@ -18,6 +18,7 @@ import {TransferCreditsCondition} from '../../contracts/conditions/TransferCredi
 
 import {FiatPaymentTemplate} from '../../contracts/agreements/FiatPaymentTemplate.sol';
 import {FixedPaymentTemplate} from '../../contracts/agreements/FixedPaymentTemplate.sol';
+import {OneTimeCreatorHook} from '../../contracts/hooks/OneTimeCreatorHook.sol';
 import {NFT1155Credits} from '../../contracts/token/NFT1155Credits.sol';
 import {NFT1155ExpirableCredits} from '../../contracts/token/NFT1155ExpirableCredits.sol';
 
@@ -62,7 +63,8 @@ contract ConfigureAll is Script, DeployConfig {
             ),
             fixedPaymentTemplate: FixedPaymentTemplate(vm.parseJsonAddress(json, '$.contracts.FixedPaymentTemplate')),
             fiatPaymentTemplate: FiatPaymentTemplate(vm.parseJsonAddress(json, '$.contracts.FiatPaymentTemplate')),
-            accessManager: AccessManager(vm.parseJsonAddress(json, '$.contracts.AccessManager'))
+            accessManager: AccessManager(vm.parseJsonAddress(json, '$.contracts.AccessManager')),
+            oneTimeCreatorHook: OneTimeCreatorHook(vm.parseJsonAddress(json, '$.contracts.OneTimeCreatorHook'))
         });
 
         managePermissions.run(config);

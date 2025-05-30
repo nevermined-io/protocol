@@ -1,7 +1,9 @@
 // Copyright 2025 Nevermined AG.
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
+
+import {IHook} from './IHook.sol';
 
 /**
  * @title Asset Management Interface
@@ -439,4 +441,11 @@ interface IAsset {
      * @param _newOwner The address of the new owner
      */
     function transferPlanOwnership(uint256 _planId, address _newOwner) external;
+
+    /**
+     * @notice Gets the hooks associated with a plan
+     * @param _planId The ID of the plan
+     * @return Array of hook contracts
+     */
+    function getPlanHooks(uint256 _planId) external view returns (IHook[] memory);
 }

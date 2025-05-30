@@ -1,7 +1,7 @@
 // Copyright 2025 Nevermined AG.
 // SPDX-License-Identifier: (Apache-2.0 AND CC-BY-4.0)
 // Code is Apache-2.0 and docs are CC-BY-4.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {DistributePaymentsCondition} from '../conditions/DistributePaymentsCondition.sol';
 import {LockPaymentCondition} from '../conditions/LockPaymentCondition.sol';
@@ -42,8 +42,6 @@ contract FixedPaymentTemplate is BaseTemplate {
     struct FixedPaymentTemplateStorage {
         /// @notice Reference to the NVMConfig contract for system configuration
         INVMConfig nvmConfig;
-        /// @notice Reference to the AssetsRegistry contract for plan information
-        IAsset assetsRegistry;
         // Conditions required to execute this template
         /// @notice Condition that locks the payment in a secure vault
         LockPaymentCondition lockPaymentCondition;
@@ -51,6 +49,8 @@ contract FixedPaymentTemplate is BaseTemplate {
         TransferCreditsCondition transferCondition;
         /// @notice Condition that distributes the locked payment to the asset owner
         DistributePaymentsCondition distributePaymentsCondition;
+        /// @notice Reference to the AgreementsStore contract for managing agreements
+        AgreementsStore agreementStore;
     }
 
     /**
@@ -73,11 +73,11 @@ contract FixedPaymentTemplate is BaseTemplate {
         TransferCreditsCondition _transferCondtionAddress,
         DistributePaymentsCondition _distributePaymentsCondition
     ) external initializer {
+        __BaseTemplate_init(_assetsRegistryAddress);
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
 
         $.nvmConfig = _nvmConfigAddress;
-        $.assetsRegistry = _assetsRegistryAddress;
-        _getBaseTemplateStorage().agreementStore = _agreementStoreAddress;
+        $.agreementStore = _agreementStoreAddress;
         $.lockPaymentCondition = _lockPaymentConditionAddress;
         $.transferCondition = _transferCondtionAddress;
         $.distributePaymentsCondition = _distributePaymentsCondition;
@@ -96,20 +96,19 @@ contract FixedPaymentTemplate is BaseTemplate {
      */
     function createAgreement(bytes32 _seed, uint256 _planId, bytes[] memory _params) external payable {
         FixedPaymentTemplateStorage storage $ = _getFixedPaymentTemplateStorage();
-        BaseTemplateStorage storage $bt = _getBaseTemplateStorage();
 
         // Validate inputs
         if (_seed == bytes32(0)) revert InvalidSeed(_seed);
         if (_planId == 0) revert InvalidPlanId(_planId);
 
         // Check if the Plan is registered in the AssetsRegistry
-        if (!$.assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
+        if (!_getBaseTemplateStorage().assetsRegistry.planExists(_planId)) revert IAsset.PlanNotFound(_planId);
 
         // Calculate agreementId
         bytes32 agreementId = keccak256(abi.encode(NVM_CONTRACT_NAME, msg.sender, _seed, _planId, _params));
 
         // Check if the agreement is already registered
-        IAgreement.Agreement memory agreement = $bt.agreementStore.getAgreement(agreementId);
+        IAgreement.Agreement memory agreement = $.agreementStore.getAgreement(agreementId);
 
         if (agreement.lastUpdated != 0) {
             revert IAgreement.AgreementAlreadyRegistered(agreementId);
@@ -124,14 +123,20 @@ contract FixedPaymentTemplate is BaseTemplate {
             agreementId, $.distributePaymentsCondition.NVM_CONTRACT_NAME()
         );
 
-        $bt.agreementStore.register(
-            agreementId, msg.sender, _planId, conditionIds, new IAgreement.ConditionState[](3), _params
-        );
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](3);
+
+        // Execute before hooks
+        _executeBeforeHooks(_planId, agreementId, msg.sender, conditionIds, conditionStates, _params);
+
+        $.agreementStore.register(agreementId, msg.sender, _planId, conditionIds, conditionStates, _params);
 
         // Lock the payment
         _lockPayment(conditionIds[0], agreementId, _planId, msg.sender);
         _transferPlan(conditionIds[1], agreementId, _planId, conditionIds[0], msg.sender);
         _distributePayments(conditionIds[2], agreementId, _planId, conditionIds[0], conditionIds[1]);
+
+        // Execute after hooks
+        _executeAfterHooks(_planId, agreementId, msg.sender, conditionIds, _params);
     }
 
     /**

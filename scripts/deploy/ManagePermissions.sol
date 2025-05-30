@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.28;
+pragma solidity ^0.8.30;
 
 import {AssetsRegistry} from '../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
@@ -13,9 +13,10 @@ import {DistributePaymentsCondition} from '../../contracts/conditions/Distribute
 import {FiatSettlementCondition} from '../../contracts/conditions/FiatSettlementCondition.sol';
 import {LockPaymentCondition} from '../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../contracts/conditions/TransferCreditsCondition.sol';
+
+import {OneTimeCreatorHook} from '../../contracts/hooks/OneTimeCreatorHook.sol';
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
 import {NFT1155Credits} from '../../contracts/token/NFT1155Credits.sol';
-
 import {NFT1155ExpirableCredits} from '../../contracts/token/NFT1155ExpirableCredits.sol';
 import {Constants} from '../../scripts/Constants.sol';
 import {DeployConfig} from './DeployConfig.sol';
@@ -45,6 +46,7 @@ contract ManagePermissions is Script, DeployConfig {
         FiatSettlementCondition fiatSettlementCondition;
         FixedPaymentTemplate fixedPaymentTemplate;
         FiatPaymentTemplate fiatPaymentTemplate;
+        OneTimeCreatorHook oneTimeCreatorHook;
         AccessManager accessManager;
     }
 
@@ -62,7 +64,8 @@ contract ManagePermissions is Script, DeployConfig {
                 address(config.assetsRegistry),
                 address(config.paymentsVault),
                 address(config.nftCredits),
-                address(config.nftExpirableCredits)
+                address(config.nftExpirableCredits),
+                address(config.oneTimeCreatorHook)
             ),
             config.accessManager
         );
