@@ -5,13 +5,18 @@ pragma solidity ^0.8.30;
 
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
+
+import {IHook} from '../../../contracts/interfaces/IHook.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 import {console2} from 'forge-std/console2.sol';
 
 import {AssetsRegistryV2} from '../../../contracts/mock/AssetsRegistryV2.sol';
 import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
+import {ProtocolStandardFees} from '../../../contracts/fees/ProtocolStandardFees.sol';
 import {IERC165} from '@openzeppelin/contracts/utils/introspection/IERC165.sol';
 
 contract AssetsRegistryTest is BaseTest {
@@ -123,13 +128,35 @@ contract AssetsRegistryTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = address(this);
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+                tokenAddress: address(0),
+                amounts: _amounts,
+                receivers: _receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                proofRequired: false,
+                minAmount: 1,
+                maxAmount: 1
+            }),
+            nftAddress: address(0),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
+
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: new uint256[](0),
+            receivers: new address[](0),
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -143,8 +170,15 @@ contract AssetsRegistryTest is BaseTest {
         });
 
         address nftAddress = address(assetsRegistry);
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
+        );
+
+        plan.price.amounts = amounts;
+        plan.price.receivers = receivers;
+
         vm.expectPartialRevert(IAsset.InvalidNFTAddress.selector);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, IFeeController(address(0)));
     }
 
     function test_canRegisterAssetWithoutPlans() public {
@@ -186,7 +220,7 @@ contract AssetsRegistryTest is BaseTest {
         assertEq(plan.lastUpdated, 0);
     }
 
-    function test_addFeesToPaymentsDistribution() public view {
+    function test_addFeesToPaymentsDistribution() public {
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
 
@@ -195,10 +229,35 @@ contract AssetsRegistryTest is BaseTest {
         receivers[0] = address(0x04005BBD24EC13D5920aD8845C55496A4C24c466);
         receivers[1] = address(0x9Aa6E515c64fC46FC8B20bA1Ca7f9B26ff404548);
 
-        (uint256[] memory newAmounts, address[] memory newReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_PRICE,
+                tokenAddress: address(0),
+                amounts: amounts,
+                receivers: receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                minAmount: 1,
+                maxAmount: 1,
+                proofRequired: false
+            }),
+            nftAddress: address(nftCredits),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
 
-        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(newAmounts, newReceivers);
+        // Register the plan
+        uint256 planId =
+            assetsRegistry.createPlan(plan.price, plan.credits, plan.nftAddress, IFeeController(address(0)));
+
+        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(planId);
         assertTrue(areFeesIncluded);
     }
 
@@ -416,33 +475,10 @@ contract AssetsRegistryTest is BaseTest {
         // Create a plan first
         uint256 planId = _createPlan(0);
 
-        // Try to create the same plan again
-        uint256[] memory _amounts = new uint256[](1);
-        _amounts[0] = 100;
-        address[] memory _receivers = new address[](1);
-        _receivers[0] = address(this);
-
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
-        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
-            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
-            tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
-            contractAddress: address(0)
-        });
-        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
-            creditsType: IAsset.CreditsType.FIXED,
-            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
-            durationSecs: 0,
-            amount: 100,
-            minAmount: 1,
-            maxAmount: 1,
-            proofRequired: false
-        });
+        IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
 
         vm.expectRevert(abi.encodeWithSelector(IAsset.PlanAlreadyRegistered.selector, planId));
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0);
+        assetsRegistry.createPlan(plan.price, plan.credits, plan.nftAddress, 0, plan.feeController);
     }
 
     function test_createPlan_revertIfInvalidNFTAddress() public {
@@ -469,13 +505,13 @@ contract AssetsRegistryTest is BaseTest {
         // Use a non-NFT1155 contract address
         address nonNFTAddress = address(this);
         vm.expectRevert(abi.encodeWithSelector(IAsset.InvalidNFTAddress.selector, nonNFTAddress));
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nonNFTAddress, 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nonNFTAddress, 0, IFeeController(address(0)));
     }
 
     function test_createPlan_revertIfNeverminedFeesNotIncluded() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+        nvmConfig.setFeeReceiver(nvmFeeReceiver);
 
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
@@ -506,7 +542,7 @@ contract AssetsRegistryTest is BaseTest {
                 IAsset.NeverminedFeesNotIncluded.selector, priceConfig.amounts, priceConfig.receivers
             )
         );
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, IFeeController(address(0)));
     }
 
     function test_createPlan_successWithNeverminedFees() public {
@@ -515,13 +551,11 @@ contract AssetsRegistryTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = owner;
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -534,11 +568,15 @@ contract AssetsRegistryTest is BaseTest {
             proofRequired: false
         });
 
-        // Use NFT1155Credits contract
-        address nftAddress = address(nftCredits);
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
+        );
+
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
 
         // Should not revert
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0)));
     }
 
     function test_createPlan_successWithNonFixedPrice() public {
@@ -566,7 +604,7 @@ contract AssetsRegistryTest is BaseTest {
         address nftAddress = address(nftCredits);
 
         // Should not revert even without Nevermined fees since it's not FIXED_PRICE
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, IFeeController(address(0)));
     }
 
     function test_assetExists() public {
@@ -629,7 +667,7 @@ contract AssetsRegistryTest is BaseTest {
         });
 
         vm.expectRevert(IAsset.PriceConfigInvalidAmountsOrReceivers.selector);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0, IFeeController(address(0)));
     }
 
     function test_addPlanToAsset_revertIfPlanNotFound() public {
@@ -663,7 +701,7 @@ contract AssetsRegistryTest is BaseTest {
     function test_addFeesToPaymentsDistribution_revertIfMultipleFeeReceivers() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+        nvmConfig.setFeeReceiver(nvmFeeReceiver);
 
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -674,8 +712,32 @@ contract AssetsRegistryTest is BaseTest {
         receivers[0] = nvmFeeReceiver;
         receivers[1] = nvmFeeReceiver;
 
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_PRICE,
+                tokenAddress: address(0),
+                amounts: amounts,
+                receivers: receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                minAmount: 1,
+                maxAmount: 1,
+                proofRequired: false
+            }),
+            nftAddress: address(nftCredits),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
+
         vm.expectRevert(IAsset.MultipleFeeReceiversIncluded.selector);
-        assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
+        assetsRegistry.createPlan(plan.price, plan.credits, plan.nftAddress, plan.feeController);
     }
 
     function test_assetExists_revertIfAssetNotFound() public view {
@@ -716,7 +778,7 @@ contract AssetsRegistryTest is BaseTest {
     function test_addFeesToPaymentsDistribution_whenFeesNotIncluded() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100000, nvmFeeReceiver);
+        nvmConfig.setFeeReceiver(nvmFeeReceiver);
 
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -727,8 +789,33 @@ contract AssetsRegistryTest is BaseTest {
         receivers[0] = address(1);
         receivers[1] = address(2);
 
-        (uint256[] memory newAmounts, address[] memory newReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_PRICE,
+                tokenAddress: address(0),
+                amounts: amounts,
+                receivers: receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                minAmount: 1,
+                maxAmount: 1,
+                proofRequired: false
+            }),
+            nftAddress: address(nftCredits),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
+
+        (uint256[] memory newAmounts, address[] memory newReceivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            amounts, receivers, plan.price, plan.credits, plan.nftAddress, plan.feeController
+        );
 
         // Verify that fees were added
         assertEq(newAmounts.length, amounts.length + 1, 'Should add one more amount for fees');
@@ -739,7 +826,7 @@ contract AssetsRegistryTest is BaseTest {
 
         // Verify that the amounts are correctly distributed
         uint256 totalOriginalAmount = amounts[0] + amounts[1];
-        uint256 feeAmount = (totalOriginalAmount * 100000) / 1000000; // 10% fee
+        uint256 feeAmount = (totalOriginalAmount * 10000) / 1000000; // 1% fee
         assertEq(newAmounts[newAmounts.length - 1], feeAmount, 'Fee amount should be correct');
 
         // Verify that the original amounts are preserved
@@ -752,7 +839,7 @@ contract AssetsRegistryTest is BaseTest {
     function test_areNeverminedFeesIncluded_feeReceiverIncludedButAmountTooLow() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100000, nvmFeeReceiver); // 10% fee
+        nvmConfig.setFeeReceiver(nvmFeeReceiver); // 10% fee
 
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -763,14 +850,38 @@ contract AssetsRegistryTest is BaseTest {
         receivers[0] = address(1);
         receivers[1] = nvmFeeReceiver;
 
-        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(amounts, receivers);
-        assertFalse(areFeesIncluded, 'Fees should not be considered included when amount is too low');
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_PRICE,
+                tokenAddress: address(0),
+                amounts: amounts,
+                receivers: receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                minAmount: 1,
+                maxAmount: 1,
+                proofRequired: false
+            }),
+            nftAddress: address(nftCredits),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
+
+        vm.expectPartialRevert(IAsset.NeverminedFeesNotIncluded.selector);
+        assetsRegistry.createPlan(plan.price, plan.credits, plan.nftAddress, plan.feeController);
     }
 
     function test_areNeverminedFeesIncluded_feeReceiverIncludedButAmountTooHigh() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100000, nvmFeeReceiver); // 10% fee
+        nvmConfig.setFeeReceiver(nvmFeeReceiver); // 10% fee
 
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -781,7 +892,126 @@ contract AssetsRegistryTest is BaseTest {
         receivers[0] = address(1);
         receivers[1] = nvmFeeReceiver;
 
-        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(amounts, receivers);
-        assertFalse(areFeesIncluded, 'Fees should not be considered included when amount is too high');
+        // Create a dummy plan for testing
+        IAsset.Plan memory plan = IAsset.Plan({
+            owner: address(this),
+            price: IAsset.PriceConfig({
+                priceType: IAsset.PriceType.FIXED_PRICE,
+                tokenAddress: address(0),
+                amounts: amounts,
+                receivers: receivers,
+                contractAddress: address(0)
+            }),
+            credits: IAsset.CreditsConfig({
+                creditsType: IAsset.CreditsType.FIXED,
+                redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+                durationSecs: 0,
+                amount: 100,
+                minAmount: 1,
+                maxAmount: 1,
+                proofRequired: false
+            }),
+            nftAddress: address(nftCredits),
+            feeController: IFeeController(address(0)),
+            lastUpdated: block.timestamp
+        });
+
+        vm.expectPartialRevert(IAsset.NeverminedFeesNotIncluded.selector);
+        assetsRegistry.createPlan(plan.price, plan.credits, plan.nftAddress, plan.feeController);
+    }
+
+    function test_setPlanFeeController() public {
+        uint256 planId = _createPlan();
+
+        // Set a custom fee controller
+        assetsRegistry.setPlanFeeController(planId, IFeeController(protocolStandardFees));
+
+        // Verify the fee controller was set
+        IAsset.Plan memory plan = assetsRegistry.getPlan(planId);
+        assertEq(address(plan.feeController), address(protocolStandardFees));
+    }
+
+    function test_setPlanFeeController_revertIfNotOwner() public {
+        uint256 planId = _createPlan();
+
+        // Try to set fee controller as non-owner
+        address nonOwner = makeAddr('nonOwner');
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.NotPlanOwner.selector, planId, nonOwner, address(this)));
+        assetsRegistry.setPlanFeeController(planId, IFeeController(protocolStandardFees));
+    }
+
+    function test_setPlanHooks() public {
+        uint256 planId = _createPlan();
+
+        // Create mock hooks
+        IHook[] memory hooks = new IHook[](2);
+        hooks[0] = IHook(makeAddr('hook1'));
+        hooks[1] = IHook(makeAddr('hook2'));
+
+        // Set hooks for the plan
+        assetsRegistry.setPlanHooks(planId, hooks);
+
+        // Verify hooks were set correctly
+        IHook[] memory retrievedHooks = assetsRegistry.getPlanHooks(planId);
+        assertEq(retrievedHooks.length, 2);
+        assertEq(address(retrievedHooks[0]), address(hooks[0]));
+        assertEq(address(retrievedHooks[1]), address(hooks[1]));
+    }
+
+    function test_setPlanHooks_revertIfNotOwner() public {
+        uint256 planId = _createPlan();
+
+        // Create mock hooks
+        IHook[] memory hooks = new IHook[](1);
+        hooks[0] = IHook(makeAddr('hook1'));
+
+        // Try to set hooks as non-owner
+        address nonOwner = makeAddr('nonOwner');
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.NotPlanOwner.selector, planId, nonOwner, address(this)));
+        assetsRegistry.setPlanHooks(planId, hooks);
+    }
+
+    function test_setPlanHooks_revertIfPlanNotFound() public {
+        uint256 nonExistentPlanId = 999;
+
+        // Create mock hooks
+        IHook[] memory hooks = new IHook[](1);
+        hooks[0] = IHook(makeAddr('hook1'));
+
+        vm.expectRevert(abi.encodeWithSelector(IAsset.PlanNotFound.selector, nonExistentPlanId));
+        assetsRegistry.setPlanHooks(nonExistentPlanId, hooks);
+    }
+
+    function test_setDefaultFeeController() public {
+        // Create a new fee controller
+        address newFeeController = makeAddr('newFeeController');
+
+        // Set new default fee controller
+        vm.prank(governor);
+        assetsRegistry.setDefaultFeeController(IFeeController(newFeeController));
+
+        // Verify the default fee controller was updated
+        assertEq(address(assetsRegistry.getDefaultFeeController()), newFeeController);
+    }
+
+    function test_setDefaultFeeController_revertIfNotGovernor() public {
+        // Create a new fee controller
+        address newFeeController = makeAddr('newFeeController');
+
+        // Try to set default fee controller as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        assetsRegistry.setDefaultFeeController(IFeeController(newFeeController));
+    }
+
+    function test_getDefaultFeeController() public view {
+        // Get the current default fee controller
+        IFeeController currentFeeController = assetsRegistry.getDefaultFeeController();
+
+        // Verify it matches the one set in BaseTest
+        assertEq(address(currentFeeController), address(protocolStandardFees));
     }
 }

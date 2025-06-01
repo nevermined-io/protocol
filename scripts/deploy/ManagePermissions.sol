@@ -13,6 +13,7 @@ import {DistributePaymentsCondition} from '../../contracts/conditions/Distribute
 import {FiatSettlementCondition} from '../../contracts/conditions/FiatSettlementCondition.sol';
 import {LockPaymentCondition} from '../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../contracts/conditions/TransferCreditsCondition.sol';
+import {ProtocolStandardFees} from '../../contracts/fees/ProtocolStandardFees.sol';
 
 import {OneTimeCreatorHook} from '../../contracts/hooks/OneTimeCreatorHook.sol';
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
@@ -47,6 +48,7 @@ contract ManagePermissions is Script, DeployConfig {
         FixedPaymentTemplate fixedPaymentTemplate;
         FiatPaymentTemplate fiatPaymentTemplate;
         OneTimeCreatorHook oneTimeCreatorHook;
+        ProtocolStandardFees protocolStandardFees;
         AccessManager accessManager;
     }
 
@@ -72,7 +74,9 @@ contract ManagePermissions is Script, DeployConfig {
 
         // Grant and configure governor role
         _grantGovernorRole(config.governor, config.accessManager);
-        _configureGovernorRole(config.accessManager, config.nvmConfig);
+        _configureGovernorRole(
+            config.accessManager, config.nvmConfig, config.assetsRegistry, config.protocolStandardFees
+        );
         _grantInfraAdminRole(config.governor, config.accessManager); // we grant the infra admin role to the governor
 
         // Grant and configure deposit role
@@ -224,15 +228,28 @@ contract ManagePermissions is Script, DeployConfig {
         }
     }
 
-    function _configureGovernorRole(AccessManager accessManager, NVMConfig nvmConfig) internal {
+    function _configureGovernorRole(
+        AccessManager accessManager,
+        NVMConfig nvmConfig,
+        AssetsRegistry assetsRegistry,
+        ProtocolStandardFees protocolStandardFees
+    ) internal {
         console2.log('Setting Governor Role for setters in NVMConfig');
 
         accessManager.setTargetFunctionRole(
             address(nvmConfig),
             toArray(
-                NVMConfig.setNetworkFees.selector, NVMConfig.setParameter.selector, NVMConfig.disableParameter.selector
+                NVMConfig.setParameter.selector, NVMConfig.disableParameter.selector, NVMConfig.setFeeReceiver.selector
             ),
             GOVERNOR_ROLE
+        );
+
+        accessManager.setTargetFunctionRole(
+            address(assetsRegistry), toArray(AssetsRegistry.setDefaultFeeController.selector), GOVERNOR_ROLE
+        );
+
+        accessManager.setTargetFunctionRole(
+            address(protocolStandardFees), toArray(ProtocolStandardFees.updateFeeRates.selector), GOVERNOR_ROLE
         );
     }
 

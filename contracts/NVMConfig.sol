@@ -28,13 +28,6 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
         0xd8dc47a566e10bab714c93f5587c29375a3dcfd68f88494af6f1cf90589ce900;
 
     /**
-     * @notice Denominator used for fee calculations, representing 100% with 4 decimal places
-     * @dev When calculating fees, divide the fee value by FEE_DENOMINATOR to get the actual percentage
-     * Example: 10000 / 1000000 = 0.01 = 1%
-     */
-    uint256 public constant FEE_DENOMINATOR = 1000000;
-
-    /**
      * @title ParamEntry
      * @notice Represents a configuration parameter in the Nevermined ecosystem
      * @dev This struct stores all relevant information about a configuration parameter
@@ -62,12 +55,6 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => ParamEntry) configParams;
         /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
         /**
-         * @notice The fee charged by Nevermined for using the Service Agreements
-         * @dev Integer representing a percentage with 4 decimal places
-         * Example: 10000 represents 1.0000% (10000/1000000)
-         */
-        uint256 networkFee;
-        /**
          * @notice The address that receives protocol fees
          * @dev This address collects all fees from service agreement executions
          */
@@ -88,41 +75,24 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Sets the network fee and fee receiver address for the Nevermined protocol
+     * @notice Sets the fee receiver address for the Nevermined protocol
      * @dev Only a governor address can call this function
      * @dev Emits NeverminedConfigChange events for both fee and receiver updates
-     * @dev The fee is expressed as a value between 0 and 1,000,000 (representing 0% to 100%)
      *
-     * @param _networkFee The fee percentage charged by Nevermined (in parts per 1,000,000)
      * @param _feeReceiver The address that will receive collected fees
      *
      * @custom:error InvalidNetworkFee Thrown if the fee is outside the valid range (0-1,000,000)
      * @custom:error InvalidFeeReceiver Thrown if a fee is set but the receiver is the zero address
      */
-    function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual restricted {
+    function setFeeReceiver(address _feeReceiver) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
-        if (_networkFee > 1000000) {
-            revert InvalidNetworkFee(_networkFee);
-        }
-
-        if (_networkFee > 0 && _feeReceiver == address(0)) {
+        if (_feeReceiver == address(0)) {
             revert InvalidFeeReceiver(_feeReceiver);
         }
 
-        $.networkFee = _networkFee;
         $.feeReceiver = _feeReceiver;
-        emit NeverminedConfigChange(msg.sender, keccak256('networkFee'), abi.encodePacked(_networkFee));
         emit NeverminedConfigChange(msg.sender, keccak256('feeReceiver'), abi.encodePacked(_feeReceiver));
-    }
-
-    /**
-     * @notice Retrieves the current network fee percentage
-     * @dev The returned value must be divided by FEE_DENOMINATOR to get the actual percentage
-     * @return Current network fee in parts per 1,000,000 (e.g., 10000 = 1%)
-     */
-    function getNetworkFee() external view returns (uint256) {
-        return _getNVMConfigStorage().networkFee;
     }
 
     /**
@@ -130,17 +100,8 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @dev If this returns the zero address and fees are set, fees cannot be collected
      * @return The current fee receiver address
      */
-    function getFeeReceiver() external view returns (address) {
+    function getFeeReceiver() external view override returns (address) {
         return _getNVMConfigStorage().feeReceiver;
-    }
-
-    /**
-     * @notice Returns the denominator used for fee calculations
-     * @dev This is a constant value used as the denominator when calculating fee percentages
-     * @return The fee denominator constant (1,000,000 representing 100% with 4 decimal places)
-     */
-    function getFeeDenominator() external pure returns (uint256) {
-        return FEE_DENOMINATOR;
     }
 
     /**
@@ -152,7 +113,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @param _paramName The name/key of the parameter to set (as bytes32)
      * @param _value The value to set for the parameter (as arbitrary bytes)
      */
-    function setParameter(bytes32 _paramName, bytes memory _value) external virtual restricted {
+    function setParameter(bytes32 _paramName, bytes memory _value) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         $.configParams[_paramName].value = _value;
@@ -173,6 +134,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     function getParameter(bytes32 _paramName)
         external
         view
+        override
         returns (bytes memory value, bool isActive, uint256 lastUpdated)
     {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
@@ -192,7 +154,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      *
      * @param _paramName The name/key of the parameter to disable
      */
-    function disableParameter(bytes32 _paramName) external virtual restricted {
+    function disableParameter(bytes32 _paramName) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         if ($.configParams[_paramName].isActive) {
@@ -209,7 +171,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @param _paramName The name/key of the parameter to check
      * @return Boolean indicating whether the parameter exists and is active
      */
-    function parameterExists(bytes32 _paramName) external view returns (bool) {
+    function parameterExists(bytes32 _paramName) external view override returns (bool) {
         return _getNVMConfigStorage().configParams[_paramName].isActive;
     }
 

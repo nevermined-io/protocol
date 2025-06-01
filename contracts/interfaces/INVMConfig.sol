@@ -20,13 +20,6 @@ interface INVMConfig {
     event NeverminedConfigChange(address indexed whoChanged, bytes32 indexed parameter, bytes value);
 
     /**
-     * @notice Error thrown when an invalid network fee is provided
-     * @dev Fee must be between 0 and FEE_DENOMINATOR (1,000,000, representing 100%)
-     * @param networkFee The invalid network fee that was provided
-     */
-    error InvalidNetworkFee(uint256 networkFee);
-
-    /**
      * @notice Error thrown when an invalid fee receiver address is provided
      * @dev The fee receiver cannot be the zero address when fees are enabled
      * @param feeReceiver The invalid fee receiver address that was provided
@@ -40,13 +33,6 @@ interface INVMConfig {
     error InvalidAddress(address _address);
 
     /**
-     * @notice Retrieves the current network fee percentage
-     * @dev The returned value must be divided by FEE_DENOMINATOR to get the actual percentage
-     * @return Current network fee in parts per 1,000,000 (e.g., 10000 = 1%)
-     */
-    function getNetworkFee() external view returns (uint256);
-
-    /**
      * @notice Retrieves the address that receives protocol fees
      * @dev If this returns the zero address and fees are set, fees cannot be collected
      * @return The current fee receiver address
@@ -54,9 +40,55 @@ interface INVMConfig {
     function getFeeReceiver() external view returns (address);
 
     /**
-     * @notice Returns the denominator used for fee calculations
-     * @dev This is a constant value used as the denominator when calculating fee percentages
-     * @return The fee denominator constant (1,000,000 representing 100% with 4 decimal places)
+     * @notice Sets the fee receiver address for the Nevermined protocol
+     * @dev Only a governor address can call this function
+     * @dev Emits NeverminedConfigChange events for both fee and receiver updates
+     *
+     * @param _feeReceiver The address that will receive collected fees
      */
-    function getFeeDenominator() external pure returns (uint256);
+    function setFeeReceiver(address _feeReceiver) external;
+
+    /**
+     * @notice Sets a parameter in the Nevermined configuration
+     * @dev Only an account with GOVERNOR_ROLE can call this function
+     * @dev Emits NeverminedConfigChange event on parameter update
+     * @dev Parameters are generic key-value pairs that can store any configuration data
+     *
+     * @param _paramName The name/key of the parameter to set (as bytes32)
+     * @param _value The value to set for the parameter (as arbitrary bytes)
+     */
+    function setParameter(bytes32 _paramName, bytes memory _value) external;
+
+    /**
+     * @notice Retrieves a parameter from the Nevermined configuration
+     * @dev Returns the complete parameter entry including value, status and timestamp
+     *
+     * @param _paramName The name/key of the parameter to retrieve (as bytes32)
+     * @return value The parameter's raw bytes value
+     * @return isActive Whether the parameter is currently active
+     * @return lastUpdated Timestamp of when the parameter was last updated
+     */
+    function getParameter(bytes32 _paramName)
+        external
+        view
+        returns (bytes memory value, bool isActive, uint256 lastUpdated);
+
+    /**
+     * @notice Disables a parameter in the Nevermined configuration
+     * @dev Only an account with GOVERNOR_ROLE can call this function
+     * @dev Emits NeverminedConfigChange event on parameter update
+     * @dev Does nothing if the parameter is already inactive
+     *
+     * @param _paramName The name/key of the parameter to disable (as bytes32)
+     */
+    function disableParameter(bytes32 _paramName) external;
+
+    /**
+     * @notice Checks if a parameter exists in the Nevermined configuration
+     * @dev Returns true if the parameter exists, false otherwise
+     *
+     * @param _paramName The name/key of the parameter to check (as bytes32)
+     * @return bool True if the parameter exists, false otherwise
+     */
+    function parameterExists(bytes32 _paramName) external view returns (bool);
 }

@@ -206,11 +206,11 @@ contract ManagedPermissionsTest is BaseTest, ERC1155Holder {
         _grantRole(GOVERNOR_ROLE, roleUser);
         // Should succeed
         vm.prank(roleUser);
-        nvmConfig.setNetworkFees(0, address(this));
+        nvmConfig.setFeeReceiver(address(this));
         // Should revert for nonRoleUser
         vm.prank(nonRoleUser);
         vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, nonRoleUser));
-        nvmConfig.setNetworkFees(0, address(this));
+        nvmConfig.setFeeReceiver(address(this));
     }
 
     // AgreementsStore: CONTRACT_TEMPLATE_ROLE and CONTRACT_CONDITION_ROLE

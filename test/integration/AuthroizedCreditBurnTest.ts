@@ -40,6 +40,7 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
   let walletClient
   let bobCreditsBalance: bigint
   let creditsBurnerWallet: WalletClient
+  let protocolStandardFees: any
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -60,6 +61,7 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
     accessManager = _deployment.accessManager
+    protocolStandardFees = _deployment.protocolStandardFees
 
     owner = wallets[0]
     alice = wallets[3]
@@ -124,17 +126,18 @@ describe('IT: FixedPaymentTemplate comprehensive test with authorized credit bur
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       did = result.did
       planId = result.planId
 
       await sleep(2000)
-      
+
       const asset = await assetsRegistry.read.getAsset([did])
-      
+
       console.log(' **** Result:', result)
       console.log(' **** Asset:', asset)
-      
+
       // Verify asset and plan are registered
       expect(asset.lastUpdated > 0n).to.be.true
 

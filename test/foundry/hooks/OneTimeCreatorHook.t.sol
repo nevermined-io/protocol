@@ -6,6 +6,7 @@ import {FixedPaymentTemplate} from '../../../contracts/agreements/FixedPaymentTe
 
 import {FIAT_SETTLEMENT_ROLE} from '../../../contracts/common/Roles.sol';
 import {OneTimeCreatorHook} from '../../../contracts/hooks/OneTimeCreatorHook.sol';
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
@@ -62,13 +63,11 @@ contract OneTimeCreatorHookTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = creator;
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: new uint256[](0),
+            receivers: new address[](0),
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -81,9 +80,15 @@ contract OneTimeCreatorHookTest is BaseTest {
             proofRequired: false
         });
 
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
+        );
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         address nftAddress = address(nftCredits);
         vm.prank(creator);
-        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, nftAddress, hooks);
+        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, nftAddress, hooks, IFeeController(address(0)));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, creator, 0);
     }
 }

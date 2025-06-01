@@ -34,6 +34,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -53,7 +54,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     lockPaymentCondition = _deployment.lockPaymentCondition
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
-
+    protocolStandardFees = _deployment.protocolStandardFees
     owner = wallets[0]
     alice = wallets[3]
     bob = wallets[4]
@@ -88,7 +89,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   }
   describe('Contracts Config', function () {
     it('I can load config', async () => {
-      expect((await nvmConfig.read.getNetworkFee()) > 0n).to.be.true
+      expect((await nvmConfig.read.getFeeReceiver()) > 0n).to.be.true
     })
   })
   describe('Native Token Payment Flow', function () {
@@ -110,6 +111,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       did = result.did
       planId = result.planId
@@ -218,6 +220,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       did = result.did
       planId = result.planId
@@ -310,6 +313,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       const newDid = result.did
       const newPlanId = result.planId
@@ -348,6 +352,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         createCreditsConfig(),
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       did = result.did
       planId = result.planId

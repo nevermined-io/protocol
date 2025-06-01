@@ -9,12 +9,13 @@ import {TransferCreditsCondition} from '../../contracts/conditions/TransferCredi
 import {IAgreement} from '../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../contracts/interfaces/IAsset.sol';
 import {IVault} from '../../contracts/interfaces/IVault.sol';
+
+import {Script} from '../../lib/forge-std/src/Script.sol';
+import {console2} from '../../lib/forge-std/src/console2.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
 
 contract DeployConditions is DeployConfig, Create2DeployUtils {
     error LockPaymentConditionDeployment_InvalidAuthority(address authority);

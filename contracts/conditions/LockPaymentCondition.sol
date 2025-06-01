@@ -112,7 +112,7 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
 
         if (plan.price.priceType == IAsset.PriceType.FIXED_PRICE) {
             // Check if the amounts and receivers include the Nevermined fees
-            if (!$.assetsRegistry.areNeverminedFeesIncluded(plan.price.amounts, plan.price.receivers)) {
+            if (!$.assetsRegistry.areNeverminedFeesIncluded(_planId)) {
                 revert IAsset.NeverminedFeesNotIncluded(plan.price.amounts, plan.price.receivers);
             }
 

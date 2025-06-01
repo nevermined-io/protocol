@@ -7,6 +7,7 @@ import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {INFT1155} from '../../../contracts/interfaces/INFT1155.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
@@ -99,13 +100,11 @@ contract NFT1155CreditsTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = address(this);
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -118,8 +117,15 @@ contract NFT1155CreditsTest is BaseTest {
             maxAmount: 100
         });
 
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
+        );
+
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0)));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
     }
 

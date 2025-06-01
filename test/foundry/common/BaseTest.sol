@@ -16,9 +16,11 @@ import {FiatSettlementCondition} from '../../../contracts/conditions/FiatSettlem
 import {LockPaymentCondition} from '../../../contracts/conditions/LockPaymentCondition.sol';
 import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
 
+import {ProtocolStandardFees} from '../../../contracts/fees/ProtocolStandardFees.sol';
 import {OneTimeCreatorHook} from '../../../contracts/hooks/OneTimeCreatorHook.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {AgreementsStoreV2} from '../../../contracts/mock/AgreementsStoreV2.sol';
 import {AssetsRegistryV2} from '../../../contracts/mock/AssetsRegistryV2.sol';
 import {NFT1155CreditsV2} from '../../../contracts/mock/NFT1155CreditsV2.sol';
@@ -61,6 +63,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
     FixedPaymentTemplate fixedPaymentTemplate;
     FiatPaymentTemplate fiatPaymentTemplate;
     OneTimeCreatorHook oneTimeCreatorHook;
+    ProtocolStandardFees protocolStandardFees;
 
     function setUp() public virtual {
         _deployContracts();
@@ -111,6 +114,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
         fixedPaymentTemplate = deployed.fixedPaymentTemplate;
         fiatPaymentTemplate = deployed.fiatPaymentTemplate;
         oneTimeCreatorHook = deployed.oneTimeCreatorHook;
+        protocolStandardFees = deployed.protocolStandardFees;
 
         ManagePermissions.Config memory config = ManagePermissions.Config({
             owner: owner,
@@ -129,6 +133,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
             fixedPaymentTemplate: fixedPaymentTemplate,
             fiatPaymentTemplate: fiatPaymentTemplate,
             oneTimeCreatorHook: oneTimeCreatorHook,
+            protocolStandardFees: protocolStandardFees,
             accessManager: accessManager
         });
 
@@ -176,13 +181,11 @@ abstract contract BaseTest is Test, ToArrayUtils {
         address[] memory _receivers = new address[](1);
         _receivers[0] = address(this);
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: new uint256[](0),
+            receivers: new address[](0),
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -195,8 +198,14 @@ abstract contract BaseTest is Test, ToArrayUtils {
             proofRequired: false
         });
 
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
+        );
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         address nftAddress = address(nftCredits);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, nonce);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, nonce, IFeeController(address(0)));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, address(this), nonce);
     }
 
@@ -206,13 +215,11 @@ abstract contract BaseTest is Test, ToArrayUtils {
         address[] memory _receivers = new address[](1);
         _receivers[0] = address(this);
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: new uint256[](0),
+            receivers: new address[](0),
             contractAddress: address(0)
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -225,8 +232,14 @@ abstract contract BaseTest is Test, ToArrayUtils {
             proofRequired: true
         });
 
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
+        );
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         address nftAddress = address(nftCredits);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, nonce);
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nftAddress, nonce, IFeeController(address(0)));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, address(this), nonce);
     }
 
@@ -251,14 +264,11 @@ abstract contract BaseTest is Test, ToArrayUtils {
         address[] memory _receivers = new address[](1);
         _receivers[0] = owner;
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
+            amounts: new uint256[](0),
+            receivers: new address[](0),
             contractAddress: address(0)
         });
 
@@ -272,8 +282,14 @@ abstract contract BaseTest is Test, ToArrayUtils {
             proofRequired: false
         });
 
+        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
+            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
+        );
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftExpirableCredits));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftExpirableCredits), IFeeController(address(0)));
         return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), owner);
     }
 }

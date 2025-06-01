@@ -20,45 +20,28 @@ contract NVMConfigTest is BaseTest {
         super.setUp();
 
         vm.prank(governor);
-        nvmConfig.setNetworkFees(100, owner);
+        nvmConfig.setFeeReceiver(owner);
 
         newGovernor = makeAddr('newGovernor');
     }
 
-    function test_setNetworkFees() public {
+    function test_setFeeReceiver() public {
         vm.prank(governor);
-
-        // The setNetworkFees function emits two events, one for networkFee and one for feeReceiver
-        vm.expectEmit(true, true, true, true);
-        emit INVMConfig.NeverminedConfigChange(governor, keccak256('networkFee'), abi.encodePacked(uint256(200)));
 
         vm.expectEmit(true, true, true, true);
         emit INVMConfig.NeverminedConfigChange(governor, keccak256('feeReceiver'), abi.encodePacked(governor));
 
-        nvmConfig.setNetworkFees(200, governor);
+        nvmConfig.setFeeReceiver(governor);
 
-        assertEq(nvmConfig.getNetworkFee(), 200);
         assertEq(nvmConfig.getFeeReceiver(), governor);
     }
 
-    function test_setNetworkFees_onlyGovernor() public {
+    function test_setFeeReceiver_onlyGovernor() public {
         address nonGovernor = makeAddr('nonGovernor');
 
         vm.prank(nonGovernor);
         vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
-        nvmConfig.setNetworkFees(200, governor);
-    }
-
-    function test_setNetworkFees_invalidFee() public {
-        vm.prank(governor);
-        vm.expectPartialRevert(INVMConfig.InvalidNetworkFee.selector);
-        nvmConfig.setNetworkFees(9900000, governor);
-    }
-
-    function test_setNetworkFees_invalidReceiver() public {
-        vm.prank(governor);
-        vm.expectPartialRevert(INVMConfig.InvalidFeeReceiver.selector);
-        nvmConfig.setNetworkFees(200, address(0));
+        nvmConfig.setFeeReceiver(governor);
     }
 
     function test_setParameter() public {
@@ -115,19 +98,9 @@ contract NVMConfigTest is BaseTest {
         assertEq(nvmConfigV2.getVersion(), newVersion);
     }
 
-    function test_getNetworkFee() public view {
-        uint256 networkFee = nvmConfig.getNetworkFee();
-        assertEq(networkFee, 100);
-    }
-
     function test_getFeeReceiver() public view {
         address feeReceiver = nvmConfig.getFeeReceiver();
         assertEq(feeReceiver, owner);
-    }
-
-    function test_getFeeDenominator() public view {
-        uint256 denominator = nvmConfig.getFeeDenominator();
-        assertEq(denominator, 1000000);
     }
 
     function test_parameterExists() public {
@@ -197,28 +170,12 @@ contract NVMConfigTest is BaseTest {
         assertFalse(nvmConfig.parameterExists(paramName));
     }
 
-    function test_getNetworkFee_accessControl() public {
-        // View function, no access control needed
-        address nonGovernor = makeAddr('nonGovernor');
-        vm.prank(nonGovernor);
-        uint256 fee = nvmConfig.getNetworkFee();
-        assertEq(fee, 100);
-    }
-
     function test_getFeeReceiver_accessControl() public {
         // View function, no access control needed
         address nonGovernor = makeAddr('nonGovernor');
         vm.prank(nonGovernor);
         address receiver = nvmConfig.getFeeReceiver();
         assertEq(receiver, owner);
-    }
-
-    function test_getFeeDenominator_accessControl() public {
-        // Pure function, no access control needed
-        address nonGovernor = makeAddr('nonGovernor');
-        vm.prank(nonGovernor);
-        uint256 denominator = nvmConfig.getFeeDenominator();
-        assertEq(denominator, 1000000);
     }
 
     function test_getParameter_accessControl() public {

@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import {AssetsRegistry} from '../../contracts/AssetsRegistry.sol';
 import {PaymentsVault} from '../../contracts/PaymentsVault.sol';
 import {AgreementsStore} from '../../contracts/agreements/AgreementsStore.sol';
+import {IFeeController} from '../../contracts/interfaces/IFeeController.sol';
 
 import {PaymentsVault} from '../../contracts/PaymentsVault.sol';
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
@@ -26,6 +27,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     function run(
         INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
+        IFeeController feeControllerAddress,
         address ownerAddress,
         UpgradeableContractDeploySalt memory assetsRegistrySalt,
         UpgradeableContractDeploySalt memory agreementsStoreSalt,
@@ -49,8 +51,9 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
         vm.startBroadcast(ownerAddress);
 
         // Deploy AssetsRegistry
-        assetsRegistry =
-            deployAssetsRegistry(nvmConfigAddress, accessManagerAddress, assetsRegistrySalt, revertIfAlreadyDeployed);
+        assetsRegistry = deployAssetsRegistry(
+            nvmConfigAddress, accessManagerAddress, feeControllerAddress, assetsRegistrySalt, revertIfAlreadyDeployed
+        );
 
         // Deploy AgreementsStore
         agreementsStore = deployAgreementsStore(accessManagerAddress, agreementsStoreSalt, revertIfAlreadyDeployed);
@@ -66,6 +69,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
     function deployAssetsRegistry(
         INVMConfig nvmConfigAddress,
         IAccessManager accessManagerAddress,
+        IFeeController feeControllerAddress,
         UpgradeableContractDeploySalt memory assetsRegistrySalt,
         bool revertIfAlreadyDeployed
     ) public returns (AssetsRegistry assetsRegistry) {
@@ -82,7 +86,7 @@ contract DeployCoreContracts is DeployConfig, Create2DeployUtils {
         // Deploy AssetsRegistry Proxy
         if (debug) console2.log('Deploying AssetsRegistry Proxy');
         bytes memory assetsRegistryInitData =
-            abi.encodeCall(AssetsRegistry.initialize, (nvmConfigAddress, accessManagerAddress));
+            abi.encodeCall(AssetsRegistry.initialize, (nvmConfigAddress, accessManagerAddress, feeControllerAddress));
         (address assetsRegistryProxy,) = deployWithSanityChecks(
             assetsRegistrySalt.proxySalt,
             getERC1967ProxyCreationCode(address(assetsRegistryImpl), assetsRegistryInitData),

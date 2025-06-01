@@ -33,6 +33,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -53,7 +54,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
     accessManager = _deployment.accessManager
-
+    protocolStandardFees = _deployment.protocolStandardFees
     owner = wallets[0]
     alice = wallets[3]
     bob = wallets[4]
@@ -95,13 +96,14 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
       did = result.did
       planId = result.planId
       // console.log('Price Config:', priceConfig)
 
       const asset = await assetsRegistry.read.getAsset([did])
-      
+
       console.log('Asset:', asset)
 
       const plan = await assetsRegistry.read.getPlan([planId])
@@ -223,6 +225,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
         creditsConfig,
         alice,
         nftCredits.address,
+        protocolStandardFees.address,
       )
 
       const newDid = result.did

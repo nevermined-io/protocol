@@ -125,6 +125,11 @@ export class FoundryTools {
       deploymentJson.contracts.AccessManager,
       'artifacts/@openzeppelin/contracts/access/manager',
     )
+    const protocolStandardFees = await this.getContractInstance(
+      'ProtocolStandardFees',
+      deploymentJson.contracts.ProtocolStandardFees,
+      'artifacts/contracts/fees',
+    )
     return {
       nvmConfig,
       assetsRegistry,
@@ -139,6 +144,7 @@ export class FoundryTools {
       fixedPaymentTemplate,
       fiatPaymentTemplate,
       accessManager,
+      protocolStandardFees,
     }
   }
 
@@ -257,18 +263,4 @@ export class FoundryTools {
     console.log('Resetting blockchain to snapshot:', snapshotId)
     await this.testClient.request({ method: 'evm_revert', params: [snapshotId] })
   }
-
-  // async connectToContracts(deploymentJson: any): Promise<void> {
-  //   console.log('Connecting to NVMConfig at address: ', deploymentJson.contracts.NVMConfig)
-  //   const _nvmConfig = getContract({
-  //     address: deploymentJson.contracts.NVMConfig,
-  //     abi: FoundryTools.getContractABI('NVMConfig'),
-  //     // 1a. Insert a single client
-  //     client: this.testClient,
-  //     // // 1b. Or public and/or wallet clients
-  //     // client: { public: publicClient, wallet: walletClient }
-  //   })
-  //   // const _nvmConfig = await hre.viem.getContractAt('NVMConfig', deploymentJson.contracts.NVMConfig)
-  //   console.log('Network Fees: ' , await _nvmConfig.read.getNetworkFee())
-  // }
 }

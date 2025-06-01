@@ -28,6 +28,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   let priceConfig = {
     priceType: 0, // Means Fixed Price
@@ -67,6 +68,8 @@ describe('IT: Expirable Credits e2e flow', function () {
     nftExpirableCredits = _deployment.nft1155ExpirableCredits
     paymentsVault = _deployment.paymentsVault
     fixedPaymentTemplate = _deployment.fixedPaymentTemplate
+    protocolStandardFees = _deployment.protocolStandardFees
+    nftAddress = _deployment.nft1155ExpirableCredits.address
 
     publicClient = foundryTools.getPublicClient()
   })
@@ -76,6 +79,10 @@ describe('IT: Expirable Credits e2e flow', function () {
     const feesSetup = await assetsRegistry.read.addFeesToPaymentsDistribution([
       priceConfig.amounts,
       priceConfig.receivers,
+      priceConfig,
+      creditsConfig,
+      nftAddress,
+      protocolStandardFees.address,
     ])
     priceConfig.amounts = feesSetup[0]
     priceConfig.receivers = feesSetup[1]
@@ -101,7 +108,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log(`DID: ${did}`)
 
     const txHash = await assetsRegistry.write.registerAssetAndPlan(
-      [didSeed, url, priceConfig, creditsConfig, nftAddress],
+      [didSeed, url, priceConfig, creditsConfig, nftAddress, protocolStandardFees.address],
       { account: alice.account },
     )
     expect(txHash).to.be.a('string').to.startWith('0x')

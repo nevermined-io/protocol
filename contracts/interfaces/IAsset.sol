@@ -3,6 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
+import {IFeeController} from './IFeeController.sol';
 import {IHook} from './IHook.sol';
 
 /**
@@ -197,6 +198,10 @@ interface IAsset {
          */
         address nftAddress;
         /**
+         * @notice Address of the fee controller contract, if any
+         */
+        IFeeController feeController;
+        /**
          * @notice Timestamp of when the plan definition was last updated
          */
         uint256 lastUpdated;
@@ -256,6 +261,19 @@ interface IAsset {
      * @param owner The address that replaced the plans
      */
     event AssetPlansReplaced(bytes32 indexed did, address indexed owner);
+
+    /**
+     * @notice Emitted when a plan's fee controller is updated
+     * @param planId The unique identifier of the plan
+     * @param feeController The address of the new fee controller
+     */
+    event PlanFeeControllerUpdated(uint256 indexed planId, address indexed feeController);
+
+    /**
+     * @notice Emitted when the default fee controller is updated
+     * @param feeController The address of the new default fee controller
+     */
+    event DefaultFeeControllerUpdated(address indexed feeController);
 
     /* ERRORS */
 
@@ -393,14 +411,10 @@ interface IAsset {
 
     /**
      * @notice Checks if Nevermined protocol fees are correctly included in a payment distribution
-     * @param _amounts The distribution of payment amounts
-     * @param _receivers The receivers of the payments
+     * @param _planId The ID of the plan to check
      * @return Boolean indicating whether Nevermined fees are correctly included
      */
-    function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
-        external
-        view
-        returns (bool);
+    function areNeverminedFeesIncluded(uint256 _planId) external view returns (bool);
 
     /**
      * @notice Associates a plan with an asset
