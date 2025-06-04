@@ -928,6 +928,7 @@ contract AssetsRegistryTest is BaseTest {
         uint256 planId = _createPlan();
 
         // Set a custom fee controller
+        vm.prank(governor);
         assetsRegistry.setPlanFeeController(planId, IFeeController(protocolStandardFees));
 
         // Verify the fee controller was set
@@ -935,13 +936,13 @@ contract AssetsRegistryTest is BaseTest {
         assertEq(address(plan.price.feeController), address(protocolStandardFees));
     }
 
-    function test_setPlanFeeController_revertIfNotOwner() public {
+    function test_setPlanFeeController_revertIfNotGovernor() public {
         uint256 planId = _createPlan();
 
-        // Try to set fee controller as non-owner
-        address nonOwner = makeAddr('nonOwner');
-        vm.prank(nonOwner);
-        vm.expectRevert(abi.encodeWithSelector(IAsset.NotPlanOwner.selector, planId, nonOwner, address(this)));
+        // Try to set fee controller as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
         assetsRegistry.setPlanFeeController(planId, IFeeController(protocolStandardFees));
     }
 
@@ -1017,5 +1018,221 @@ contract AssetsRegistryTest is BaseTest {
 
         // Verify it matches the one set in BaseTest
         assertEq(address(currentFeeController), address(protocolStandardFees));
+    }
+
+    function test_setFeeControllerAllowed_success() public {
+        // Create test fee controllers
+        IFeeController feeController1 = IFeeController(makeAddr('feeController1'));
+        IFeeController feeController2 = IFeeController(makeAddr('feeController2'));
+
+        // Create test creators
+        address creator1 = makeAddr('creator1');
+        address creator2 = makeAddr('creator2');
+        address creator3 = makeAddr('creator3');
+
+        // Prepare input arrays
+        IFeeController[] memory feeControllers = new IFeeController[](2);
+        feeControllers[0] = feeController1;
+        feeControllers[1] = feeController2;
+
+        address[][] memory creators = new address[][](2);
+        creators[0] = new address[](2);
+        creators[0][0] = creator1;
+        creators[0][1] = creator2;
+        creators[1] = new address[](1);
+        creators[1][0] = creator3;
+
+        bool[][] memory allowed = new bool[][](2);
+        allowed[0] = new bool[](2);
+        allowed[0][0] = true;
+        allowed[0][1] = false;
+        allowed[1] = new bool[](1);
+        allowed[1][0] = true;
+
+        // Set fee controller allowed status
+        vm.prank(governor);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify the settings were applied correctly
+        assertTrue(assetsRegistry.isFeeControllerAllowed(feeController1, creator1));
+        assertFalse(assetsRegistry.isFeeControllerAllowed(feeController1, creator2));
+        assertTrue(assetsRegistry.isFeeControllerAllowed(feeController2, creator3));
+    }
+
+    function test_setFeeControllerAllowed_revertIfNotGovernor() public {
+        // Create test arrays
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        address[][] memory creators = new address[][](1);
+        bool[][] memory allowed = new bool[][](1);
+
+        // Try to set fee controller allowed status as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_revertIfInvalidInputLength() public {
+        // Create mismatched arrays
+        IFeeController[] memory feeControllers = new IFeeController[](2);
+        address[][] memory creators = new address[][](1);
+        bool[][] memory allowed = new bool[][](1);
+
+        // Try to set fee controller allowed status with mismatched arrays
+        vm.prank(governor);
+        vm.expectRevert(IAsset.InvalidInputLength.selector);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_revertIfInvalidInnerArrayLength() public {
+        // Create test arrays with mismatched inner array lengths
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        address[][] memory creators = new address[][](1);
+        creators[0] = new address[](2);
+        bool[][] memory allowed = new bool[][](1);
+        allowed[0] = new bool[](1);
+
+        // Try to set fee controller allowed status with mismatched inner arrays
+        vm.prank(governor);
+        vm.expectRevert(IAsset.InvalidInputLength.selector);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_updateExistingSettings() public {
+        // Create test fee controller and creator
+        IFeeController feeController = IFeeController(makeAddr('feeController'));
+        address creator = makeAddr('creator');
+
+        // First set to true
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        feeControllers[0] = feeController;
+        address[][] memory creators = new address[][](1);
+        creators[0] = new address[](1);
+        creators[0][0] = creator;
+        bool[][] memory allowed = new bool[][](1);
+        allowed[0] = new bool[](1);
+        allowed[0][0] = true;
+
+        vm.prank(governor);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify initial setting
+        assertTrue(assetsRegistry.isFeeControllerAllowed(feeController, creator));
+
+        // Update to false
+        allowed[0][0] = false;
+        vm.prank(governor);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify updated setting
+        assertFalse(assetsRegistry.isFeeControllerAllowed(feeController, creator));
+    }
+
+    function test_createPlan_revertIfNotAllowedToSetFeeController() public {
+        // Create a custom fee controller
+        IFeeController customFeeController = IFeeController(makeAddr('customFeeController'));
+
+        // Create price config with custom fee controller
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0),
+            feeController: customFeeController
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        // Try to create plan with custom fee controller without permission
+        vm.expectRevert(
+            abi.encodeWithSelector(IAsset.NotAllowedToSetFeeController.selector, address(this), customFeeController)
+        );
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
+    }
+
+    function test_createPlan_successWithAllowedFeeController() public {
+        // Create a custom fee controller
+        IFeeController customFeeController = IFeeController(makeAddr('customFeeController'));
+
+        // Allow the creator to use the custom fee controller
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        feeControllers[0] = customFeeController;
+        address[][] memory creators = new address[][](1);
+        creators[0] = new address[](1);
+        creators[0][0] = address(this);
+        bool[][] memory allowed = new bool[][](1);
+        allowed[0] = new bool[](1);
+        allowed[0][0] = true;
+
+        vm.prank(governor);
+        assetsRegistry.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Create price config with custom fee controller
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0),
+            feeController: customFeeController
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        // Should succeed since creator is allowed to use the custom fee controller
+        uint256 planId = assetsRegistry.createPlan(priceConfig, creditsConfig);
+        assertTrue(planId > 0);
+    }
+
+    function test_createPlan_successWithDefaultFeeController() public {
+        // Create price config with default fee controller (address(0))
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: new uint256[](1),
+            receivers: new address[](1),
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
+        });
+        priceConfig.amounts[0] = 100;
+        priceConfig.receivers[0] = owner;
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        // Should succeed since default fee controller is always allowed
+        uint256 planId = assetsRegistry.createPlan(priceConfig, creditsConfig);
+        assertTrue(planId > 0);
     }
 }

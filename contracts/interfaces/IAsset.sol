@@ -211,6 +211,14 @@ interface IAsset {
     /* EVENTS */
 
     /**
+     * @notice Emitted when the fee controller allowed status is updated
+     * @param feeControllerAddresses Array of fee controller addresses
+     * @param creator Array of creator addresses
+     * @param allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    event FeeControllerAllowedUpdated(IFeeController[] feeControllerAddresses, address[][] creator, bool[][] allowed);
+
+    /**
      * @notice Emitted when a new Asset is registered in the system
      * @param did The unique identifier of the asset (decentralized ID)
      * @param creator The address that registered the asset
@@ -279,11 +287,23 @@ interface IAsset {
     /* ERRORS */
 
     /**
+     * @notice Error thrown when a fee controller is not allowed to set the plan fee controller
+     * @param creator The address of the creator
+     * @param feeController The address of the fee controller
+     */
+    error NotAllowedToSetFeeController(address creator, IFeeController feeController);
+
+    /**
      * @notice Error thrown when attempting to register a plan that already exists
      * @dev The planId is computed using the hash of the plan's configuration and creator
      * @param planId The identifier of the plan that already exists
      */
     error PlanAlreadyRegistered(uint256 planId);
+
+    /**
+     * @notice Error thrown when an invalid input length is provided
+     */
+    error InvalidInputLength();
 
     /**
      * @notice Error thrown when an invalid NFT contract address is provided

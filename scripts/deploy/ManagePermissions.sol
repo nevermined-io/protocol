@@ -245,7 +245,13 @@ contract ManagePermissions is Script, DeployConfig {
         );
 
         accessManager.setTargetFunctionRole(
-            address(assetsRegistry), toArray(AssetsRegistry.setDefaultFeeController.selector), GOVERNOR_ROLE
+            address(assetsRegistry),
+            toArray(
+                AssetsRegistry.setDefaultFeeController.selector,
+                AssetsRegistry.setPlanFeeController.selector,
+                AssetsRegistry.setFeeControllerAllowed.selector
+            ),
+            GOVERNOR_ROLE
         );
 
         accessManager.setTargetFunctionRole(

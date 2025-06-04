@@ -59,12 +59,12 @@ contract ProtocolStandardFees is IProtocolStandardFees, AccessManagedUUPSUpgrade
      * @param priceConfig The price configuration of the plan
      * @return uint256 The calculated fee amount
      */
-    function calculateFee(
-        uint256 totalAmount,
-        IAsset.PriceConfig calldata priceConfig,
-        IAsset.CreditsConfig calldata,
-        address
-    ) external view override returns (uint256) {
+    function calculateFee(uint256 totalAmount, IAsset.PriceConfig calldata priceConfig, IAsset.CreditsConfig calldata)
+        external
+        view
+        override
+        returns (uint256)
+    {
         ProtocolStandardFeesStorage storage $ = _getProtocolStandardFeesStorage();
 
         uint256 feeRate;
@@ -101,6 +101,7 @@ contract ProtocolStandardFees is IProtocolStandardFees, AccessManagedUUPSUpgrade
      * @return $ Reference to the contract's storage struct
      */
     function _getProtocolStandardFeesStorage() internal pure returns (ProtocolStandardFeesStorage storage $) {
+        // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
             $.slot := PROTOCOL_STANDARD_FEES_STORAGE_LOCATION
         }

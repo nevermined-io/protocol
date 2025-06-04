@@ -3,7 +3,6 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
-import {IAsset} from './IAsset.sol';
 import {IFeeController} from './IFeeController.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 

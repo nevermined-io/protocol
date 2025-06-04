@@ -77,7 +77,7 @@ contract ProtocolStandardFeesTest is BaseTest {
             IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0];
-        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));
+        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits);
         assertEq(fee, 10); // 1% of 1000 = 10
     }
 
@@ -109,7 +109,7 @@ contract ProtocolStandardFeesTest is BaseTest {
             IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0];
-        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));
+        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits);
         assertEq(fee, 20); // 2% of 1000 = 20
     }
 
@@ -143,7 +143,7 @@ contract ProtocolStandardFeesTest is BaseTest {
             IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0] + priceConfig.amounts[1];
-        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));
+        uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits);
         assertEq(fee, 30); // 1% of (1000 + 2000) = 30
     }
 }

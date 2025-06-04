@@ -16,13 +16,11 @@ interface IFeeController {
      * @param totalAmount The total amount for which the fee is calculated
      * @param priceConfig The price configuration of the plan
      * @param creditsConfig The credits configuration of the plan
-     * @param nftAddress The address of the NFT contract that represents the plan's credits
      * @return uint256 The calculated fee amount
      */
     function calculateFee(
         uint256 totalAmount,
         IAsset.PriceConfig calldata priceConfig,
-        IAsset.CreditsConfig calldata creditsConfig,
-        address nftAddress
+        IAsset.CreditsConfig calldata creditsConfig
     ) external view returns (uint256);
 }
