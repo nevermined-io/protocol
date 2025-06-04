@@ -39,6 +39,7 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
     amounts: [100n],
     receivers: [creatorAddress],
     contractAddress: '0x0000000000000000000000000000000000000000',
+    feeController: '0x0000000000000000000000000000000000000000',
   }
 }
 
@@ -46,7 +47,7 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
  * Creates a credits configuration object for asset registration
  * @returns Credits configuration object
  */
-export function createCreditsConfig(): any {
+export function createCreditsConfig(nftAddress: `0x${string}`): any {
   return {
     creditsType: 1, // FIXED
     redemptionType: 0, // ONLY_GLOBAL_ROLE
@@ -55,6 +56,7 @@ export function createCreditsConfig(): any {
     amount: 100n,
     minAmount: 1n,
     maxAmount: 1n,
+    nftAddress: nftAddress,
   }
 }
 
@@ -128,8 +130,6 @@ export async function registerAssetAndPlan(
   priceConfig: any,
   creditsConfig: any,
   creator: any,
-  nftAddress?: `0x${string}`,
-  feeControllerAddress?: `0x${string}`,
 ): Promise<{ did: `0x${string}`; planId: bigint }> {
   const didSeed = generateId()
   const did = await assetsRegistry.read.hashDID([didSeed, creator.account.address])
@@ -140,36 +140,19 @@ export async function registerAssetAndPlan(
     priceConfig.receivers,
     priceConfig,
     creditsConfig,
-    nftAddress,
-    feeControllerAddress,
   ])
   priceConfig.amounts = [...result[0]]
   priceConfig.receivers = [...result[1]]
 
-  // const creditsConfig = createCreditsConfig()
-
-  // Use provided NFT address or default to zero address
-  const nftAddressToUse = nftAddress || '0x0000000000000000000000000000000000000000'
-
   const planId = await assetsRegistry.read.hashPlanId([
     priceConfig,
     creditsConfig,
-    nftAddressToUse,
     creator.account.address,
     nonce,
   ])
-  await assetsRegistry.write.createPlan(
-    [
-      priceConfig,
-      creditsConfig,
-      nftAddressToUse,
-      nonce,
-      feeControllerAddress ?? '0x0000000000000000000000000000000000000000',
-    ],
-    {
-      account: creator.account,
-    },
-  )
+  await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nonce], {
+    account: creator.account,
+  })
 
   await assetsRegistry.write.register([didSeed, 'https://nevermined.io', [planId]], {
     account: creator.account,

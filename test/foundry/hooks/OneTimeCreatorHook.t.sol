@@ -68,7 +68,8 @@ contract OneTimeCreatorHookTest is BaseTest {
             tokenAddress: address(0),
             amounts: new uint256[](0),
             receivers: new address[](0),
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -77,18 +78,17 @@ contract OneTimeCreatorHookTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            _amounts, _receivers, priceConfig, creditsConfig, address(0), IFeeController(address(0))
-        );
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
-        address nftAddress = address(nftCredits);
         vm.prank(creator);
-        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, nftAddress, hooks, IFeeController(address(0)));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, creator, 0);
+        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, hooks);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, creator, 0);
     }
 }

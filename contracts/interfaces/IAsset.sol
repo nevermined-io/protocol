@@ -132,6 +132,10 @@ interface IAsset {
          * @dev Only used if priceType is SMART_CONTRACT_PRICE
          */
         address contractAddress;
+        /**
+         * @notice The address of the fee controller contract, if any
+         */
+        IFeeController feeController;
     }
 
     /**
@@ -173,6 +177,11 @@ interface IAsset {
          * @dev Only used if creditsType is DYNAMIC
          */
         uint256 maxAmount;
+        /**
+         * @notice The address of the NFT contract that represents the plan's credits
+         * @dev Only used if creditsType is FIXED
+         */
+        address nftAddress;
     }
 
     /**
@@ -193,14 +202,6 @@ interface IAsset {
          * @notice The credits configuration of the plan
          */
         CreditsConfig credits;
-        /**
-         * @notice The address of the NFT contract that represents the plan's credits
-         */
-        address nftAddress;
-        /**
-         * @notice Address of the fee controller contract, if any
-         */
-        IFeeController feeController;
         /**
          * @notice Timestamp of when the plan definition was last updated
          */

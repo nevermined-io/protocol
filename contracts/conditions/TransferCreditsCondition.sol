@@ -101,10 +101,10 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         // Only mint if amount is greater than zero
         if (plan.credits.amount > 0) {
             if (plan.credits.creditsType == IAsset.CreditsType.EXPIRABLE) {
-                NFT1155ExpirableCredits nft1155 = NFT1155ExpirableCredits(plan.nftAddress);
+                NFT1155ExpirableCredits nft1155 = NFT1155ExpirableCredits(plan.credits.nftAddress);
                 nft1155.mint(_receiverAddress, uint256(_planId), plan.credits.amount, plan.credits.durationSecs, '');
             } else if (plan.credits.creditsType == IAsset.CreditsType.FIXED) {
-                NFT1155Credits nft1155 = NFT1155Credits(plan.nftAddress);
+                NFT1155Credits nft1155 = NFT1155Credits(plan.credits.nftAddress);
                 nft1155.mint(_receiverAddress, uint256(_planId), plan.credits.amount, '');
             } else if (plan.credits.creditsType == IAsset.CreditsType.DYNAMIC) {
                 revert IAsset.InvalidCreditsType(plan.credits.creditsType);

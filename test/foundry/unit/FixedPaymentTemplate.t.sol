@@ -40,7 +40,8 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
             tokenAddress: address(0),
             amounts: _amounts,
             receivers: _receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -49,18 +50,18 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            _amounts, _receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0, IFeeController(address(0)));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this), 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this), 0);
     }
 
     function _createERC20FixedPricePlan() internal returns (uint256) {
@@ -74,7 +75,8 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
             tokenAddress: address(mockERC20),
             amounts: _amounts,
             receivers: _receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -83,18 +85,18 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            _amounts, _receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), 0, IFeeController(address(0)));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this), 0);
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this), 0);
     }
 
     function test_createAgreement() public {

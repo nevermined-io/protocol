@@ -56,7 +56,8 @@ contract ProtocolStandardFeesTest is BaseTest {
             tokenAddress: address(0),
             amounts: new uint256[](1),
             receivers: new address[](1),
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         priceConfig.amounts[0] = 1000; // 1000 wei
         priceConfig.receivers[0] = address(1);
@@ -68,17 +69,12 @@ contract ProtocolStandardFeesTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(0)
         });
 
-        IAsset.Plan memory plan = IAsset.Plan({
-            owner: address(1),
-            price: priceConfig,
-            credits: creditsConfig,
-            nftAddress: address(0),
-            feeController: IFeeController(address(0)),
-            lastUpdated: block.timestamp
-        });
+        IAsset.Plan memory plan =
+            IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0];
         uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));
@@ -92,7 +88,8 @@ contract ProtocolStandardFeesTest is BaseTest {
             tokenAddress: address(0),
             amounts: new uint256[](1),
             receivers: new address[](1),
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         priceConfig.amounts[0] = 1000; // 1000 wei
         priceConfig.receivers[0] = address(1);
@@ -104,17 +101,12 @@ contract ProtocolStandardFeesTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(0)
         });
 
-        IAsset.Plan memory plan = IAsset.Plan({
-            owner: address(1),
-            price: priceConfig,
-            credits: creditsConfig,
-            nftAddress: address(0),
-            feeController: IFeeController(address(0)),
-            lastUpdated: block.timestamp
-        });
+        IAsset.Plan memory plan =
+            IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0];
         uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));
@@ -128,7 +120,8 @@ contract ProtocolStandardFeesTest is BaseTest {
             tokenAddress: address(0),
             amounts: new uint256[](2),
             receivers: new address[](2),
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         priceConfig.amounts[0] = 1000; // 1000 wei
         priceConfig.amounts[1] = 2000; // 2000 wei
@@ -142,17 +135,12 @@ contract ProtocolStandardFeesTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(0)
         });
 
-        IAsset.Plan memory plan = IAsset.Plan({
-            owner: address(1),
-            price: priceConfig,
-            credits: creditsConfig,
-            nftAddress: address(0),
-            feeController: IFeeController(address(0)),
-            lastUpdated: block.timestamp
-        });
+        IAsset.Plan memory plan =
+            IAsset.Plan({owner: address(1), price: priceConfig, credits: creditsConfig, lastUpdated: block.timestamp});
 
         uint256 totalAmount = priceConfig.amounts[0] + priceConfig.amounts[1];
         uint256 fee = protocolStandardFees.calculateFee(totalAmount, plan.price, plan.credits, address(0));

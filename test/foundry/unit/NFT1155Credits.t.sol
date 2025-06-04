@@ -105,7 +105,8 @@ contract NFT1155CreditsTest is BaseTest {
             tokenAddress: address(0),
             amounts: _amounts,
             receivers: _receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -114,19 +115,19 @@ contract NFT1155CreditsTest is BaseTest {
             durationSecs: 0,
             amount: amount,
             minAmount: 1,
-            maxAmount: 100
+            maxAmount: 100,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory amounts, address[] memory receivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            _amounts, _receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0)));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
     }
 
     function test_mintBatch_unauthorized() public {

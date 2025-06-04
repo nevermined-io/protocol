@@ -45,7 +45,8 @@ contract TransferCreditsConditionTest is BaseTest {
             tokenAddress: address(0),
             amounts: amounts,
             receivers: receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -55,12 +56,12 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            amounts, receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -70,17 +71,10 @@ contract TransferCreditsConditionTest is BaseTest {
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed,
-            'https://nevermined.io',
-            priceConfig,
-            creditsConfig,
-            address(nftCredits),
-            IFeeController(address(0))
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(2));
@@ -121,7 +115,8 @@ contract TransferCreditsConditionTest is BaseTest {
             tokenAddress: address(0),
             amounts: amounts,
             receivers: receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         uint256 durationSecs = 30 days;
@@ -132,12 +127,12 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftExpirableCredits)
         });
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            amounts, receivers, priceConfig, creditsConfig, address(nftExpirableCredits), IFeeController(address(0))
-        );
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -147,17 +142,10 @@ contract TransferCreditsConditionTest is BaseTest {
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed,
-            'https://nevermined.io',
-            priceConfig,
-            creditsConfig,
-            address(nftExpirableCredits),
-            IFeeController(address(0))
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(4));
@@ -198,7 +186,8 @@ contract TransferCreditsConditionTest is BaseTest {
             tokenAddress: address(0),
             amounts: amounts,
             receivers: receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -208,12 +197,12 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            amounts, receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -223,17 +212,10 @@ contract TransferCreditsConditionTest is BaseTest {
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed,
-            'https://nevermined.io',
-            priceConfig,
-            creditsConfig,
-            address(nftCredits),
-            IFeeController(address(0))
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(6));
@@ -272,7 +254,8 @@ contract TransferCreditsConditionTest is BaseTest {
             tokenAddress: address(0),
             amounts: amounts,
             receivers: receivers,
-            contractAddress: address(0)
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -282,12 +265,12 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) = assetsRegistry.addFeesToPaymentsDistribution(
-            amounts, receivers, priceConfig, creditsConfig, address(nftCredits), IFeeController(address(0))
-        );
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -297,17 +280,10 @@ contract TransferCreditsConditionTest is BaseTest {
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed,
-            'https://nevermined.io',
-            priceConfig,
-            creditsConfig,
-            address(nftCredits),
-            IFeeController(address(0))
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(8));
