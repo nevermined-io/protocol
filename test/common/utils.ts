@@ -39,6 +39,7 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
     amounts: [100n],
     receivers: [creatorAddress],
     contractAddress: '0x0000000000000000000000000000000000000000',
+    feeController: '0x0000000000000000000000000000000000000000',
   }
 }
 
@@ -46,7 +47,7 @@ export function createPriceConfig(tokenAddress: `0x${string}`, creatorAddress: `
  * Creates a credits configuration object for asset registration
  * @returns Credits configuration object
  */
-export function createCreditsConfig(): any {
+export function createCreditsConfig(nftAddress: `0x${string}`): any {
   return {
     creditsType: 1, // FIXED
     redemptionType: 0, // ONLY_GLOBAL_ROLE
@@ -55,6 +56,7 @@ export function createCreditsConfig(): any {
     amount: 100n,
     minAmount: 1n,
     maxAmount: 1n,
+    nftAddress: nftAddress,
   }
 }
 
@@ -79,38 +81,6 @@ export function createExpirableCreditsConfig(): any {
   }
 }
 
-export async function registerPlan(
-  assetsRegistry: any,
-  publisher: any,
-  priceConfig: any,
-  creditsConfig: any,
-  nftCreditsAddress: string,
-): Promise<any> {
-  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    priceConfig.amounts,
-    priceConfig.receivers,
-  ])
-  const [_amounts, _receivers] = result
-  priceConfig.amounts = _amounts
-  priceConfig.receivers = _receivers
-
-  const planId = await assetsRegistry.read.hashPlanId([
-    priceConfig,
-    creditsConfig,
-    nftCreditsAddress,
-    publisher.account.address,
-  ])
-  try {
-    await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftCreditsAddress], {
-      account: publisher.account,
-    })
-  } catch (e) {
-    console.log('Plan already registered: ', planId)
-  }
-
-  return planId
-}
-
 /**
  * Registers an asset and plan in the AssetsRegistry
  * @param assetsRegistry The AssetsRegistry contract instance
@@ -124,38 +94,25 @@ export async function registerAssetAndPlan(
   priceConfig: any,
   creditsConfig: any,
   creator: any,
-  nftAddress?: `0x${string}`,
 ): Promise<{ did: `0x${string}`; planId: bigint }> {
   const didSeed = generateId()
   const did = await assetsRegistry.read.hashDID([didSeed, creator.account.address])
 
   const nonce = getRandomBigInt()
-  const areFeesIncluded = await assetsRegistry.read.areNeverminedFeesIncluded([
-    priceConfig.amounts,
-    priceConfig.receivers,
+  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
+    priceConfig,
+    creditsConfig,
   ])
-  if (!areFeesIncluded) {
-    const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-      priceConfig.amounts,
-      priceConfig.receivers,
-    ])
-    priceConfig.amounts = [...result[0]]
-    priceConfig.receivers = [...result[1]]
-  }
-
-  // const creditsConfig = createCreditsConfig()
-
-  // Use provided NFT address or default to zero address
-  const nftAddressToUse = nftAddress || '0x0000000000000000000000000000000000000000'
+  priceConfig.amounts = [...result[0]]
+  priceConfig.receivers = [...result[1]]
 
   const planId = await assetsRegistry.read.hashPlanId([
     priceConfig,
     creditsConfig,
-    nftAddressToUse,
     creator.account.address,
     nonce,
   ])
-  await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nftAddressToUse, nonce], {
+  await assetsRegistry.write.createPlan([priceConfig, creditsConfig, nonce], {
     account: creator.account,
   })
 
@@ -250,5 +207,5 @@ export async function signCreditsBurnProof(
  * @returns A promise that resolves after the specified time
  */
 export async function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }

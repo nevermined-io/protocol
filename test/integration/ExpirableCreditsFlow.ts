@@ -28,6 +28,7 @@ describe('IT: Expirable Credits e2e flow', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   let priceConfig = {
     priceType: 0, // Means Fixed Price
@@ -35,6 +36,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     amounts: [100],
     receivers: [''],
     contractAddress: zeroAddress,
+    feeController: zeroAddress,
   }
   const creditsConfig = {
     creditsType: 0, // Means Expirable Credits
@@ -44,6 +46,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     minAmount: 1,
     maxAmount: 1,
     proofRequired: false,
+    nftAddress: zeroAddress as `0x${string}`,
   }
   let nftAddress: string
   const url = 'https://nevermined.io'
@@ -67,15 +70,19 @@ describe('IT: Expirable Credits e2e flow', function () {
     nftExpirableCredits = _deployment.nft1155ExpirableCredits
     paymentsVault = _deployment.paymentsVault
     fixedPaymentTemplate = _deployment.fixedPaymentTemplate
+    protocolStandardFees = _deployment.protocolStandardFees
+    nftAddress = _deployment.nft1155ExpirableCredits.address
 
     publicClient = foundryTools.getPublicClient()
   })
 
   it('Alice can define the fees of the plan', async () => {
     priceConfig.receivers = [alice.account.address]
+    priceConfig.feeController = protocolStandardFees.address
+    creditsConfig.nftAddress = nftExpirableCredits.address
     const feesSetup = await assetsRegistry.read.addFeesToPaymentsDistribution([
-      priceConfig.amounts,
-      priceConfig.receivers,
+      priceConfig,
+      creditsConfig,
     ])
     priceConfig.amounts = feesSetup[0]
     priceConfig.receivers = feesSetup[1]
@@ -101,7 +108,7 @@ describe('IT: Expirable Credits e2e flow', function () {
     console.log(`DID: ${did}`)
 
     const txHash = await assetsRegistry.write.registerAssetAndPlan(
-      [didSeed, url, priceConfig, creditsConfig, nftAddress],
+      [didSeed, url, priceConfig, creditsConfig],
       { account: alice.account },
     )
     expect(txHash).to.be.a('string').to.startWith('0x')

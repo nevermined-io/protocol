@@ -4,6 +4,8 @@
 pragma solidity ^0.8.30;
 
 import {IAsset} from './interfaces/IAsset.sol';
+
+import {IFeeController} from './interfaces/IFeeController.sol';
 import {IHook} from './interfaces/IHook.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
@@ -115,7 +117,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @notice Creates a new pricing plan with specified configuration
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @param _hooks Array of hook contracts to be called during agreement creation
      * @param _nonce Optional nonce to ensure unique plan IDs when using identical configurations
      * @return planId The ID of the created plan
@@ -125,7 +126,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     function _createPlan(
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
-        address _nftAddress,
         IHook[] memory _hooks,
         uint256 _nonce
     ) internal returns (uint256) {
@@ -135,30 +135,33 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
             revert PriceConfigInvalidAmountsOrReceivers();
         }
 
-        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender, _nonce);
+        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, msg.sender, _nonce);
         if ($.plans[planId].lastUpdated != 0) {
             revert PlanAlreadyRegistered(planId);
         }
 
-        if (!_isNFT1155Contract(_nftAddress)) {
-            revert InvalidNFTAddress(_nftAddress);
+        if (
+            _priceConfig.feeController != $.nvmConfig.getDefaultFeeController()
+                && _priceConfig.feeController != IFeeController(address(0x0))
+        ) {
+            require(
+                $.nvmConfig.isFeeControllerAllowed(_priceConfig.feeController, msg.sender),
+                NotAllowedToSetFeeController(msg.sender, _priceConfig.feeController)
+            );
         }
+
+        if (!_isNFT1155Contract(_creditsConfig.nftAddress)) {
+            revert InvalidNFTAddress(_creditsConfig.nftAddress);
+        }
+
+        // Create the plan first
+        $.plans[planId] =
+            Plan({owner: msg.sender, price: _priceConfig, credits: _creditsConfig, lastUpdated: block.timestamp});
 
         // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
-        if (
-            _priceConfig.priceType == IAsset.PriceType.FIXED_PRICE
-                && !areNeverminedFeesIncluded(_priceConfig.amounts, _priceConfig.receivers)
-        ) {
+        if (!areNeverminedFeesIncluded(planId)) {
             revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
         }
-
-        $.plans[planId] = Plan({
-            owner: msg.sender,
-            price: _priceConfig,
-            credits: _creditsConfig,
-            nftAddress: _nftAddress,
-            lastUpdated: block.timestamp
-        });
 
         // Store hooks for this plan
         for (uint256 i = 0; i < _hooks.length; i++) {
@@ -173,7 +176,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @notice Creates a new pricing plan with specified configuration
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @param _hooks Array of hook contracts to be called during agreement creation
      * @return planId The ID of the created plan
      * @dev Uses a default nonce of 0 for plan ID generation
@@ -181,18 +183,16 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     function createPlanWithHooks(
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
-        address _nftAddress,
         IHook[] calldata _hooks
     ) public returns (uint256) {
         IHook[] memory hooks = _hooks;
-        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, hooks, 0);
+        return _createPlan(_priceConfig, _creditsConfig, hooks, 0);
     }
 
     /**
      * @notice Creates a new pricing plan with specified configuration
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @param _hooks Array of hook contracts to be called during agreement creation
      * @param _nonce Optional nonce to ensure unique plan IDs
      * @return planId The ID of the created plan
@@ -200,47 +200,42 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     function createPlanWithHooks(
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
-        address _nftAddress,
         IHook[] calldata _hooks,
         uint256 _nonce
     ) public returns (uint256) {
         IHook[] memory hooks = _hooks;
-        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, hooks, _nonce);
+        return _createPlan(_priceConfig, _creditsConfig, hooks, _nonce);
     }
 
     /**
      * @notice Creates a new pricing plan with specified configuration
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @return planId The ID of the created plan
      * @dev Uses a default nonce of 0 and no hooks
      */
-    function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _nftAddress)
+    function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig)
         public
         returns (uint256)
     {
         IHook[] memory emptyHooks = new IHook[](0);
-        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, 0);
+        return _createPlan(_priceConfig, _creditsConfig, emptyHooks, 0);
     }
 
     /**
      * @notice Creates a new pricing plan with specified configuration and nonce
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @param _nonce Optional nonce to ensure unique plan IDs
      * @return planId The ID of the created plan
      * @dev Uses no hooks
      */
-    function createPlan(
-        PriceConfig memory _priceConfig,
-        CreditsConfig memory _creditsConfig,
-        address _nftAddress,
-        uint256 _nonce
-    ) public returns (uint256) {
+    function createPlan(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, uint256 _nonce)
+        public
+        returns (uint256)
+    {
         IHook[] memory emptyHooks = new IHook[](0);
-        return _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, _nonce);
+        return _createPlan(_priceConfig, _creditsConfig, emptyHooks, _nonce);
     }
 
     /**
@@ -249,7 +244,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @param _url URL to the asset's metadata
      * @param _priceConfig Configuration for the plan's pricing model
      * @param _creditsConfig Configuration for the credits granted by the plan
-     * @param _nftAddress Address of the NFT contract implementing the credits
      * @dev If the plan already exists, it will be reused rather than recreated
      * @dev This is a convenience function that combines plan creation and asset registration
      */
@@ -257,13 +251,12 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         bytes32 _didSeed,
         string memory _url,
         PriceConfig memory _priceConfig,
-        CreditsConfig memory _creditsConfig,
-        address _nftAddress
+        CreditsConfig memory _creditsConfig
     ) external {
-        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, _nftAddress, msg.sender);
+        uint256 planId = hashPlanId(_priceConfig, _creditsConfig, msg.sender);
         if (!planExists(planId)) {
             IHook[] memory emptyHooks = new IHook[](0);
-            _createPlan(_priceConfig, _creditsConfig, _nftAddress, emptyHooks, 0);
+            _createPlan(_priceConfig, _creditsConfig, emptyHooks, 0);
         }
 
         uint256[] memory _assetPlans = new uint256[](1);
@@ -305,7 +298,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @notice Given the plan attributes and the address of the plan creator, it computes a unique identifier for the plan
      * @param _priceConfig The price configuration of the plan
      * @param _creditsConfig The credits configuration of the plan
-     * @param _nftAddress The address of the NFT contract that represents the plan
      * @param _creator The address of the user that created the plan
      * @param _nonce Optional nonce to ensure uniqueness of the plan ID
      * @return uint256 The unique identifier of the plan
@@ -314,29 +306,26 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     function hashPlanId(
         PriceConfig memory _priceConfig,
         CreditsConfig memory _creditsConfig,
-        address _nftAddress,
         address _creator,
         uint256 _nonce
     ) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(_priceConfig, _creditsConfig, _nftAddress, _creator, _nonce)));
+        return uint256(keccak256(abi.encode(_priceConfig, _creditsConfig, _creator, _nonce)));
     }
 
     /**
      * @notice Given the plan attributes and the address of the plan creator, it computes a unique identifier for the plan
      * @param _priceConfig The price configuration of the plan
      * @param _creditsConfig The credits configuration of the plan
-     * @param _nftAddress The address of the NFT contract that represents the plan
      * @param _creator The address of the user that created the plan
      * @return uint256 The unique identifier of the plan
      * @dev Convenience overload that uses a default nonce of 0
      */
-    function hashPlanId(
-        PriceConfig memory _priceConfig,
-        CreditsConfig memory _creditsConfig,
-        address _nftAddress,
-        address _creator
-    ) public pure returns (uint256) {
-        return hashPlanId(_priceConfig, _creditsConfig, _nftAddress, _creator, 0);
+    function hashPlanId(PriceConfig memory _priceConfig, CreditsConfig memory _creditsConfig, address _creator)
+        public
+        pure
+        returns (uint256)
+    {
+        return hashPlanId(_priceConfig, _creditsConfig, _creator, 0);
     }
 
     /**
@@ -508,39 +497,42 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
     /**
      * @notice Checks if Nevermined fees are included in the payment distribution
-     * @param _amounts Array of payment amounts for different receivers
-     * @param _receivers Array of payment receivers' addresses
-     * @return Boolean indicating whether Nevermined fees are properly included
-     * @dev Verifies both that the fee receiver is included and that the fee amount is correct
-     * @dev Returns true if fees are not required (fee is zero or no receiver is specified)
+     * @param _planId The ID of the plan to check
+     * @return bool True if Nevermined fees are properly included
      */
-    function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
-        public
-        view
-        returns (bool)
-    {
+    function areNeverminedFeesIncluded(uint256 _planId) public view returns (bool) {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
-        uint256 networkFee = $.nvmConfig.getNetworkFee();
+        IAsset.Plan storage plan = $.plans[_planId];
+        PriceConfig storage priceConfig = plan.price;
         address feeReceiver = $.nvmConfig.getFeeReceiver();
 
-        if (networkFee == 0 || feeReceiver == address(0)) return true;
+        if (feeReceiver == address(0)) return true;
 
         uint256 totalAmount = 0;
-        uint256 amountsLength = _amounts.length;
+        uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
             unchecked {
-                totalAmount += _amounts[i];
+                totalAmount += priceConfig.amounts[i];
             }
         }
 
         if (totalAmount == 0) return true;
 
+        // Calculate expected fee amount using the appropriate fee controller
+        IFeeController feeController = plan.price.feeController == IFeeController(address(0))
+            ? $.nvmConfig.getDefaultFeeController()
+            : plan.price.feeController;
+        uint256 expectedFeeAmount = feeController.calculateFee(totalAmount, plan.price, plan.credits);
+
+        if (expectedFeeAmount == 0) return true;
+
+        // Check if the fee receiver is included in the payment distribution
         bool _feeReceiverIncluded = false;
         uint256 _receiverIndex = 0;
-        uint256 receiversLength = _receivers.length;
+        uint256 receiversLength = priceConfig.receivers.length;
 
         for (uint256 i = 0; i < receiversLength; i++) {
-            if (_receivers[i] == feeReceiver) {
+            if (priceConfig.receivers[i] == feeReceiver) {
                 if (_feeReceiverIncluded) {
                     revert MultipleFeeReceiversIncluded();
                 }
@@ -552,74 +544,58 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         if (!_feeReceiverIncluded) return false;
 
         // Return if fee calculation is correct
-        return _calculateFeeAmount(networkFee, totalAmount, $.nvmConfig.getFeeDenominator()) == _amounts[_receiverIndex];
+        return expectedFeeAmount == priceConfig.amounts[_receiverIndex];
     }
 
     /**
      * @notice Adds Nevermined fees to the payment distribution if not already included
-     * @param _amounts Original array of payment amounts for different receivers
-     * @param _receivers Original array of payment receivers' addresses
+     * @param priceConfig The price configuration of the plan
+     * @param creditsConfig The credits configuration of the plan
      * @return amounts Updated array of payment amounts including fees
      * @return receivers Updated array of payment receivers including fee recipient
-     * @dev If fees are already included or not required, returns the original arrays unchanged
      */
-    function addFeesToPaymentsDistribution(uint256[] memory _amounts, address[] memory _receivers)
-        external
-        view
-        returns (uint256[] memory amounts, address[] memory receivers)
-    {
+    function addFeesToPaymentsDistribution(
+        IAsset.PriceConfig calldata priceConfig,
+        IAsset.CreditsConfig calldata creditsConfig
+    ) external view returns (uint256[] memory amounts, address[] memory receivers) {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
-        // If the fees are already added we don't need to do anything
-        if (areNeverminedFeesIncluded(_amounts, _receivers)) return (_amounts, _receivers);
+        if ($.nvmConfig.getFeeReceiver() == address(0)) return (priceConfig.amounts, priceConfig.receivers);
 
         uint256 totalAmount = 0;
-        uint256 amountsLength = _amounts.length;
+        uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
             unchecked {
-                totalAmount += _amounts[i];
+                totalAmount += priceConfig.amounts[i];
             }
         }
+        if (totalAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
-        // If the total amount is zero we don't need to add fees
-        if (totalAmount == 0) return (_amounts, _receivers);
+        // Calculate fee amount using the appropriate fee controller
+        uint256 feeAmount;
+        {
+            IFeeController feeController = priceConfig.feeController == IFeeController(address(0))
+                ? $.nvmConfig.getDefaultFeeController()
+                : priceConfig.feeController;
+            feeAmount = feeController.calculateFee(totalAmount, priceConfig, creditsConfig);
+        }
+        if (feeAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
-        uint256 feeAmount =
-            _calculateFeeAmount($.nvmConfig.getNetworkFee(), totalAmount, $.nvmConfig.getFeeDenominator());
-
-        uint256 _length = amountsLength;
-
-        uint256[] memory amountsWithFees = new uint256[](_length + 1);
-        for (uint256 i; i < _length; i++) {
+        uint256[] memory amountsWithFees = new uint256[](amountsLength + 1);
+        for (uint256 i; i < amountsLength; i++) {
             unchecked {
-                amountsWithFees[i] = _amounts[i];
+                amountsWithFees[i] = priceConfig.amounts[i];
             }
         }
-        amountsWithFees[_length] = feeAmount;
+        amountsWithFees[amountsLength] = feeAmount;
 
-        address[] memory receiversWithFees = new address[](_length + 1);
-        for (uint256 i; i < _length; i++) {
-            receiversWithFees[i] = _receivers[i];
+        address[] memory receiversWithFees = new address[](amountsLength + 1);
+        for (uint256 i; i < amountsLength; i++) {
+            receiversWithFees[i] = priceConfig.receivers[i];
         }
-        receiversWithFees[_length] = $.nvmConfig.getFeeReceiver();
+        receiversWithFees[amountsLength] = $.nvmConfig.getFeeReceiver();
 
         return (amountsWithFees, receiversWithFees);
-    }
-
-    /**
-     * @notice Calculates the fee amount based on the total payment amount
-     * @param _feeAmount The fee rate from the configuration
-     * @param _totalAmount The total payment amount to apply the fee to
-     * @param _feeDenominator The denominator used for fee calculation (e.g., 10000 for a basis point system)
-     * @return uint256 The calculated fee amount
-     * @dev Uses multiplication before division to avoid rounding errors
-     */
-    function _calculateFeeAmount(uint256 _feeAmount, uint256 _totalAmount, uint256 _feeDenominator)
-        internal
-        pure
-        returns (uint256)
-    {
-        return (_feeAmount * _totalAmount) / _feeDenominator;
     }
 
     /**
@@ -673,5 +649,24 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         for (uint256 i = 0; i < _hooks.length; i++) {
             $.planHooks[_planId].push(_hooks[i]);
         }
+    }
+
+    /**
+     * @notice Sets a custom fee controller for a plan
+     * @param _planId The ID of the plan
+     * @param _feeControllerAddress Address of the fee controller contract
+     * @dev Only callable by the plan owner
+     */
+    function setPlanFeeController(uint256 _planId, IFeeController _feeControllerAddress) external restricted {
+        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
+
+        if ($.plans[_planId].lastUpdated == 0) {
+            revert PlanNotFound(_planId);
+        }
+
+        $.plans[_planId].price.feeController = _feeControllerAddress;
+        $.plans[_planId].lastUpdated = block.timestamp;
+
+        emit PlanFeeControllerUpdated(_planId, address(_feeControllerAddress));
     }
 }

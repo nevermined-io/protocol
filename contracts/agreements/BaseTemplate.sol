@@ -9,7 +9,6 @@ import {IHook} from '../interfaces/IHook.sol';
 import {ITemplate} from '../interfaces/ITemplate.sol';
 
 import {AccessManagedUUPSUpgradeable} from '../proxy/AccessManagedUUPSUpgradeable.sol';
-import {AgreementsStore} from './AgreementsStore.sol';
 
 /**
  * @title BaseTemplate
@@ -36,6 +35,7 @@ abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
         IAsset assetsRegistry;
     }
 
+    // solhint-disable-next-line func-name-mixedcase
     function __BaseTemplate_init(IAsset _assetsRegistryAddress) internal onlyInitializing {
         BaseTemplateStorage storage $ = _getBaseTemplateStorage();
         $.assetsRegistry = _assetsRegistryAddress;

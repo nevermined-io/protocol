@@ -6,6 +6,8 @@ pragma solidity ^0.8.30;
 import {TransferCreditsCondition} from '../../../contracts/conditions/TransferCreditsCondition.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 import {BaseTest} from '../common/BaseTest.sol';
@@ -38,15 +40,13 @@ contract TransferCreditsConditionTest is BaseTest {
         address[] memory receivers = new address[](1);
         receivers[0] = receiver;
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: finalAmounts,
-            receivers: finalReceivers,
-            contractAddress: address(0)
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -56,20 +56,25 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
+
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = finalAmounts;
+        priceConfig.receivers = finalReceivers;
 
         // Register asset and plan
         bytes32 didSeed = bytes32(uint256(1));
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(2));
@@ -105,15 +110,13 @@ contract TransferCreditsConditionTest is BaseTest {
         address[] memory receivers = new address[](1);
         receivers[0] = receiver;
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: finalAmounts,
-            receivers: finalReceivers,
-            contractAddress: address(0)
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         uint256 durationSecs = 30 days;
@@ -124,20 +127,25 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftExpirableCredits)
         });
+
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = finalAmounts;
+        priceConfig.receivers = finalReceivers;
 
         // Register asset and plan
         bytes32 didSeed = bytes32(uint256(3));
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftExpirableCredits)
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftExpirableCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(4));
@@ -173,15 +181,13 @@ contract TransferCreditsConditionTest is BaseTest {
         address[] memory receivers = new address[](1);
         receivers[0] = receiver;
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: finalAmounts,
-            receivers: finalReceivers,
-            contractAddress: address(0)
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -191,20 +197,25 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
+
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = finalAmounts;
+        priceConfig.receivers = finalReceivers;
 
         // Register asset and plan
         bytes32 didSeed = bytes32(uint256(5));
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(6));
@@ -238,15 +249,13 @@ contract TransferCreditsConditionTest is BaseTest {
         address[] memory receivers = new address[](1);
         receivers[0] = receiver;
 
-        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers);
-
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: finalAmounts,
-            receivers: finalReceivers,
-            contractAddress: address(0)
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
 
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
@@ -256,20 +265,25 @@ contract TransferCreditsConditionTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 100,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
+
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = finalAmounts;
+        priceConfig.receivers = finalReceivers;
 
         // Register asset and plan
         bytes32 didSeed = bytes32(uint256(7));
         did = assetsRegistry.hashDID(didSeed, address(this));
 
         vm.prank(address(this));
-        assetsRegistry.registerAssetAndPlan(
-            didSeed, 'https://nevermined.io', priceConfig, creditsConfig, address(nftCredits)
-        );
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
 
         // Get the plan ID
-        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        planId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
 
         // Create agreement
         bytes32 agreementSeed = bytes32(uint256(8));

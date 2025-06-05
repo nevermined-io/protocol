@@ -34,6 +34,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -53,7 +54,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
     lockPaymentCondition = _deployment.lockPaymentCondition
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
-
+    protocolStandardFees = _deployment.protocolStandardFees
     owner = wallets[0]
     alice = wallets[3]
     bob = wallets[4]
@@ -88,7 +89,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
   }
   describe('Contracts Config', function () {
     it('I can load config', async () => {
-      expect((await nvmConfig.read.getNetworkFee()) > 0n).to.be.true
+      expect((await nvmConfig.read.getFeeReceiver()) > 0n).to.be.true
     })
   })
   describe('Native Token Payment Flow', function () {
@@ -103,14 +104,8 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
     it('Alice can register an asset with a plan', async () => {
       priceConfig = createPriceConfig(zeroAddress, alice.account.address)
-      creditsConfig = createCreditsConfig()
-      const result = await registerAssetAndPlan(
-        assetsRegistry,
-        priceConfig,
-        creditsConfig,
-        alice,
-        nftCredits.address,
-      )
+      creditsConfig = createCreditsConfig(nftCredits.address)
+      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice)
       did = result.did
       planId = result.planId
 
@@ -121,7 +116,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
       const plan = await assetsRegistry.read.getPlan([planId])
       expect(plan.lastUpdated > 0n).to.be.true
-      expect(plan.nftAddress).to.equalIgnoreCase(nftCredits.address)
+      expect(plan.credits.nftAddress).to.equalIgnoreCase(nftCredits.address)
 
       console.log('Plan ID:', planId)
     })
@@ -210,15 +205,9 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
 
     before(async () => {
       priceConfig = createPriceConfig(zeroAddress, bob.account.address)
-      creditsConfig = createCreditsConfig()
+      creditsConfig = createCreditsConfig(nftCredits.address)
 
-      const result = await registerAssetAndPlan(
-        assetsRegistry,
-        priceConfig,
-        creditsConfig,
-        alice,
-        nftCredits.address,
-      )
+      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice)
       did = result.did
       planId = result.planId
 
@@ -302,6 +291,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         amounts: [100n],
         receivers: [alice.account.address],
         contractAddress: zeroAddress,
+        feeController: zeroAddress,
       }
 
       const result = await registerAssetAndPlan(
@@ -309,7 +299,6 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
         unsupportedPriceConfig,
         creditsConfig,
         alice,
-        nftCredits.address,
       )
       const newDid = result.did
       const newPlanId = result.planId
@@ -345,9 +334,8 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       const result = await registerAssetAndPlan(
         assetsRegistry,
         priceConfig,
-        createCreditsConfig(),
+        createCreditsConfig(nftCredits.address),
         alice,
-        nftCredits.address,
       )
       did = result.did
       planId = result.planId
@@ -362,7 +350,7 @@ describe('IT: FixedPaymentTemplate comprehensive test', function () {
       const plan = await assetsRegistry.read.getPlan([planId])
       console.log('Plan = :', plan)
       expect(plan.price.tokenAddress).to.equalIgnoreCase(mockERC20.address)
-      expect(plan.nftAddress).to.equalIgnoreCase(nftCredits.address)
+      expect(plan.credits.nftAddress).to.equalIgnoreCase(nftCredits.address)
     })
 
     it('We can check the ERC20 balances before agreement', async () => {

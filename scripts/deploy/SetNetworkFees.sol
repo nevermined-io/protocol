@@ -3,8 +3,8 @@ pragma solidity ^0.8.30;
 
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
 import {DeployConfig} from './DeployConfig.sol';
-import {Script} from 'forge-std/Script.sol';
-import {console2} from 'forge-std/console2.sol';
+import {Script} from 'lib/forge-std/src/Script.sol';
+import {console2} from 'lib/forge-std/src/console2.sol';
 
 /**
  * @notice This script sets the network fees in the NVMConfig contract
@@ -20,15 +20,14 @@ contract SetNetworkFees is Script, DeployConfig {
         NVMConfig nvmConfig = NVMConfig(vm.parseJsonAddress(json, '$.contracts.NVMConfig'));
 
         address feeReceiver = vm.envOr('NVM_FEE_RECEIVER', governorAddress);
-        uint256 feeAmount = vm.envOr('NVM_FEE_AMOUNT', uint256(10000));
 
         // Start broadcast with the signer provided by --mnemonics and --mnemonic-indexes
         // This must be the governor account
         vm.startBroadcast(governorAddress);
         // Set network fees (requires governor role)
-        nvmConfig.setNetworkFees(feeAmount, feeReceiver);
+        nvmConfig.setFeeReceiver(feeReceiver);
 
-        console2.log('Network fees set to:', feeAmount, 'to address:', feeReceiver);
+        console2.log('Fee receiver set to:', feeReceiver);
 
         vm.stopBroadcast();
     }

@@ -6,6 +6,7 @@ import {FixedPaymentTemplate} from '../../../contracts/agreements/FixedPaymentTe
 
 import {FIAT_SETTLEMENT_ROLE} from '../../../contracts/common/Roles.sol';
 import {OneTimeCreatorHook} from '../../../contracts/hooks/OneTimeCreatorHook.sol';
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
@@ -62,14 +63,13 @@ contract OneTimeCreatorHookTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = creator;
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
-            contractAddress: address(0)
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -78,12 +78,17 @@ contract OneTimeCreatorHookTest is BaseTest {
             amount: 100,
             minAmount: 1,
             maxAmount: 1,
-            proofRequired: false
+            proofRequired: false,
+            nftAddress: address(nftCredits)
         });
 
-        address nftAddress = address(nftCredits);
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         vm.prank(creator);
-        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, nftAddress, hooks);
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, nftAddress, creator, 0);
+        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, hooks);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, creator, 0);
     }
 }

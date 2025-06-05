@@ -33,6 +33,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
   let foundryTools
   let publicClient
   let walletClient
+  let protocolStandardFees: any
 
   before(async () => {
     await loadFixture(deployInstance)
@@ -53,7 +54,7 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
     agreementsStore = _deployment.agreementsStore
     nftCredits = _deployment.nft1155Credits
     accessManager = _deployment.accessManager
-
+    protocolStandardFees = _deployment.protocolStandardFees
     owner = wallets[0]
     alice = wallets[3]
     bob = wallets[4]
@@ -86,27 +87,21 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
   describe('FIAT Payment Flow', function () {
     it('Alice can register an asset with a plan', async () => {
       priceConfig = createPriceConfig(zeroAddress, alice.account.address)
-      creditsConfig = createCreditsConfig()
+      creditsConfig = createCreditsConfig(nftCredits.address)
 
       priceConfig.priceType = 1 // FIXED_FIAT_PRICE
-      const result = await registerAssetAndPlan(
-        assetsRegistry,
-        priceConfig,
-        creditsConfig,
-        alice,
-        nftCredits.address,
-      )
+      const result = await registerAssetAndPlan(assetsRegistry, priceConfig, creditsConfig, alice)
       did = result.did
       planId = result.planId
       // console.log('Price Config:', priceConfig)
 
       const asset = await assetsRegistry.read.getAsset([did])
-      
+
       console.log('Asset:', asset)
 
       const plan = await assetsRegistry.read.getPlan([planId])
       expect(plan.lastUpdated > 0n).to.be.true
-      expect(plan.nftAddress).to.equalIgnoreCase(nftCredits.address)
+      expect(plan.credits.nftAddress).to.equalIgnoreCase(nftCredits.address)
 
       console.log('Plan ID:', planId)
     })
@@ -197,39 +192,21 @@ describe('IT: FiatPaymentTemplate comprehensive test', function () {
         amounts: [100n],
         receivers: [alice.account.address],
         contractAddress: zeroAddress,
+        feeController: zeroAddress,
       }
 
       // Create credits config
-      const creditsConfig = createCreditsConfig()
-
-      // Register asset with unsupported price type
-      // const didSeed = generateId()
-      // const newDid = await assetsRegistry.read.hashDID([didSeed, alice.account.address])
-
-      // await assetsRegistry.write.registerAssetAndPlan(
-      //   [
-      //     didSeed,
-      //     'https://nevermined.io',
-      //     unsupportedPriceConfig,
-      //     creditsConfig,
-      //     nftCredits.address,
-      //   ],
-      //   { account: alice.account },
-      // )
+      const creditsConfig = createCreditsConfig(nftCredits.address)
 
       const result = await registerAssetAndPlan(
         assetsRegistry,
         unsupportedPriceConfig,
         creditsConfig,
         alice,
-        nftCredits.address,
       )
 
       const newDid = result.did
       const newPlanId = result.planId
-      // Get the new plan ID
-      // const asset = await assetsRegistry.read.getAsset([newDid])
-      // const newPlanId = asset.plans[0]
 
       console.log('New Plan ID:', newPlanId)
       console.log('New DID:', newDid)

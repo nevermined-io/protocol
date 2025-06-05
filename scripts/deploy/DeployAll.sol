@@ -21,11 +21,14 @@ import {DeployAccessManager} from './DeployAccessManager.sol';
 import {DeployConditions} from './DeployConditions.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {DeployCoreContracts} from './DeployCoreContracts.sol';
+
+import {DeployFeeContracts} from './DeployFeeContracts.sol';
 import {DeployLibraries} from './DeployLibraries.sol';
 import {DeployNFTContracts} from './DeployNFTContracts.sol';
 import {DeployNVMConfig} from './DeployNVMConfig.sol';
 import {DeployTemplates} from './DeployTemplates.sol';
 
+import {ProtocolStandardFees} from '../../contracts/fees/ProtocolStandardFees.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
 import {AccessManager} from '@openzeppelin/contracts/access/manager/AccessManager.sol';
 
@@ -51,6 +54,7 @@ struct DeployedContracts {
     FixedPaymentTemplate fixedPaymentTemplate;
     FiatPaymentTemplate fiatPaymentTemplate;
     OneTimeCreatorHook oneTimeCreatorHook;
+    ProtocolStandardFees protocolStandardFees;
 }
 
 contract DeployAll is Script, DeployConfig {
@@ -143,6 +147,12 @@ contract DeployAll is Script, DeployConfig {
             implementationSalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_IMPL_', version)),
             proxySalt: keccak256(abi.encodePacked('FIAT_PAYMENT_TEMPLATE_PROXY_', version))
         });
+
+        // Fees
+        deploymentSalt[type(ProtocolStandardFees).name] = UpgradeableContractDeploySalt({
+            implementationSalt: keccak256(abi.encodePacked('PROTOCOL_STANDARD_FEES_IMPL_', version)),
+            proxySalt: keccak256(abi.encodePacked('PROTOCOL_STANDARD_FEES_PROXY_', version))
+        });
     }
 
     function run() public returns (DeployedContracts memory deployed) {
@@ -175,9 +185,24 @@ contract DeployAll is Script, DeployConfig {
         );
         if (debug) console2.log('OneTimeCreatorHook deployed at:', address(deployed.oneTimeCreatorHook));
 
+        // Deploy Fees
+        deployed.protocolStandardFees = new DeployFeeContracts().run(
+            DeployFeeContracts.DeployFeeContractsParams({
+                ownerAddress: ownerAddress,
+                accessManagerAddress: deployed.accessManager,
+                protocolStandardFeesSalt: deploymentSalt[type(ProtocolStandardFees).name],
+                revertIfAlreadyDeployed: revertIfAlreadyDeployed
+            })
+        );
+        if (debug) console2.log('ProtocolStandardFees deployed at:', address(deployed.protocolStandardFees));
+
         // 2. Deploy NVMConfig
         deployed.nvmConfig = new DeployNVMConfig().run(
-            ownerAddress, deployed.accessManager, deploymentSalt[type(NVMConfig).name], revertIfAlreadyDeployed
+            ownerAddress,
+            deployed.accessManager,
+            deployed.protocolStandardFees,
+            deploymentSalt[type(NVMConfig).name],
+            revertIfAlreadyDeployed
         );
         if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
 
@@ -314,6 +339,9 @@ contract DeployAll is Script, DeployConfig {
             vm.serializeAddress(contractJsonKey, type(FiatPaymentTemplate).name, address(deployed.fiatPaymentTemplate));
         contractJsonContent =
             vm.serializeAddress(contractJsonKey, type(OneTimeCreatorHook).name, address(deployed.oneTimeCreatorHook));
+        contractJsonContent = vm.serializeAddress(
+            contractJsonKey, type(ProtocolStandardFees).name, address(deployed.protocolStandardFees)
+        );
 
         // Combine all JSON parts
         jsonContent = vm.serializeString(rootJsonKey, contractJsonKey, contractJsonContent);

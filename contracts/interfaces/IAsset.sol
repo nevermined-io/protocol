@@ -3,6 +3,7 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
+import {IFeeController} from './IFeeController.sol';
 import {IHook} from './IHook.sol';
 
 /**
@@ -131,6 +132,10 @@ interface IAsset {
          * @dev Only used if priceType is SMART_CONTRACT_PRICE
          */
         address contractAddress;
+        /**
+         * @notice The address of the fee controller contract, if any
+         */
+        IFeeController feeController;
     }
 
     /**
@@ -172,6 +177,11 @@ interface IAsset {
          * @dev Only used if creditsType is DYNAMIC
          */
         uint256 maxAmount;
+        /**
+         * @notice The address of the NFT contract that represents the plan's credits
+         * @dev Only used if creditsType is FIXED
+         */
+        address nftAddress;
     }
 
     /**
@@ -193,16 +203,20 @@ interface IAsset {
          */
         CreditsConfig credits;
         /**
-         * @notice The address of the NFT contract that represents the plan's credits
-         */
-        address nftAddress;
-        /**
          * @notice Timestamp of when the plan definition was last updated
          */
         uint256 lastUpdated;
     }
 
     /* EVENTS */
+
+    /**
+     * @notice Emitted when the fee controller allowed status is updated
+     * @param feeControllerAddresses Array of fee controller addresses
+     * @param creator Array of creator addresses
+     * @param allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    event FeeControllerAllowedUpdated(IFeeController[] feeControllerAddresses, address[][] creator, bool[][] allowed);
 
     /**
      * @notice Emitted when a new Asset is registered in the system
@@ -257,7 +271,27 @@ interface IAsset {
      */
     event AssetPlansReplaced(bytes32 indexed did, address indexed owner);
 
+    /**
+     * @notice Emitted when a plan's fee controller is updated
+     * @param planId The unique identifier of the plan
+     * @param feeController The address of the new fee controller
+     */
+    event PlanFeeControllerUpdated(uint256 indexed planId, address indexed feeController);
+
+    /**
+     * @notice Emitted when the default fee controller is updated
+     * @param feeController The address of the new default fee controller
+     */
+    event DefaultFeeControllerUpdated(address indexed feeController);
+
     /* ERRORS */
+
+    /**
+     * @notice Error thrown when a fee controller is not allowed to set the plan fee controller
+     * @param creator The address of the creator
+     * @param feeController The address of the fee controller
+     */
+    error NotAllowedToSetFeeController(address creator, IFeeController feeController);
 
     /**
      * @notice Error thrown when attempting to register a plan that already exists
@@ -393,14 +427,10 @@ interface IAsset {
 
     /**
      * @notice Checks if Nevermined protocol fees are correctly included in a payment distribution
-     * @param _amounts The distribution of payment amounts
-     * @param _receivers The receivers of the payments
+     * @param _planId The ID of the plan to check
      * @return Boolean indicating whether Nevermined fees are correctly included
      */
-    function areNeverminedFeesIncluded(uint256[] memory _amounts, address[] memory _receivers)
-        external
-        view
-        returns (bool);
+    function areNeverminedFeesIncluded(uint256 _planId) external view returns (bool);
 
     /**
      * @notice Associates a plan with an asset

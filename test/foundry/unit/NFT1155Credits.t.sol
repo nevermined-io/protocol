@@ -7,6 +7,7 @@ import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {INFT1155} from '../../../contracts/interfaces/INFT1155.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
@@ -99,14 +100,13 @@ contract NFT1155CreditsTest is BaseTest {
         address[] memory _receivers = new address[](1);
         _receivers[0] = address(this);
 
-        (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers);
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: amounts,
-            receivers: receivers,
-            contractAddress: address(0)
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
         });
         IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
             creditsType: IAsset.CreditsType.FIXED,
@@ -115,12 +115,19 @@ contract NFT1155CreditsTest is BaseTest {
             durationSecs: 0,
             amount: amount,
             minAmount: 1,
-            maxAmount: 100
+            maxAmount: 100,
+            nftAddress: address(nftCredits)
         });
 
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig, address(nftCredits));
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(nftCredits), address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
     }
 
     function test_mintBatch_unauthorized() public {

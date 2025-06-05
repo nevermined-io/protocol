@@ -2,6 +2,8 @@
 pragma solidity ^0.8.30;
 
 import {NVMConfig} from '../../contracts/NVMConfig.sol';
+
+import {IFeeController} from '../../contracts/interfaces/IFeeController.sol';
 import {DeployConfig} from './DeployConfig.sol';
 import {Create2DeployUtils} from './common/Create2DeployUtils.sol';
 import {UpgradeableContractDeploySalt} from './common/Types.sol';
@@ -17,6 +19,7 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
     function run(
         address ownerAddress,
         IAccessManager accessManagerAddress,
+        IFeeController defaultFeeController,
         UpgradeableContractDeploySalt memory deploymentSalt,
         bool revertIfAlreadyDeployed
     ) public returns (NVMConfig) {
@@ -45,7 +48,8 @@ contract DeployNVMConfig is DeployConfig, Create2DeployUtils {
 
         // Deploy NVMConfig Proxy
         if (debug) console2.log('Deploying NVMConfig Proxy');
-        bytes memory nvmConfigInitData = abi.encodeCall(NVMConfig.initialize, (accessManagerAddress));
+        bytes memory nvmConfigInitData =
+            abi.encodeCall(NVMConfig.initialize, (accessManagerAddress, defaultFeeController));
         (address nvmConfigProxy,) = deployWithSanityChecks(
             deploymentSalt.proxySalt,
             getERC1967ProxyCreationCode(address(nvmConfigImpl), nvmConfigInitData),

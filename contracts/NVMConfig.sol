@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
+import {IFeeController} from './interfaces/IFeeController.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
-
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
@@ -26,13 +26,6 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("nevermined.nvmconfig.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant NVM_CONFIG_STORAGE_LOCATION =
         0xd8dc47a566e10bab714c93f5587c29375a3dcfd68f88494af6f1cf90589ce900;
-
-    /**
-     * @notice Denominator used for fee calculations, representing 100% with 4 decimal places
-     * @dev When calculating fees, divide the fee value by FEE_DENOMINATOR to get the actual percentage
-     * Example: 10000 / 1000000 = 0.01 = 1%
-     */
-    uint256 public constant FEE_DENOMINATOR = 1000000;
 
     /**
      * @title ParamEntry
@@ -62,16 +55,18 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
         mapping(bytes32 => ParamEntry) configParams;
         /////// NEVERMINED GOVERNABLE VARIABLES ////////////////////////////////////////////////
         /**
-         * @notice The fee charged by Nevermined for using the Service Agreements
-         * @dev Integer representing a percentage with 4 decimal places
-         * Example: 10000 represents 1.0000% (10000/1000000)
-         */
-        uint256 networkFee;
-        /**
          * @notice The address that receives protocol fees
          * @dev This address collects all fees from service agreement executions
          */
         address feeReceiver;
+        /**
+         * @notice Default fee controller to use when plan's controller is zero
+         */
+        IFeeController defaultFeeController;
+        /**
+         * @notice Mapping of fee controller to creator to check if the fee controller is allowed to set the plan fee controller
+         */
+        mapping(IFeeController => mapping(address => bool)) isFeeControllerAllowed;
     }
 
     /**
@@ -79,7 +74,8 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @dev This function can only be called once when the proxy contract is initialized
      * @param _authority The access manager contract that will control upgrade permissions
      */
-    function initialize(IAccessManager _authority) external initializer {
+    function initialize(IAccessManager _authority, IFeeController _defaultFeeController) external initializer {
+        _getNVMConfigStorage().defaultFeeController = _defaultFeeController;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
@@ -88,41 +84,24 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Sets the network fee and fee receiver address for the Nevermined protocol
+     * @notice Sets the fee receiver address for the Nevermined protocol
      * @dev Only a governor address can call this function
      * @dev Emits NeverminedConfigChange events for both fee and receiver updates
-     * @dev The fee is expressed as a value between 0 and 1,000,000 (representing 0% to 100%)
      *
-     * @param _networkFee The fee percentage charged by Nevermined (in parts per 1,000,000)
      * @param _feeReceiver The address that will receive collected fees
      *
      * @custom:error InvalidNetworkFee Thrown if the fee is outside the valid range (0-1,000,000)
      * @custom:error InvalidFeeReceiver Thrown if a fee is set but the receiver is the zero address
      */
-    function setNetworkFees(uint256 _networkFee, address _feeReceiver) external virtual restricted {
+    function setFeeReceiver(address _feeReceiver) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
-        if (_networkFee > 1000000) {
-            revert InvalidNetworkFee(_networkFee);
-        }
-
-        if (_networkFee > 0 && _feeReceiver == address(0)) {
+        if (_feeReceiver == address(0)) {
             revert InvalidFeeReceiver(_feeReceiver);
         }
 
-        $.networkFee = _networkFee;
         $.feeReceiver = _feeReceiver;
-        emit NeverminedConfigChange(msg.sender, keccak256('networkFee'), abi.encodePacked(_networkFee));
         emit NeverminedConfigChange(msg.sender, keccak256('feeReceiver'), abi.encodePacked(_feeReceiver));
-    }
-
-    /**
-     * @notice Retrieves the current network fee percentage
-     * @dev The returned value must be divided by FEE_DENOMINATOR to get the actual percentage
-     * @return Current network fee in parts per 1,000,000 (e.g., 10000 = 1%)
-     */
-    function getNetworkFee() external view returns (uint256) {
-        return _getNVMConfigStorage().networkFee;
     }
 
     /**
@@ -130,17 +109,8 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @dev If this returns the zero address and fees are set, fees cannot be collected
      * @return The current fee receiver address
      */
-    function getFeeReceiver() external view returns (address) {
+    function getFeeReceiver() external view override returns (address) {
         return _getNVMConfigStorage().feeReceiver;
-    }
-
-    /**
-     * @notice Returns the denominator used for fee calculations
-     * @dev This is a constant value used as the denominator when calculating fee percentages
-     * @return The fee denominator constant (1,000,000 representing 100% with 4 decimal places)
-     */
-    function getFeeDenominator() external pure returns (uint256) {
-        return FEE_DENOMINATOR;
     }
 
     /**
@@ -152,7 +122,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @param _paramName The name/key of the parameter to set (as bytes32)
      * @param _value The value to set for the parameter (as arbitrary bytes)
      */
-    function setParameter(bytes32 _paramName, bytes memory _value) external virtual restricted {
+    function setParameter(bytes32 _paramName, bytes memory _value) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         $.configParams[_paramName].value = _value;
@@ -173,6 +143,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
     function getParameter(bytes32 _paramName)
         external
         view
+        override
         returns (bytes memory value, bool isActive, uint256 lastUpdated)
     {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
@@ -192,7 +163,7 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      *
      * @param _paramName The name/key of the parameter to disable
      */
-    function disableParameter(bytes32 _paramName) external virtual restricted {
+    function disableParameter(bytes32 _paramName) external virtual override restricted {
         NVMConfigStorage storage $ = _getNVMConfigStorage();
 
         if ($.configParams[_paramName].isActive) {
@@ -209,8 +180,70 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @param _paramName The name/key of the parameter to check
      * @return Boolean indicating whether the parameter exists and is active
      */
-    function parameterExists(bytes32 _paramName) external view returns (bool) {
+    function parameterExists(bytes32 _paramName) external view override returns (bool) {
         return _getNVMConfigStorage().configParams[_paramName].isActive;
+    }
+
+    /**
+     * @notice Sets the default fee controller for the Nevermined protocol
+     * @dev Only a governor address can call this function
+     * @param _defaultFeeController The address of the default fee controller contract
+     */
+    function setDefaultFeeController(IFeeController _defaultFeeController) external virtual override restricted {
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+        $.defaultFeeController = _defaultFeeController;
+        emit NeverminedConfigChange(
+            msg.sender, keccak256('defaultFeeController'), abi.encodePacked(address(_defaultFeeController))
+        );
+    }
+
+    /**
+     * @notice Gets the default fee controller contract
+     * @return The address of the default fee controller contract
+     */
+    function getDefaultFeeController() external view override returns (IFeeController) {
+        return _getNVMConfigStorage().defaultFeeController;
+    }
+
+    /**
+     * @notice Sets the fee controller allowed status for creators
+     * @param _feeControllerAddresses Array of fee controller addresses
+     * @param _creator Array of creator addresses
+     * @param _allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    function setFeeControllerAllowed(
+        IFeeController[] calldata _feeControllerAddresses,
+        address[][] calldata _creator,
+        bool[][] calldata _allowed
+    ) external virtual override restricted {
+        require(_feeControllerAddresses.length == _creator.length, InvalidInputLength());
+        require(_feeControllerAddresses.length == _allowed.length, InvalidInputLength());
+
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
+        for (uint256 i = 0; i < _feeControllerAddresses.length; i++) {
+            require(_creator[i].length == _allowed[i].length, InvalidInputLength());
+            for (uint256 j = 0; j < _creator[i].length; j++) {
+                $.isFeeControllerAllowed[_feeControllerAddresses[i]][_creator[i][j]] = _allowed[i][j];
+            }
+        }
+
+        emit FeeControllerAllowedUpdated(_feeControllerAddresses, _creator, _allowed);
+    }
+
+    /**
+     * @notice Gets whether a fee controller is allowed for a creator
+     * @param _feeController The fee controller to check
+     * @param _creator The creator address to check
+     * @return bool True if the fee controller is allowed for the creator
+     */
+    function isFeeControllerAllowed(IFeeController _feeController, address _creator)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return _getNVMConfigStorage().isFeeControllerAllowed[_feeController][_creator];
     }
 
     /**

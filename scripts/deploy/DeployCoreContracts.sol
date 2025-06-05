@@ -4,6 +4,7 @@ pragma solidity ^0.8.30;
 import {AssetsRegistry} from '../../contracts/AssetsRegistry.sol';
 import {PaymentsVault} from '../../contracts/PaymentsVault.sol';
 import {AgreementsStore} from '../../contracts/agreements/AgreementsStore.sol';
+import {IFeeController} from '../../contracts/interfaces/IFeeController.sol';
 
 import {PaymentsVault} from '../../contracts/PaymentsVault.sol';
 import {INVMConfig} from '../../contracts/interfaces/INVMConfig.sol';
