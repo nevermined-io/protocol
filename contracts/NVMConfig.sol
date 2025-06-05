@@ -3,8 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
+import {IFeeController} from './interfaces/IFeeController.sol';
 import {INVMConfig} from './interfaces/INVMConfig.sol';
-
 import {AccessManagedUUPSUpgradeable} from './proxy/AccessManagedUUPSUpgradeable.sol';
 import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessManager.sol';
 
@@ -59,6 +59,14 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
          * @dev This address collects all fees from service agreement executions
          */
         address feeReceiver;
+        /**
+         * @notice Default fee controller to use when plan's controller is zero
+         */
+        IFeeController defaultFeeController;
+        /**
+         * @notice Mapping of fee controller to creator to check if the fee controller is allowed to set the plan fee controller
+         */
+        mapping(IFeeController => mapping(address => bool)) isFeeControllerAllowed;
     }
 
     /**
@@ -66,7 +74,8 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @dev This function can only be called once when the proxy contract is initialized
      * @param _authority The access manager contract that will control upgrade permissions
      */
-    function initialize(IAccessManager _authority) external initializer {
+    function initialize(IAccessManager _authority, IFeeController _defaultFeeController) external initializer {
+        _getNVMConfigStorage().defaultFeeController = _defaultFeeController;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
@@ -173,6 +182,68 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      */
     function parameterExists(bytes32 _paramName) external view override returns (bool) {
         return _getNVMConfigStorage().configParams[_paramName].isActive;
+    }
+
+    /**
+     * @notice Sets the default fee controller for the Nevermined protocol
+     * @dev Only a governor address can call this function
+     * @param _defaultFeeController The address of the default fee controller contract
+     */
+    function setDefaultFeeController(IFeeController _defaultFeeController) external virtual override restricted {
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+        $.defaultFeeController = _defaultFeeController;
+        emit NeverminedConfigChange(
+            msg.sender, keccak256('defaultFeeController'), abi.encodePacked(address(_defaultFeeController))
+        );
+    }
+
+    /**
+     * @notice Gets the default fee controller contract
+     * @return The address of the default fee controller contract
+     */
+    function getDefaultFeeController() external view override returns (IFeeController) {
+        return _getNVMConfigStorage().defaultFeeController;
+    }
+
+    /**
+     * @notice Sets the fee controller allowed status for creators
+     * @param _feeControllerAddresses Array of fee controller addresses
+     * @param _creator Array of creator addresses
+     * @param _allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    function setFeeControllerAllowed(
+        IFeeController[] calldata _feeControllerAddresses,
+        address[][] calldata _creator,
+        bool[][] calldata _allowed
+    ) external virtual override restricted {
+        require(_feeControllerAddresses.length == _creator.length, InvalidInputLength());
+        require(_feeControllerAddresses.length == _allowed.length, InvalidInputLength());
+
+        NVMConfigStorage storage $ = _getNVMConfigStorage();
+
+        for (uint256 i = 0; i < _feeControllerAddresses.length; i++) {
+            require(_creator[i].length == _allowed[i].length, InvalidInputLength());
+            for (uint256 j = 0; j < _creator[i].length; j++) {
+                $.isFeeControllerAllowed[_feeControllerAddresses[i]][_creator[i][j]] = _allowed[i][j];
+            }
+        }
+
+        emit FeeControllerAllowedUpdated(_feeControllerAddresses, _creator, _allowed);
+    }
+
+    /**
+     * @notice Gets whether a fee controller is allowed for a creator
+     * @param _feeController The fee controller to check
+     * @param _creator The creator address to check
+     * @return bool True if the fee controller is allowed for the creator
+     */
+    function isFeeControllerAllowed(IFeeController _feeController, address _creator)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return _getNVMConfigStorage().isFeeControllerAllowed[_feeController][_creator];
     }
 
     /**

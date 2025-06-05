@@ -4,6 +4,8 @@
 pragma solidity ^0.8.30;
 
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
+
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
 import {NVMConfigV2} from '../../../contracts/mock/NVMConfigV2.sol';
@@ -11,6 +13,8 @@ import {BaseTest} from '../common/BaseTest.sol';
 import {UUPSUpgradeable} from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import {GOVERNOR_ROLE} from '../../../contracts/common/Roles.sol';
+
+import {ProtocolStandardFees} from '../../../contracts/fees/ProtocolStandardFees.sol';
 import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract NVMConfigTest is BaseTest {
@@ -208,5 +212,144 @@ contract NVMConfigTest is BaseTest {
         address nonGovernor = makeAddr('nonGovernor');
         vm.prank(nonGovernor);
         assertTrue(nvmConfig.parameterExists(paramName));
+    }
+
+    function test_setDefaultFeeController() public {
+        // Create a new fee controller
+        address newFeeController = makeAddr('newFeeController');
+
+        // Set new default fee controller
+        vm.prank(governor);
+        nvmConfig.setDefaultFeeController(IFeeController(newFeeController));
+
+        // Verify the default fee controller was updated
+        assertEq(address(nvmConfig.getDefaultFeeController()), newFeeController);
+    }
+
+    function test_setDefaultFeeController_revertIfNotGovernor() public {
+        // Create a new fee controller
+        address newFeeController = makeAddr('newFeeController');
+
+        // Try to set default fee controller as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        nvmConfig.setDefaultFeeController(IFeeController(newFeeController));
+    }
+
+    function test_getDefaultFeeController() public view {
+        // Get the current default fee controller
+        IFeeController currentFeeController = nvmConfig.getDefaultFeeController();
+
+        // Verify it matches the one set in BaseTest
+        assertEq(address(currentFeeController), address(protocolStandardFees));
+    }
+
+    function test_setFeeControllerAllowed_success() public {
+        // Create test fee controllers
+        IFeeController feeController1 = IFeeController(makeAddr('feeController1'));
+        IFeeController feeController2 = IFeeController(makeAddr('feeController2'));
+
+        // Create test creators
+        address creator1 = makeAddr('creator1');
+        address creator2 = makeAddr('creator2');
+        address creator3 = makeAddr('creator3');
+
+        // Prepare input arrays
+        IFeeController[] memory feeControllers = new IFeeController[](2);
+        feeControllers[0] = feeController1;
+        feeControllers[1] = feeController2;
+
+        address[][] memory creators = new address[][](2);
+        creators[0] = new address[](2);
+        creators[0][0] = creator1;
+        creators[0][1] = creator2;
+        creators[1] = new address[](1);
+        creators[1][0] = creator3;
+
+        bool[][] memory allowed = new bool[][](2);
+        allowed[0] = new bool[](2);
+        allowed[0][0] = true;
+        allowed[0][1] = false;
+        allowed[1] = new bool[](1);
+        allowed[1][0] = true;
+
+        // Set fee controller allowed status
+        vm.prank(governor);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify the settings were applied correctly
+        assertTrue(nvmConfig.isFeeControllerAllowed(feeController1, creator1));
+        assertFalse(nvmConfig.isFeeControllerAllowed(feeController1, creator2));
+        assertTrue(nvmConfig.isFeeControllerAllowed(feeController2, creator3));
+    }
+
+    function test_setFeeControllerAllowed_revertIfNotGovernor() public {
+        // Create test arrays
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        address[][] memory creators = new address[][](1);
+        bool[][] memory allowed = new bool[][](1);
+
+        // Try to set fee controller allowed status as non-governor
+        address nonGovernor = makeAddr('nonGovernor');
+        vm.prank(nonGovernor);
+        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_revertIfInvalidInputLength() public {
+        // Create mismatched arrays
+        IFeeController[] memory feeControllers = new IFeeController[](2);
+        address[][] memory creators = new address[][](1);
+        bool[][] memory allowed = new bool[][](1);
+
+        // Try to set fee controller allowed status with mismatched arrays
+        vm.prank(governor);
+        vm.expectRevert(INVMConfig.InvalidInputLength.selector);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_revertIfInvalidInnerArrayLength() public {
+        // Create test arrays with mismatched inner array lengths
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        address[][] memory creators = new address[][](1);
+        creators[0] = new address[](2);
+        bool[][] memory allowed = new bool[][](1);
+        allowed[0] = new bool[](1);
+
+        // Try to set fee controller allowed status with mismatched inner arrays
+        vm.prank(governor);
+        vm.expectRevert(INVMConfig.InvalidInputLength.selector);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+    }
+
+    function test_setFeeControllerAllowed_updateExistingSettings() public {
+        // Create test fee controller and creator
+        IFeeController feeController = IFeeController(makeAddr('feeController'));
+        address creator = makeAddr('creator');
+
+        // First set to true
+        IFeeController[] memory feeControllers = new IFeeController[](1);
+        feeControllers[0] = feeController;
+        address[][] memory creators = new address[][](1);
+        creators[0] = new address[](1);
+        creators[0][0] = creator;
+        bool[][] memory allowed = new bool[][](1);
+        allowed[0] = new bool[](1);
+        allowed[0][0] = true;
+
+        vm.prank(governor);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify initial setting
+        assertTrue(nvmConfig.isFeeControllerAllowed(feeController, creator));
+
+        // Update to false
+        allowed[0][0] = false;
+        vm.prank(governor);
+        nvmConfig.setFeeControllerAllowed(feeControllers, creators, allowed);
+
+        // Verify updated setting
+        assertFalse(nvmConfig.isFeeControllerAllowed(feeController, creator));
     }
 }

@@ -3,6 +3,8 @@
 // Code is Apache-2.0 and docs are CC-BY-4.0
 pragma solidity ^0.8.30;
 
+import {IFeeController} from './IFeeController.sol';
+
 /**
  * @title Nevermined Configuration Interface
  * @author Nevermined AG
@@ -31,6 +33,11 @@ interface INVMConfig {
      * @param _address The invalid address that was provided
      */
     error InvalidAddress(address _address);
+
+    /**
+     * @notice Error thrown when an invalid input length is provided
+     */
+    error InvalidInputLength();
 
     /**
      * @notice Retrieves the address that receives protocol fees
@@ -91,4 +98,46 @@ interface INVMConfig {
      * @return bool True if the parameter exists, false otherwise
      */
     function parameterExists(bytes32 _paramName) external view returns (bool);
+
+    /**
+     * @notice Emitted when a fee controller is allowed or disallowed for a creator
+     * @param feeControllerAddresses Array of fee controller addresses
+     * @param creator Array of creator addresses
+     * @param allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    event FeeControllerAllowedUpdated(
+        IFeeController[] indexed feeControllerAddresses, address[][] creator, bool[][] allowed
+    );
+
+    /**
+     * @notice Sets the default fee controller for the Nevermined protocol
+     * @param _defaultFeeController The address of the default fee controller contract
+     */
+    function setDefaultFeeController(IFeeController _defaultFeeController) external;
+
+    /**
+     * @notice Gets the default fee controller contract
+     * @return The address of the default fee controller contract
+     */
+    function getDefaultFeeController() external view returns (IFeeController);
+
+    /**
+     * @notice Sets the fee controller allowed status for creators
+     * @param _feeControllerAddresses Array of fee controller addresses
+     * @param _creator Array of creator addresses
+     * @param _allowed Array of boolean values indicating if the fee controller is allowed for the creator
+     */
+    function setFeeControllerAllowed(
+        IFeeController[] calldata _feeControllerAddresses,
+        address[][] calldata _creator,
+        bool[][] calldata _allowed
+    ) external;
+
+    /**
+     * @notice Gets whether a fee controller is allowed for a creator
+     * @param _feeController The fee controller to check
+     * @param _creator The creator address to check
+     * @return bool True if the fee controller is allowed for the creator
+     */
+    function isFeeControllerAllowed(IFeeController _feeController, address _creator) external view returns (bool);
 }

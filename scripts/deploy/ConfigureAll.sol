@@ -72,6 +72,11 @@ contract ConfigureAll is Script, DeployConfig {
         managePermissions.run(config);
         if (debug) console2.log('Permissions configured');
 
+        // Set the default fee controller
+        vm.prank(governorAddress);
+        config.nvmConfig.setDefaultFeeController(config.protocolStandardFees);
+        if (debug) console2.log('Default fee controller set');
+
         string memory blockNumberJson = vm.toString(block.number);
         vm.writeJson(blockNumberJson, addressesJson, '$.blockNumber');
         if (debug) console2.log('Added block number to JSON:', block.number);

@@ -185,18 +185,7 @@ contract DeployAll is Script, DeployConfig {
         );
         if (debug) console2.log('OneTimeCreatorHook deployed at:', address(deployed.oneTimeCreatorHook));
 
-        // 2. Deploy NVMConfig
-        deployed.nvmConfig = new DeployNVMConfig().run(
-            ownerAddress, deployed.accessManager, deploymentSalt[type(NVMConfig).name], revertIfAlreadyDeployed
-        );
-        if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
-
-        // 3. Deploy Libraries
-        deployed.tokenUtils =
-            new DeployLibraries().run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
-        if (debug) console2.log('TokenUtils deployed at:', deployed.tokenUtils);
-
-        // 4. Deploy Fees
+        // Deploy Fees
         deployed.protocolStandardFees = new DeployFeeContracts().run(
             DeployFeeContracts.DeployFeeContractsParams({
                 ownerAddress: ownerAddress,
@@ -207,11 +196,25 @@ contract DeployAll is Script, DeployConfig {
         );
         if (debug) console2.log('ProtocolStandardFees deployed at:', address(deployed.protocolStandardFees));
 
+        // 2. Deploy NVMConfig
+        deployed.nvmConfig = new DeployNVMConfig().run(
+            ownerAddress,
+            deployed.accessManager,
+            deployed.protocolStandardFees,
+            deploymentSalt[type(NVMConfig).name],
+            revertIfAlreadyDeployed
+        );
+        if (debug) console2.log('NVMConfig deployed at:', address(deployed.nvmConfig));
+
+        // 3. Deploy Libraries
+        deployed.tokenUtils =
+            new DeployLibraries().run(ownerAddress, deploymentSalt[type(TokenUtils).name], revertIfAlreadyDeployed);
+        if (debug) console2.log('TokenUtils deployed at:', deployed.tokenUtils);
+
         // 4. Deploy Core Contracts
         (deployed.assetsRegistry, deployed.agreementsStore, deployed.paymentsVault) = new DeployCoreContracts().run(
             deployed.nvmConfig,
             deployed.accessManager,
-            deployed.protocolStandardFees,
             ownerAddress,
             deploymentSalt[type(AssetsRegistry).name],
             deploymentSalt[type(AgreementsStore).name],

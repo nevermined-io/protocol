@@ -239,19 +239,17 @@ contract ManagePermissions is Script, DeployConfig {
         accessManager.setTargetFunctionRole(
             address(nvmConfig),
             toArray(
-                NVMConfig.setParameter.selector, NVMConfig.disableParameter.selector, NVMConfig.setFeeReceiver.selector
+                NVMConfig.setParameter.selector,
+                NVMConfig.disableParameter.selector,
+                NVMConfig.setFeeReceiver.selector,
+                NVMConfig.setDefaultFeeController.selector,
+                NVMConfig.setFeeControllerAllowed.selector
             ),
             GOVERNOR_ROLE
         );
 
         accessManager.setTargetFunctionRole(
-            address(assetsRegistry),
-            toArray(
-                AssetsRegistry.setDefaultFeeController.selector,
-                AssetsRegistry.setPlanFeeController.selector,
-                AssetsRegistry.setFeeControllerAllowed.selector
-            ),
-            GOVERNOR_ROLE
+            address(assetsRegistry), toArray(AssetsRegistry.setPlanFeeController.selector), GOVERNOR_ROLE
         );
 
         accessManager.setTargetFunctionRole(

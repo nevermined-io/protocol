@@ -301,11 +301,6 @@ interface IAsset {
     error PlanAlreadyRegistered(uint256 planId);
 
     /**
-     * @notice Error thrown when an invalid input length is provided
-     */
-    error InvalidInputLength();
-
-    /**
      * @notice Error thrown when an invalid NFT contract address is provided
      * @dev The NFT address must be a valid ERC-1155 contract
      * @param nftAddress The invalid NFT contract address

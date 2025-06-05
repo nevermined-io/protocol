@@ -36,25 +36,16 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         mapping(uint256 => Plan) plans;
         /// @notice Mapping of plan ID to array of hook contracts
         mapping(uint256 => IHook[]) planHooks;
-        /// @notice Default fee controller to use when plan's controller is zero
-        IFeeController defaultFeeController;
-        /// @notice Mapping of fee controller to creator to check if the fee controller is allowed to set the plan fee controller
-        mapping(IFeeController => mapping(address => bool)) isFeeControllerAllowed;
     }
 
     /**
      * @notice Initializes the AssetsRegistry contract with a configuration address and access manager
      * @param _nvmConfigAddress Address of the NVMConfig contract managing system configuration
      * @param _authority Address of the AccessManager contract handling permissions
-     * @param _defaultFeeController Address of the default fee controller contract
      * @dev This function replaces the constructor for upgradeable contracts
      */
-    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority, IFeeController _defaultFeeController)
-        external
-        initializer
-    {
+    function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
         _getAssetsRegistryStorage().nvmConfig = _nvmConfigAddress;
-        _getAssetsRegistryStorage().defaultFeeController = _defaultFeeController;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
 
@@ -150,11 +141,11 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         }
 
         if (
-            _priceConfig.feeController != $.defaultFeeController
+            _priceConfig.feeController != $.nvmConfig.getDefaultFeeController()
                 && _priceConfig.feeController != IFeeController(address(0x0))
         ) {
             require(
-                $.isFeeControllerAllowed[_priceConfig.feeController][msg.sender],
+                $.nvmConfig.isFeeControllerAllowed(_priceConfig.feeController, msg.sender),
                 NotAllowedToSetFeeController(msg.sender, _priceConfig.feeController)
             );
         }
@@ -168,7 +159,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
             Plan({owner: msg.sender, price: _priceConfig, credits: _creditsConfig, lastUpdated: block.timestamp});
 
         // If the price type is FIXED_PRICE, we need to check if the Nevermined fees are included in the payment distribution
-        if (_priceConfig.priceType == IAsset.PriceType.FIXED_PRICE && !areNeverminedFeesIncluded(planId)) {
+        if (!areNeverminedFeesIncluded(planId)) {
             revert NeverminedFeesNotIncluded(_priceConfig.amounts, _priceConfig.receivers);
         }
 
@@ -528,8 +519,9 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         if (totalAmount == 0) return true;
 
         // Calculate expected fee amount using the appropriate fee controller
-        IFeeController feeController =
-            plan.price.feeController == IFeeController(address(0)) ? $.defaultFeeController : plan.price.feeController;
+        IFeeController feeController = plan.price.feeController == IFeeController(address(0))
+            ? $.nvmConfig.getDefaultFeeController()
+            : plan.price.feeController;
         uint256 expectedFeeAmount = feeController.calculateFee(totalAmount, plan.price, plan.credits);
 
         if (expectedFeeAmount == 0) return true;
@@ -587,7 +579,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         uint256 feeAmount;
         {
             IFeeController feeController = priceConfig.feeController == IFeeController(address(0))
-                ? $.defaultFeeController
+                ? $.nvmConfig.getDefaultFeeController()
                 : priceConfig.feeController;
             feeAmount = feeController.calculateFee(totalAmount, priceConfig, creditsConfig);
         }
@@ -680,59 +672,5 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         $.plans[_planId].lastUpdated = block.timestamp;
 
         emit PlanFeeControllerUpdated(_planId, address(_feeControllerAddress));
-    }
-
-    /**
-     * @notice Updates the default fee controller contract
-     * @param _defaultFeeController Address of the new default fee controller contract
-     * @dev Only callable by the governor role
-     */
-    function setDefaultFeeController(IFeeController _defaultFeeController) external restricted {
-        _getAssetsRegistryStorage().defaultFeeController = _defaultFeeController;
-        emit DefaultFeeControllerUpdated(address(_defaultFeeController));
-    }
-
-    /**
-     * @notice Sets the fee controller allowed status for a creator
-     * @param _feeControllerAddresses Array of fee controller addresses
-     * @param _creator Array of creator addresses
-     * @param _allowed Array of boolean values indicating if the fee controller is allowed for the creator
-     */
-    function setFeeControllerAllowed(
-        IFeeController[] calldata _feeControllerAddresses,
-        address[][] calldata _creator,
-        bool[][] calldata _allowed
-    ) external restricted {
-        require(_feeControllerAddresses.length == _creator.length, InvalidInputLength());
-        require(_feeControllerAddresses.length == _allowed.length, InvalidInputLength());
-
-        AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
-
-        for (uint256 i = 0; i < _feeControllerAddresses.length; i++) {
-            require(_creator[i].length == _allowed[i].length, InvalidInputLength());
-            for (uint256 j = 0; j < _creator[i].length; j++) {
-                $.isFeeControllerAllowed[_feeControllerAddresses[i]][_creator[i][j]] = _allowed[i][j];
-            }
-        }
-
-        emit FeeControllerAllowedUpdated(_feeControllerAddresses, _creator, _allowed);
-    }
-
-    /**
-     * @notice Gets the current default fee controller contract
-     * @return The address of the default fee controller contract
-     */
-    function getDefaultFeeController() external view returns (IFeeController) {
-        return _getAssetsRegistryStorage().defaultFeeController;
-    }
-
-    /**
-     * @notice Gets whether a fee controller is allowed for a creator
-     * @param _feeController The fee controller to check
-     * @param _creator The creator address to check
-     * @return bool True if the fee controller is allowed for the creator
-     */
-    function isFeeControllerAllowed(IFeeController _feeController, address _creator) external view returns (bool) {
-        return _getAssetsRegistryStorage().isFeeControllerAllowed[_feeController][_creator];
     }
 }
