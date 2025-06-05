@@ -81,42 +81,6 @@ export function createExpirableCreditsConfig(): any {
   }
 }
 
-export async function registerPlan(
-  assetsRegistry: any,
-  publisher: any,
-  priceConfig: any,
-  creditsConfig: any,
-  nftCreditsAddress: string,
-  feeControllerAddress: string,
-): Promise<any> {
-  const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    priceConfig.amounts,
-    priceConfig.receivers,
-  ])
-  const [_amounts, _receivers] = result
-  priceConfig.amounts = _amounts
-  priceConfig.receivers = _receivers
-
-  const planId = await assetsRegistry.read.hashPlanId([
-    priceConfig,
-    creditsConfig,
-    nftCreditsAddress,
-    publisher.account.address,
-  ])
-  try {
-    await assetsRegistry.write.createPlan(
-      [priceConfig, creditsConfig, nftCreditsAddress, feeControllerAddress],
-      {
-        account: publisher.account,
-      },
-    )
-  } catch (e) {
-    console.log('Plan already registered: ', planId)
-  }
-
-  return planId
-}
-
 /**
  * Registers an asset and plan in the AssetsRegistry
  * @param assetsRegistry The AssetsRegistry contract instance
@@ -136,8 +100,6 @@ export async function registerAssetAndPlan(
 
   const nonce = getRandomBigInt()
   const result = await assetsRegistry.read.addFeesToPaymentsDistribution([
-    priceConfig.amounts,
-    priceConfig.receivers,
     priceConfig,
     creditsConfig,
   ])

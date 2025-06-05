@@ -81,8 +81,6 @@ describe('IT: Expirable Credits e2e flow', function () {
     priceConfig.feeController = protocolStandardFees.address
     creditsConfig.nftAddress = nftExpirableCredits.address
     const feesSetup = await assetsRegistry.read.addFeesToPaymentsDistribution([
-      priceConfig.amounts,
-      priceConfig.receivers,
       priceConfig,
       creditsConfig,
     ])

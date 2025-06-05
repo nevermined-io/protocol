@@ -549,31 +549,27 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
     /**
      * @notice Adds Nevermined fees to the payment distribution if not already included
-     * @param _amounts Original array of payment amounts for different receivers
-     * @param _receivers Original array of payment receivers' addresses
      * @param priceConfig The price configuration of the plan
      * @param creditsConfig The credits configuration of the plan
      * @return amounts Updated array of payment amounts including fees
      * @return receivers Updated array of payment receivers including fee recipient
      */
     function addFeesToPaymentsDistribution(
-        uint256[] calldata _amounts,
-        address[] calldata _receivers,
         IAsset.PriceConfig calldata priceConfig,
         IAsset.CreditsConfig calldata creditsConfig
     ) external view returns (uint256[] memory amounts, address[] memory receivers) {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
-        if ($.nvmConfig.getFeeReceiver() == address(0)) return (_amounts, _receivers);
+        if ($.nvmConfig.getFeeReceiver() == address(0)) return (priceConfig.amounts, priceConfig.receivers);
 
         uint256 totalAmount = 0;
-        uint256 amountsLength = _amounts.length;
+        uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
             unchecked {
-                totalAmount += _amounts[i];
+                totalAmount += priceConfig.amounts[i];
             }
         }
-        if (totalAmount == 0) return (_amounts, _receivers);
+        if (totalAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
         // Calculate fee amount using the appropriate fee controller
         uint256 feeAmount;
@@ -583,19 +579,19 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
                 : priceConfig.feeController;
             feeAmount = feeController.calculateFee(totalAmount, priceConfig, creditsConfig);
         }
-        if (feeAmount == 0) return (_amounts, _receivers);
+        if (feeAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
         uint256[] memory amountsWithFees = new uint256[](amountsLength + 1);
         for (uint256 i; i < amountsLength; i++) {
             unchecked {
-                amountsWithFees[i] = _amounts[i];
+                amountsWithFees[i] = priceConfig.amounts[i];
             }
         }
         amountsWithFees[amountsLength] = feeAmount;
 
         address[] memory receiversWithFees = new address[](amountsLength + 1);
         for (uint256 i; i < amountsLength; i++) {
-            receiversWithFees[i] = _receivers[i];
+            receiversWithFees[i] = priceConfig.receivers[i];
         }
         receiversWithFees[amountsLength] = $.nvmConfig.getFeeReceiver();
 

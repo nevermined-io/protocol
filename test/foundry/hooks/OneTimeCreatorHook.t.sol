@@ -66,8 +66,8 @@ contract OneTimeCreatorHookTest is BaseTest {
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](0),
-            receivers: new address[](0),
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0),
             feeController: IFeeController(address(0))
         });
@@ -83,7 +83,7 @@ contract OneTimeCreatorHookTest is BaseTest {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 

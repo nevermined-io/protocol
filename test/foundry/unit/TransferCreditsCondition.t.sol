@@ -61,7 +61,7 @@ contract TransferCreditsConditionTest is BaseTest {
         });
 
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -132,7 +132,7 @@ contract TransferCreditsConditionTest is BaseTest {
         });
 
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -202,7 +202,7 @@ contract TransferCreditsConditionTest is BaseTest {
         });
 
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
@@ -270,7 +270,7 @@ contract TransferCreditsConditionTest is BaseTest {
         });
 
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;

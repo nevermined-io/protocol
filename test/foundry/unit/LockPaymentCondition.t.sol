@@ -69,7 +69,7 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Add fees to payments distribution
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         // Update price config with final amounts and receivers
         priceConfig.amounts = finalAmounts;
@@ -160,7 +160,7 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Add fees to payments distribution
         (uint256[] memory finalAmounts2, address[] memory finalReceivers2) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         // Update price config with final amounts and receivers
         priceConfig.amounts = finalAmounts2;
@@ -467,7 +467,7 @@ contract LockPaymentConditionTest is BaseTest {
 
         // Add fees to payments distribution
         (uint256[] memory finalAmounts, address[] memory finalReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
         priceConfig.amounts = finalAmounts;
         priceConfig.receivers = finalReceivers;
 

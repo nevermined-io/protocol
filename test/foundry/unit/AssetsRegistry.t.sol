@@ -155,8 +155,8 @@ contract AssetsRegistryTest is BaseTest {
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](0),
-            receivers: new address[](0),
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0),
             feeController: IFeeController(address(0))
         });
@@ -172,7 +172,7 @@ contract AssetsRegistryTest is BaseTest {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         plan.price.amounts = amounts;
         plan.price.receivers = receivers;
@@ -574,7 +574,7 @@ contract AssetsRegistryTest is BaseTest {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
@@ -819,7 +819,7 @@ contract AssetsRegistryTest is BaseTest {
         });
 
         (uint256[] memory newAmounts, address[] memory newReceivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(amounts, receivers, plan.price, plan.credits);
+            assetsRegistry.addFeesToPaymentsDistribution(plan.price, plan.credits);
 
         // Verify that fees were added
         assertEq(newAmounts.length, amounts.length + 1, 'Should add one more amount for fees');

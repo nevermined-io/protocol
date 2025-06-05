@@ -55,7 +55,7 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
@@ -90,7 +90,7 @@ contract FixedPaymentTemplateTest is BaseTest, ERC1155Holder {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;

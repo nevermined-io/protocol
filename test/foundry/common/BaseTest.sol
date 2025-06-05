@@ -184,8 +184,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](0),
-            receivers: new address[](0),
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0),
             feeController: IFeeController(address(0))
         });
@@ -201,7 +201,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
@@ -218,8 +218,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](0),
-            receivers: new address[](0),
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0),
             feeController: IFeeController(address(0))
         });
@@ -235,7 +235,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
@@ -267,8 +267,8 @@ abstract contract BaseTest is Test, ToArrayUtils {
         IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
             priceType: IAsset.PriceType.FIXED_PRICE,
             tokenAddress: address(0),
-            amounts: new uint256[](0),
-            receivers: new address[](0),
+            amounts: _amounts,
+            receivers: _receivers,
             contractAddress: address(0),
             feeController: IFeeController(address(0))
         });
@@ -285,7 +285,7 @@ abstract contract BaseTest is Test, ToArrayUtils {
         });
 
         (uint256[] memory amounts, address[] memory receivers) =
-            assetsRegistry.addFeesToPaymentsDistribution(_amounts, _receivers, priceConfig, creditsConfig);
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
 
