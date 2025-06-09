@@ -223,9 +223,6 @@ contract AssetsRegistryTest is BaseTest {
     }
 
     function test_addFeesToPaymentsDistribution() public {
-        // Setup NVM Fee Receiver
-        vm.prank(governor);
-        nvmConfig.setFeeReceiver(nvmFeeReceiver);
 
         uint256[] memory amounts = new uint256[](2);
         address[] memory receivers = new address[](2);
@@ -300,42 +297,20 @@ contract AssetsRegistryTest is BaseTest {
             nftAddress: address(nftExpirableCredits)
         });
 
-        // IAsset.Plan memory plan = IAsset.Plan({
-        //     owner: address(this),
-        //     price: IAsset.PriceConfig({
-        //         priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
-        //         tokenAddress: address(0),
-        //         amounts: amounts,
-        //         receivers: receivers,
-        //         contractAddress: address(0),
-        //         feeController: IFeeController(address(protocolStandardFees))//IFeeController(address(0))
-        //     }),
-        //     credits: IAsset.CreditsConfig({
-        //         creditsType: IAsset.CreditsType.FIXED,
-        //         redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
-        //         durationSecs: 86400,
-        //         amount: 1,
-        //         minAmount: 1,
-        //         maxAmount: 1,
-        //         proofRequired: false,
-        //         nftAddress: address(nftExpirableCredits)
-        //     }),
-        //     lastUpdated: block.timestamp
-        // });
-
         (uint256[] memory amounts, address[] memory receivers) =
             assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
 
         priceConfig.amounts = amounts;
         priceConfig.receivers = receivers;
         // Register the plan
-        uint256 planId = assetsRegistry.createPlan(priceConfig, creditsConfig);
         address feeReceiver = nvmConfig.getFeeReceiver();
         console2.log('Fee Receiver:', feeReceiver);
         console2.log(priceConfig.amounts[0]);
         console2.log(priceConfig.receivers[0]);
-        // console2.log(priceConfig.amounts[1]);
-        // console2.log(priceConfig.receivers[1]);
+        console2.log(priceConfig.amounts[1]);
+        console2.log(priceConfig.receivers[1]);
+
+        uint256 planId = assetsRegistry.createPlan(priceConfig, creditsConfig);
 
         bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(planId);
         assertTrue(areFeesIncluded);
