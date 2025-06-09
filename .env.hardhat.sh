@@ -20,5 +20,6 @@ export NVM_FEE_AMOUNT=10000
 # Fee receiver address (defaults to owner address if not set)
 export NVM_FEE_RECEIVER=0x731E7a35DDBB7d2b168D16824B371034f0DD0024
 
-
 export DEPLOYMENT_ADDRESSES_JSON="./deployments/latest-hardhat.json"
+
+export CONTRACTS_DEPLOYMENT_VERSION=1.0.1
