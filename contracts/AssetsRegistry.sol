@@ -508,11 +508,20 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
         if (feeReceiver == address(0)) return true;
 
+        bool _feeReceiverIncluded = false;
+        uint256 _receiverIndex = 0;
         uint256 totalAmount = 0;
         uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
-            unchecked {
-                totalAmount += priceConfig.amounts[i];
+            if (priceConfig.receivers[i] == feeReceiver) {
+                require(!_feeReceiverIncluded, MultipleFeeReceiversIncluded());
+
+                _feeReceiverIncluded = true;
+                _receiverIndex = i;
+            } else {
+                unchecked {
+                    totalAmount += priceConfig.amounts[i];
+                }
             }
         }
 
@@ -525,22 +534,6 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         uint256 expectedFeeAmount = feeController.calculateFee(totalAmount, plan.price, plan.credits);
 
         if (expectedFeeAmount == 0) return true;
-
-        // Check if the fee receiver is included in the payment distribution
-        bool _feeReceiverIncluded = false;
-        uint256 _receiverIndex = 0;
-        uint256 receiversLength = priceConfig.receivers.length;
-
-        for (uint256 i = 0; i < receiversLength; i++) {
-            if (priceConfig.receivers[i] == feeReceiver) {
-                if (_feeReceiverIncluded) {
-                    revert MultipleFeeReceiversIncluded();
-                }
-
-                _feeReceiverIncluded = true;
-                _receiverIndex = i;
-            }
-        }
         if (!_feeReceiverIncluded) return false;
 
         // Return if fee calculation is correct
