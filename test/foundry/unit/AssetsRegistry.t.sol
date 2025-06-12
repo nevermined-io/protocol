@@ -882,6 +882,59 @@ contract AssetsRegistryTest is BaseTest {
         assetsRegistry.createPlan(plan.price, plan.credits);
     }
 
+    function test_addFiatFeesToPaymentsDistribution() public {
+        // Setup NVM Fee Receiver
+        vm.prank(governor);
+        nvmConfig.setFeeReceiver(nvmFeeReceiver);
+
+        uint256[] memory _amounts = new uint256[](1);
+        address[] memory _receivers = new address[](1);
+
+        _amounts[0] = 5000;
+        // amounts[1] = 100;
+        _receivers[0] = address(0x70997970C51812dc3A010C7d01b50e0d17dc79C8);
+        // receivers[1] = address(0x731E7a35DDBB7d2b168D16824B371034f0DD0024);
+
+        // Create a dummy plan for testing
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(protocolStandardFees)) //IFeeController(address(0))
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 86400,
+            amount: 1,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftExpirableCredits)
+        });
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+        // Register the plan
+        address feeReceiver = nvmConfig.getFeeReceiver();
+        console2.log('Fee Receiver:', feeReceiver);
+        console2.log(priceConfig.amounts[0]);
+        console2.log(priceConfig.receivers[0]);
+        console2.log(priceConfig.amounts[1]);
+        console2.log(priceConfig.receivers[1]);
+
+        uint256 planId = assetsRegistry.createPlan(priceConfig, creditsConfig);
+
+        bool areFeesIncluded = assetsRegistry.areNeverminedFeesIncluded(planId);
+        assertTrue(areFeesIncluded);
+    }
+
     function test_areNeverminedFeesIncluded_feeReceiverIncludedButAmountTooHigh() public {
         // Setup NVM Fee Receiver
         vm.prank(governor);
