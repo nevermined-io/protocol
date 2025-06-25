@@ -131,6 +131,10 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     ) internal returns (uint256) {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
+        if (_creditsConfig.minAmount > _creditsConfig.maxAmount) {
+            revert InvalidCreditsConfigAmounts(_creditsConfig.minAmount, _creditsConfig.maxAmount);
+        }
+
         if (_priceConfig.amounts.length != _priceConfig.receivers.length) {
             revert PriceConfigInvalidAmountsOrReceivers();
         }

@@ -395,6 +395,13 @@ interface IAsset {
      */
     error PriceConfigInvalidAmountsOrReceivers();
 
+    /**
+     * @notice Error thrown when an invalid min amount is provided
+     * @param minAmount The invalid min amount
+     * @param maxAmount The invalid max amount
+     */
+    error InvalidCreditsConfigAmounts(uint256 minAmount, uint256 maxAmount);
+
     /* FUNCTIONS */
 
     /**

@@ -6,6 +6,8 @@ pragma solidity ^0.8.30;
 import {AssetsRegistry} from '../../../contracts/AssetsRegistry.sol';
 import {NVMConfig} from '../../../contracts/NVMConfig.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
+
+import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 
 import '../../../contracts/common/Roles.sol';
@@ -567,5 +569,42 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         // Verify balance is unchanged (only non-expired credits count)
         uint256 balance = nftExpirableCredits.balanceOf(receiver, planId);
         assertEq(balance, 50);
+    }
+
+    function test_createPlan_invalidCreditsConfigAmounts_reverts() public {
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = owner;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(0),
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
+        });
+
+        // Create credits config with minAmount > maxAmount (invalid configuration)
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.EXPIRABLE,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 10,
+            amount: 100,
+            minAmount: 50, // minAmount is greater than maxAmount
+            maxAmount: 30, // maxAmount is less than minAmount
+            proofRequired: false,
+            nftAddress: address(nftExpirableCredits)
+        });
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
+        vm.prank(owner);
+        vm.expectRevert(abi.encodeWithSelector(IAsset.InvalidCreditsConfigAmounts.selector, 50, 30));
+        assetsRegistry.createPlan(priceConfig, creditsConfig);
     }
 }
