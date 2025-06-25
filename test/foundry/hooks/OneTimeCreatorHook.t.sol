@@ -57,6 +57,47 @@ contract OneTimeCreatorHookTest is BaseTest {
         fiatPaymentTemplate.createAgreement(keccak256('test-seed-2'), planId, buyer, params);
     }
 
+    function test_HooksMustBeUnique_reverts() public {
+        // Create a hooks array with duplicate hook addresses
+        IHook[] memory hooks = new IHook[](2);
+        hooks[0] = oneTimeCreatorHook;
+        hooks[1] = oneTimeCreatorHook; // duplicate
+
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = creator;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
+        uint256 uniqueNonce = 12345;
+        vm.prank(creator);
+        vm.expectRevert(IAsset.HooksMustBeUnique.selector);
+        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, hooks, uniqueNonce);
+    }
+
     function _createPlanWithHooks(IHook[] memory hooks) internal returns (uint256) {
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = 100;

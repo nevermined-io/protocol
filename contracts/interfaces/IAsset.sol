@@ -402,6 +402,11 @@ interface IAsset {
      */
     error InvalidCreditsConfigAmounts(uint256 minAmount, uint256 maxAmount);
 
+    /**
+     * @notice Error thrown when hooks are not added in ascending order
+     */
+    error HooksMustBeUnique();
+
     /* FUNCTIONS */
 
     /**

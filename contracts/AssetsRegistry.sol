@@ -168,7 +168,12 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         }
 
         // Store hooks for this plan
+        uint256 previousHook = 0;
         for (uint256 i = 0; i < _hooks.length; i++) {
+            uint256 hookId = uint256(uint160(address(_hooks[i])));
+            require(hookId > previousHook, HooksMustBeUnique());
+            previousHook = hookId;
+
             $.planHooks[planId].push(_hooks[i]);
         }
 
