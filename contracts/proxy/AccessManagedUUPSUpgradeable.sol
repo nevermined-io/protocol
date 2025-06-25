@@ -32,6 +32,7 @@ abstract contract AccessManagedUUPSUpgradeable is
      * @param newImplementation The address of the new implementation
      */
     function _authorizeUpgrade(address newImplementation) internal override restricted {
+        require(newImplementation != address(0), AuthorityCannotBeZero());
         emit UpgradeAuthorized(msg.sender, newImplementation);
     }
 }

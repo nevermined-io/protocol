@@ -185,34 +185,48 @@ contract AgreementsStore is IAgreement, AccessManagedUUPSUpgradeable {
             revert AgreementNotFound(_agreementId);
         }
 
-        // GAS - seems like agreement.conditionStates should be a mapping(conditionId => conditionState) instead?
-        // cc @aaitor
+        // Load arrays into memory to reduce storage reads
+        bytes32[] memory conditionIds = agreement.conditionIds;
+        ConditionState[] memory conditionStates = agreement.conditionStates;
 
-        uint256 numChecksPassed = 0;
-        for (uint256 i = 0; i < agreement.conditionStates.length; i++) {
-            if (agreement.conditionIds[i] == _conditionId) {
-                if (
-                    agreement.conditionStates[i] == ConditionState.Fulfilled
-                        || agreement.conditionStates[i] == ConditionState.Aborted
-                ) {
-                    // The condition is already fulfilled or aborted
+        bool primaryConditionAvailable = false;
+        uint256 dependentConditionsMatched = 0;
+
+        // First, check if the primary condition exists and is not already fulfilled or aborted
+        for (uint256 j = 0; j < conditionIds.length; j++) {
+            if (conditionIds[j] == _conditionId) {
+                primaryConditionAvailable = true;
+                // If primary condition is already fulfilled or aborted, return false
+                if (conditionStates[j] == ConditionState.Fulfilled || conditionStates[j] == ConditionState.Aborted) {
                     return false;
                 }
-                numChecksPassed++;
-            } else {
-                for (uint256 j = 0; j < _dependantConditions.length; j++) {
-                    if (agreement.conditionIds[i] == _dependantConditions[j]) {
-                        // Found a dependant condition
-                        if (agreement.conditionStates[i] != ConditionState.Fulfilled) {
-                            // The dependant condition is not fulfilled
-                            return false;
-                        }
-                        numChecksPassed++;
+                break;
+            }
+        }
+
+        // If primary condition doesn't exist, return false
+        if (!primaryConditionAvailable) {
+            return false;
+        }
+
+        // Iterate through each dependent condition
+        for (uint256 i = 0; i < _dependantConditions.length; i++) {
+            // Inner loop to check all condition IDs
+            for (uint256 j = 0; j < conditionIds.length; j++) {
+                // Check for dependent condition match
+                if (conditionIds[j] == _dependantConditions[i]) {
+                    // If dependent condition is not fulfilled, return false
+                    if (conditionStates[j] != ConditionState.Fulfilled) {
+                        return false;
                     }
+                    dependentConditionsMatched++;
+                    break; // Found the dependent condition, no need to continue inner loop
                 }
             }
         }
-        return numChecksPassed == _dependantConditions.length + 1;
+
+        // Check if all dependent conditions were matched
+        return dependentConditionsMatched == _dependantConditions.length;
     }
 
     /**

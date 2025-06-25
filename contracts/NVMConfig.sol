@@ -75,6 +75,9 @@ contract NVMConfig is INVMConfig, AccessManagedUUPSUpgradeable {
      * @param _authority The access manager contract that will control upgrade permissions
      */
     function initialize(IAccessManager _authority, IFeeController _defaultFeeController) external initializer {
+        require(_authority != IAccessManager(address(0)), InvalidAuthorityAddress());
+        require(_defaultFeeController != IFeeController(address(0)), InvalidDefaultFeeControllerAddress());
+
         _getNVMConfigStorage().defaultFeeController = _defaultFeeController;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }

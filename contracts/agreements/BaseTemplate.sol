@@ -37,6 +37,7 @@ abstract contract BaseTemplate is ITemplate, AccessManagedUUPSUpgradeable {
 
     // solhint-disable-next-line func-name-mixedcase
     function __BaseTemplate_init(IAsset _assetsRegistryAddress) internal onlyInitializing {
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
         BaseTemplateStorage storage $ = _getBaseTemplateStorage();
         $.assetsRegistry = _assetsRegistryAddress;
     }

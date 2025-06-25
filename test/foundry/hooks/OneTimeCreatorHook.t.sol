@@ -11,7 +11,9 @@ import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {IHook} from '../../../contracts/interfaces/IHook.sol';
+
 import {BaseTest} from '../common/BaseTest.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract OneTimeCreatorHookTest is BaseTest {
     address creator;
@@ -55,6 +57,108 @@ contract OneTimeCreatorHookTest is BaseTest {
         vm.prank(buyer);
         vm.expectPartialRevert(OneTimeCreatorHook.CreatorAlreadyCreatedAgreement.selector);
         fiatPaymentTemplate.createAgreement(keccak256('test-seed-2'), planId, buyer, params);
+    }
+
+    function test_HooksMustBeUnique_reverts() public {
+        // Create a hooks array with duplicate hook addresses
+        IHook[] memory hooks = new IHook[](2);
+        hooks[0] = oneTimeCreatorHook;
+        hooks[1] = oneTimeCreatorHook; // duplicate
+
+        uint256[] memory _amounts = new uint256[](1);
+        _amounts[0] = 100;
+        address[] memory _receivers = new address[](1);
+        _receivers[0] = creator;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_FIAT_PRICE,
+            tokenAddress: address(0),
+            amounts: _amounts,
+            receivers: _receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
+        });
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 1,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        (uint256[] memory amounts, address[] memory receivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+        priceConfig.amounts = amounts;
+        priceConfig.receivers = receivers;
+
+        uint256 uniqueNonce = 12345;
+        vm.prank(creator);
+        vm.expectRevert(IAsset.HooksMustBeUnique.selector);
+        assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, hooks, uniqueNonce);
+    }
+
+    function test_beforeAgreementRegistered_onlyTemplate_reverts() public {
+        address unauthorized = makeAddr('unauthorized');
+
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Try to call beforeAgreementRegistered from unauthorized address
+        vm.prank(unauthorized);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, unauthorized));
+        oneTimeCreatorHook.beforeAgreementRegistered(
+            agreementId, testCreator, testPlanId, conditionIds, conditionStates, params
+        );
+    }
+
+    function test_afterAgreementCreated_onlyTemplate_reverts() public {
+        address unauthorized = makeAddr('unauthorized');
+
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Try to call afterAgreementCreated from unauthorized address
+        vm.prank(unauthorized);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, unauthorized));
+        oneTimeCreatorHook.afterAgreementCreated(agreementId, testCreator, testPlanId, conditionIds, params);
+    }
+
+    function test_beforeAgreementRegistered_template_success() public {
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Call beforeAgreementRegistered from template (this contract has template role)
+        vm.expectEmit(true, true, false, false);
+        emit OneTimeCreatorHook.FirstAgreementCreated(testCreator, agreementId);
+        oneTimeCreatorHook.beforeAgreementRegistered(
+            agreementId, testCreator, testPlanId, conditionIds, conditionStates, params
+        );
+    }
+
+    function test_afterAgreementCreated_template_success() public {
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Call afterAgreementCreated from template (this contract has template role)
+        // Should not revert
+        oneTimeCreatorHook.afterAgreementCreated(agreementId, testCreator, testPlanId, conditionIds, params);
     }
 
     function _createPlanWithHooks(IHook[] memory hooks) internal returns (uint256) {

@@ -515,4 +515,74 @@ contract LockPaymentConditionTest is BaseTest {
         }
         return total;
     }
+
+    function test_fulfill_ERC20Token_MsgValueMustBeZero_reverts() public {
+        // Setup a new plan with ERC20 token
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+        address[] memory receivers = new address[](1);
+        receivers[0] = receiver;
+
+        IAsset.PriceConfig memory priceConfig = IAsset.PriceConfig({
+            priceType: IAsset.PriceType.FIXED_PRICE,
+            tokenAddress: address(mockERC20),
+            amounts: amounts,
+            receivers: receivers,
+            contractAddress: address(0),
+            feeController: IFeeController(address(0))
+        });
+
+        IAsset.CreditsConfig memory creditsConfig = IAsset.CreditsConfig({
+            creditsType: IAsset.CreditsType.FIXED,
+            redemptionType: IAsset.RedemptionType.ONLY_OWNER,
+            durationSecs: 0,
+            amount: 100,
+            minAmount: 1,
+            maxAmount: 100,
+            proofRequired: false,
+            nftAddress: address(nftCredits)
+        });
+
+        // Add fees to payments distribution
+        (uint256[] memory finalAmounts, address[] memory finalReceivers) =
+            assetsRegistry.addFeesToPaymentsDistribution(priceConfig, creditsConfig);
+
+        // Update price config with final amounts and receivers
+        priceConfig.amounts = finalAmounts;
+        priceConfig.receivers = finalReceivers;
+
+        // Register new asset and plan
+        bytes32 didSeed = bytes32(uint256(11));
+        vm.prank(address(this));
+        assetsRegistry.registerAssetAndPlan(didSeed, 'https://nevermined.io', priceConfig, creditsConfig);
+
+        // Get the plan ID
+        uint256 erc20PlanId = assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
+
+        // Create agreement
+        bytes32 agreementSeed = bytes32(uint256(12));
+        bytes32 erc20AgreementId = agreementsStore.hashAgreementId(agreementSeed, user);
+
+        // Hash condition ID
+        bytes32 contractName = lockPaymentCondition.NVM_CONTRACT_NAME();
+        bytes32 erc20ConditionId = lockPaymentCondition.hashConditionId(erc20AgreementId, contractName);
+
+        // Register agreement with the condition
+        bytes32[] memory conditionIds = new bytes32[](1);
+        conditionIds[0] = erc20ConditionId;
+
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](1);
+        conditionStates[0] = IAgreement.ConditionState.Unfulfilled;
+
+        vm.prank(template);
+        agreementsStore.register(erc20AgreementId, user, erc20PlanId, conditionIds, conditionStates, new bytes[](0));
+
+        // Fund template with ETH
+        vm.deal(template, 1000);
+
+        // Try to fulfill ERC20 condition with ETH value - should revert
+        vm.prank(template);
+        vm.expectRevert(IAgreement.MsgValueMustBeZeroForERC20Payments.selector);
+        lockPaymentCondition.fulfill{value: 100}(erc20ConditionId, erc20AgreementId, erc20PlanId, user);
+    }
 }

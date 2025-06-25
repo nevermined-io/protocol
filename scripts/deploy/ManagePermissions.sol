@@ -97,7 +97,8 @@ contract ManagePermissions is Script, DeployConfig {
             config.fiatSettlementCondition,
             config.lockPaymentCondition,
             config.transferCreditsCondition,
-            config.accessManager
+            config.accessManager,
+            config.oneTimeCreatorHook
         );
 
         // Grant and configure condition status updater role
@@ -283,7 +284,8 @@ contract ManagePermissions is Script, DeployConfig {
         FiatSettlementCondition fiatSettlementCondition,
         LockPaymentCondition lockPaymentCondition,
         TransferCreditsCondition transferCreditsCondition,
-        AccessManager accessManager
+        AccessManager accessManager,
+        OneTimeCreatorHook oneTimeCreatorHook
     ) internal {
         console2.log('Setting Template role for fulfill() in condition contracts');
 
@@ -304,6 +306,20 @@ contract ManagePermissions is Script, DeployConfig {
         accessManager.setTargetFunctionRole(
             address(transferCreditsCondition),
             toArray(TransferCreditsCondition.fulfill.selector),
+            CONTRACT_TEMPLATE_ROLE
+        );
+
+        console2.log(
+            'Setting Template role for beforeAgreementRegistered() and afterAgreementCreated() in OneTimeCreatorHook'
+        );
+        accessManager.setTargetFunctionRole(
+            address(oneTimeCreatorHook),
+            toArray(OneTimeCreatorHook.beforeAgreementRegistered.selector),
+            CONTRACT_TEMPLATE_ROLE
+        );
+        accessManager.setTargetFunctionRole(
+            address(oneTimeCreatorHook),
+            toArray(OneTimeCreatorHook.afterAgreementCreated.selector),
             CONTRACT_TEMPLATE_ROLE
         );
     }

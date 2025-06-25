@@ -395,6 +395,33 @@ interface IAsset {
      */
     error PriceConfigInvalidAmountsOrReceivers();
 
+    /**
+     * @notice Error thrown when an invalid min amount is provided
+     * @param minAmount The invalid min amount
+     * @param maxAmount The invalid max amount
+     */
+    error InvalidCreditsConfigAmounts(uint256 minAmount, uint256 maxAmount);
+
+    /**
+     * @notice Error thrown when hooks are not added in ascending order
+     */
+    error HooksMustBeUnique();
+
+    /**
+     * @notice Error thrown when plans are not unique
+     */
+    error PlansMustBeUnique();
+
+    /**
+     * @notice Error thrown when the NVMConfig address is set to the zero address
+     */
+    error InvalidNVMConfigAddress();
+
+    /**
+     * @notice Error thrown when the authority address is set to the zero address
+     */
+    error InvalidAuthorityAddress();
+
     /* FUNCTIONS */
 
     /**

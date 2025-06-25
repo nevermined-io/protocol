@@ -17,4 +17,9 @@ interface IAccessManagedUUPSUpgradeable {
      * @param newImplementation The address of the new implementation contract to upgrade to
      */
     event UpgradeAuthorized(address indexed caller, address indexed newImplementation);
+
+    /**
+     * @notice Error thrown when the authority is set to the zero address
+     */
+    error AuthorityCannotBeZero();
 }

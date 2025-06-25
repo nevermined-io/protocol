@@ -45,6 +45,8 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @dev This function replaces the constructor for upgradeable contracts
      */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
+        require(_nvmConfigAddress != INVMConfig(address(0)), InvalidNVMConfigAddress());
+        require(_authority != IAccessManager(address(0)), InvalidAuthorityAddress());
         _getAssetsRegistryStorage().nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }
@@ -131,6 +133,10 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
     ) internal returns (uint256) {
         AssetsRegistryStorage storage $ = _getAssetsRegistryStorage();
 
+        if (_creditsConfig.minAmount > _creditsConfig.maxAmount) {
+            revert InvalidCreditsConfigAmounts(_creditsConfig.minAmount, _creditsConfig.maxAmount);
+        }
+
         if (_priceConfig.amounts.length != _priceConfig.receivers.length) {
             revert PriceConfigInvalidAmountsOrReceivers();
         }
@@ -164,7 +170,12 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         }
 
         // Store hooks for this plan
+        uint256 previousHook = 0;
         for (uint256 i = 0; i < _hooks.length; i++) {
+            uint256 hookId = uint256(uint160(address(_hooks[i])));
+            require(hookId > previousHook, HooksMustBeUnique());
+            previousHook = hookId;
+
             $.planHooks[planId].push(_hooks[i]);
         }
 
@@ -432,7 +443,11 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         }
 
         // Validate that all plans exist
+        uint256 previousPlan = 0;
         for (uint256 i = 0; i < _plans.length; i++) {
+            require(_plans[i] > previousPlan, PlansMustBeUnique());
+            previousPlan = _plans[i];
+
             if ($.plans[_plans[i]].lastUpdated == 0) {
                 revert PlanNotFound(_plans[i]);
             }
@@ -519,9 +534,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
                 _feeReceiverIncluded = true;
                 _receiverIndex = i;
             } else {
-                unchecked {
-                    totalAmount += priceConfig.amounts[i];
-                }
+                totalAmount += priceConfig.amounts[i];
             }
         }
 
@@ -558,9 +571,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         uint256 totalAmount = 0;
         uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
-            unchecked {
-                totalAmount += priceConfig.amounts[i];
-            }
+            totalAmount += priceConfig.amounts[i];
         }
         if (totalAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
@@ -576,9 +587,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
         uint256[] memory amountsWithFees = new uint256[](amountsLength + 1);
         for (uint256 i; i < amountsLength; i++) {
-            unchecked {
-                amountsWithFees[i] = priceConfig.amounts[i];
-            }
+            amountsWithFees[i] = priceConfig.amounts[i];
         }
         amountsWithFees[amountsLength] = feeAmount;
 

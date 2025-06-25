@@ -16,9 +16,7 @@ library TokenUtils {
         uint256 _totalAmount;
         uint256 length = _amounts.length;
         for (uint256 i; i < length; i++) {
-            unchecked {
-                _totalAmount += _amounts[i];
-            }
+            _totalAmount += _amounts[i];
         }
         return _totalAmount;
     }

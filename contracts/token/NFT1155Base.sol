@@ -49,6 +49,9 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
     function __NFT1155Base_init(IAccessManager _authority, IAsset _assetsRegistryAddress) internal onlyInitializing {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_authority != IAccessManager(address(0)), InvalidAuthorityAddress());
+
         __AccessManagedUUPSUpgradeable_init(address(_authority));
         __EIP712_init(type(NFT1155Base).name, '1');
 
@@ -113,8 +116,18 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data)
         public
         virtual
-        restricted
     {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        address sender = msg.sender;
+        (bool hasRole,) = IAccessManager(authority()).hasRole(CREDITS_MINTER_ROLE, sender);
+
+        for (uint256 i = 0; i < _ids.length; i++) {
+            IAsset.Plan memory plan = $.assetsRegistry.getPlan(_ids[i]);
+            if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_ids[i]);
+            require(hasRole || plan.owner == sender, InvalidRole(sender, CREDITS_MINTER_ROLE));
+        }
+
         _mintBatch(_to, _ids, _values, _data);
     }
 
@@ -262,7 +275,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         uint256 _max
     ) internal pure returns (uint256) {
         if (_creditsType == IAsset.CreditsType.DYNAMIC) {
-            if (_amount < _min || _amount > _max) return _min;
+            if (_amount < _min) return _min;
+            else if (_amount > _max) return _max;
             else return _amount;
         } else if (_creditsType == IAsset.CreditsType.FIXED) {
             return _min;
@@ -319,16 +333,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         bytes memory /*data*/
     ) public virtual override {
         revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
-    }
-
-    /**
-     * @notice Checks if the contract supports a given interface
-     * @param interfaceId Interface identifier to check
-     * @return Boolean indicating whether the interface is supported
-     * @dev Supports ERC1155 and ERC2981 interfaces
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return ERC1155Upgradeable.supportsInterface(interfaceId) || interfaceId == type(IERC2981).interfaceId;
     }
 
     function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {

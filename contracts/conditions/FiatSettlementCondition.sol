@@ -55,6 +55,9 @@ contract FiatSettlementCondition is ReentrancyGuardTransientUpgradeable, Templat
         external
         initializer
     {
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_agreementStoreAddress != IAgreement(address(0)), InvalidAgreementStoreAddress());
+
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         FiatSettlementConditionStorage storage $ = _getFiatSettlementConditionStorage();
 
