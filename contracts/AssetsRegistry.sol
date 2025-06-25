@@ -532,9 +532,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
                 _feeReceiverIncluded = true;
                 _receiverIndex = i;
             } else {
-                unchecked {
-                    totalAmount += priceConfig.amounts[i];
-                }
+                totalAmount += priceConfig.amounts[i];
             }
         }
 
@@ -571,9 +569,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         uint256 totalAmount = 0;
         uint256 amountsLength = priceConfig.amounts.length;
         for (uint256 i; i < amountsLength; i++) {
-            unchecked {
-                totalAmount += priceConfig.amounts[i];
-            }
+            totalAmount += priceConfig.amounts[i];
         }
         if (totalAmount == 0) return (priceConfig.amounts, priceConfig.receivers);
 
@@ -589,9 +585,7 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
 
         uint256[] memory amountsWithFees = new uint256[](amountsLength + 1);
         for (uint256 i; i < amountsLength; i++) {
-            unchecked {
-                amountsWithFees[i] = priceConfig.amounts[i];
-            }
+            amountsWithFees[i] = priceConfig.amounts[i];
         }
         amountsWithFees[amountsLength] = feeAmount;
 

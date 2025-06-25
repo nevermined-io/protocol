@@ -144,9 +144,9 @@ contract AssetsRegistryTest is BaseTest {
                 redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
                 durationSecs: 0,
                 amount: 100,
-                proofRequired: false,
                 minAmount: 1,
                 maxAmount: 1,
+                proofRequired: false,
                 nftAddress: address(0)
             }),
             lastUpdated: block.timestamp
@@ -165,9 +165,9 @@ contract AssetsRegistryTest is BaseTest {
             redemptionType: IAsset.RedemptionType.ONLY_GLOBAL_ROLE,
             durationSecs: 0,
             amount: 100,
-            proofRequired: false,
             minAmount: 1,
             maxAmount: 1,
+            proofRequired: false,
             nftAddress: address(0)
         });
 
@@ -429,13 +429,20 @@ contract AssetsRegistryTest is BaseTest {
     }
 
     function test_replacePlans_success() public {
-        uint256 planId = _createPlan();
-        uint256 planId2 = _createPlan(999);
-        bytes32 did = _registerAsset(planId);
+        uint256 planId1 = _createPlan(1);
+        uint256 planId2 = _createPlan(2);
+        bytes32 did = _registerAsset(planId1);
 
+        // Ensure plan IDs are in ascending order
         uint256[] memory newPlans = new uint256[](2);
-        newPlans[0] = planId;
-        newPlans[1] = planId2;
+        if (planId1 < planId2) {
+            newPlans[0] = planId1;
+            newPlans[1] = planId2;
+        } else {
+            newPlans[0] = planId2;
+            newPlans[1] = planId1;
+        }
+
         assetsRegistry.replacePlansForAsset(did, newPlans);
         IAsset.DIDAsset memory asset = assetsRegistry.getAsset(did);
 
