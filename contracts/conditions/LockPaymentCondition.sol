@@ -127,6 +127,7 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
                     $.vault.depositNativeToken{value: amountToTransfer}();
                 } else {
                     // Record the deposit in the vault
+                    require(msg.value == 0, IAgreement.MsgValueMustBeZeroForERC20Payments());
                     $.vault.depositERC20(plan.price.tokenAddress, amountToTransfer, _senderAddress);
                 }
             }

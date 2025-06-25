@@ -1076,10 +1076,15 @@ contract AssetsRegistryTest is BaseTest {
         // Register an asset with the first plan
         bytes32 did = _registerAsset(planId1);
 
-        // Create an array with plans in descending order (planId2 > planId1, but we put planId2 first)
+        // Create an array with plans in descending order
         uint256[] memory descendingPlans = new uint256[](2);
-        descendingPlans[0] = planId2; // higher ID first
-        descendingPlans[1] = planId1; // lower ID second
+        if (planId1 > planId2) {
+            descendingPlans[0] = planId1; // higher ID first
+            descendingPlans[1] = planId2; // lower ID second
+        } else {
+            descendingPlans[0] = planId2; // higher ID first
+            descendingPlans[1] = planId1; // lower ID second
+        }
 
         // Attempt to replace plans with descending order - should revert
         vm.prank(address(this));

@@ -70,6 +70,11 @@ interface IAgreement {
     error ConditionAlreadyFulfilled(bytes32 agreementId, bytes32 conditionId);
 
     /**
+     * @notice Error thrown when msg.value is not zero for ERC20 payments
+     */
+    error MsgValueMustBeZeroForERC20Payments();
+
+    /**
      * @title ConditionState
      * @notice Enum representing the possible states of a condition within an agreement
      * @dev The state transitions typically follow Uninitialized -> Unfulfilled -> Fulfilled,
