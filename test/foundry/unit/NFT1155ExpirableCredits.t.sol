@@ -180,7 +180,7 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
 
         // Try to burn as unauthorized account
         vm.prank(unauthorized);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectPartialRevert(INFT1155.InvalidRedemptionPermission.selector);
         nftExpirableCredits.burn(receiver, planId, 1, 0, '');
     }
 

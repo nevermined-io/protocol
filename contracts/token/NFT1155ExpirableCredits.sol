@@ -157,7 +157,6 @@ contract NFT1155ExpirableCredits is NFT1155Base {
         public
         virtual
         override
-        restricted
     {
         _processPreCreditBurn(_from, _planId, _value);
 
