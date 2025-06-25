@@ -55,7 +55,7 @@ contract PaymentsVault is IVault, ReentrancyGuardTransientUpgradeable, AccessMan
      * @dev Emits ReceivedNativeToken event on successful deposit
      * @dev This function enables the contract to receive ETH transfers
      */
-    receive() external payable {
+    receive() external payable nonReentrant {
         (bool hasRole,) = IAccessManager(authority()).hasRole(DEPOSITOR_ROLE, msg.sender);
         require(hasRole, InvalidRole(msg.sender, DEPOSITOR_ROLE));
         emit ReceivedNativeToken(msg.sender, msg.value);
