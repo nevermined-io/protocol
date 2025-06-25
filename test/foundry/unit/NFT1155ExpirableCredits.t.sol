@@ -405,4 +405,100 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidLength.selector, ids.length, values.length));
         nftExpirableCredits.burnBatch(receiver, ids, values, 0, '');
     }
+
+    function test_processPreCreditBurn_skipsBurnEntries() public {
+        // Mint credits in multiple batches
+        vm.startPrank(minter);
+        nftExpirableCredits.mint(receiver, planId, 100, 0, ''); // First mint: 100 credits
+        nftExpirableCredits.mint(receiver, planId, 50, 0, ''); // Second mint: 50 credits
+        vm.stopPrank();
+
+        // Perform first burn operation
+        vm.prank(burner);
+        nftExpirableCredits.burn(receiver, planId, 30, 0, ''); // Burn 30 credits
+
+        // Get entries after first burn to verify burn entry was created
+        NFT1155ExpirableCredits.MintedCredits[] memory entriesAfterFirstBurn =
+            nftExpirableCredits.getMintedEntries(receiver, planId);
+
+        // Should have 3 entries: 2 mints + 1 burn
+        assertEq(entriesAfterFirstBurn.length, 3);
+        assertTrue(entriesAfterFirstBurn[0].isMintOps); // First mint
+        assertTrue(entriesAfterFirstBurn[1].isMintOps); // Second mint
+        assertFalse(entriesAfterFirstBurn[2].isMintOps); // First burn
+
+        // Perform second burn operation - this should skip the burn entry from first burn
+        vm.prank(burner);
+        nftExpirableCredits.burn(receiver, planId, 40, 0, ''); // Burn 40 more credits
+
+        // Get entries after second burn
+        NFT1155ExpirableCredits.MintedCredits[] memory entriesAfterSecondBurn =
+            nftExpirableCredits.getMintedEntries(receiver, planId);
+
+        // Should have 4 entries: 2 mints + 2 burns (the second burn creates 1 new burn entry)
+        assertEq(entriesAfterSecondBurn.length, 4);
+
+        // Verify the burn entries from second burn operation
+        // The second burn should have processed against the remaining valid mint entries
+        // and created appropriate burn entries, skipping the previous burn entry
+
+        // Check that we have the correct number of mint and burn operations
+        uint256 mintCount = 0;
+        uint256 burnCount = 0;
+        for (uint256 i = 0; i < entriesAfterSecondBurn.length; i++) {
+            if (entriesAfterSecondBurn[i].isMintOps) {
+                mintCount++;
+            } else {
+                burnCount++;
+            }
+        }
+
+        assertEq(mintCount, 2); // Should have 2 mint operations
+        assertEq(burnCount, 2); // Should have 2 burn operations (1 from first burn + 1 from second burn)
+
+        // Verify final balance
+        uint256 finalBalance = nftExpirableCredits.balanceOf(receiver, planId);
+        // Initial: 100 + 50 = 150, Burned: 30 + 40 = 70, Final: 150 - 70 = 80
+        assertEq(finalBalance, 80);
+    }
+
+    function test_processPreCreditBurn_skipsBurnEntriesSimple() public {
+        // Mint credits
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 100, 0, ''); // 100 credits, no expiration
+
+        // Perform first burn operation
+        vm.prank(burner);
+        nftExpirableCredits.burn(receiver, planId, 30, 0, ''); // Burn 30 credits
+
+        // Get entries after first burn
+        NFT1155ExpirableCredits.MintedCredits[] memory entriesAfterFirstBurn =
+            nftExpirableCredits.getMintedEntries(receiver, planId);
+
+        // Should have 2 entries: 1 mint + 1 burn
+        assertEq(entriesAfterFirstBurn.length, 2);
+        assertTrue(entriesAfterFirstBurn[0].isMintOps); // Mint
+        assertFalse(entriesAfterFirstBurn[1].isMintOps); // Burn
+
+        // Perform second burn operation - this should skip the burn entry from first burn
+        vm.prank(burner);
+        nftExpirableCredits.burn(receiver, planId, 40, 0, ''); // Burn 40 more credits
+
+        // Get entries after second burn
+        NFT1155ExpirableCredits.MintedCredits[] memory entriesAfterSecondBurn =
+            nftExpirableCredits.getMintedEntries(receiver, planId);
+
+        // Should have 3 entries: 1 mint + 2 burns
+        assertEq(entriesAfterSecondBurn.length, 3);
+
+        // Verify all entries
+        assertTrue(entriesAfterSecondBurn[0].isMintOps); // Mint
+        assertFalse(entriesAfterSecondBurn[1].isMintOps); // First burn
+        assertFalse(entriesAfterSecondBurn[2].isMintOps); // Second burn
+
+        // Verify final balance
+        uint256 finalBalance = nftExpirableCredits.balanceOf(receiver, planId);
+        // Initial: 100, Burned: 30 + 40 = 70, Final: 100 - 70 = 30
+        assertEq(finalBalance, 30);
+    }
 }

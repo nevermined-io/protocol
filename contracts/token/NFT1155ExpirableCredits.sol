@@ -194,7 +194,12 @@ contract NFT1155ExpirableCredits is NFT1155Base {
 
         uint256 _numEntries = $.credits[_key].length;
         for (uint256 index = 0; index < _numEntries; index++) {
-            MintedCredits memory entry = $.credits[_key][index];
+            MintedCredits storage entry = $.credits[_key][index];
+
+            // If the entry is a burn operation, we skip it
+            if (!entry.isMintOps) {
+                continue;
+            }
 
             if (entry.expirationSecs == 0 || block.timestamp < (entry.mintTimestamp + entry.expirationSecs)) {
                 if (_pendingToBurn <= entry.amountMinted) {
