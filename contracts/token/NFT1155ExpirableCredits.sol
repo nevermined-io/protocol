@@ -30,6 +30,8 @@ contract NFT1155ExpirableCredits is NFT1155Base {
     bytes32 private constant NFT1155_EXPIRABLE_CREDITS_STORAGE_LOCATION =
         0xad13115e659bb74b20198931946852537615445c0d1e91655e57181f5cb10400;
 
+    error NotEnoughCreditsToBurn(address _from, uint256 _planId, uint256 _value);
+
     /**
      * @notice Struct to track minted credits and their expiration details
      * @param amountMinted Number of credits minted or burned in this operation
@@ -204,6 +206,7 @@ contract NFT1155ExpirableCredits is NFT1155Base {
             if (entry.expirationSecs == 0 || block.timestamp < (entry.mintTimestamp + entry.expirationSecs)) {
                 if (_pendingToBurn <= entry.amountMinted) {
                     $.credits[_key].push(MintedCredits(_pendingToBurn, entry.expirationSecs, block.timestamp, false));
+                    _pendingToBurn = 0;
                     break;
                 } else {
                     _pendingToBurn -= entry.amountMinted;
@@ -213,6 +216,8 @@ contract NFT1155ExpirableCredits is NFT1155Base {
                 }
             }
         }
+
+        require(_pendingToBurn == 0, NotEnoughCreditsToBurn(_from, _planId, _value));
     }
 
     /**

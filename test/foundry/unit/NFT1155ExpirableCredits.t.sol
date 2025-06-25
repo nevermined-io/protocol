@@ -501,4 +501,71 @@ contract NFT1155ExpirableCreditsTest is BaseTest {
         // Initial: 100, Burned: 30 + 40 = 70, Final: 100 - 70 = 30
         assertEq(finalBalance, 30);
     }
+
+    function test_burn_notEnoughCreditsToBurn_reverts() public {
+        // Mint only 50 credits
+        vm.prank(minter);
+        nftExpirableCredits.mint(receiver, planId, 50, 0, '');
+
+        // Try to burn 100 credits (more than available)
+        vm.prank(burner);
+        vm.expectRevert(
+            abi.encodeWithSelector(NFT1155ExpirableCredits.NotEnoughCreditsToBurn.selector, receiver, planId, 100)
+        );
+        nftExpirableCredits.burn(receiver, planId, 100, 0, '');
+
+        // Verify balance is unchanged
+        uint256 balance = nftExpirableCredits.balanceOf(receiver, planId);
+        assertEq(balance, 50);
+    }
+
+    function test_burnBatch_notEnoughCreditsToBurn_reverts() public {
+        // Mint credits for both plans
+        vm.startPrank(minter);
+        nftExpirableCredits.mint(receiver, planId, 50, 0, ''); // 50 credits for planId
+        nftExpirableCredits.mint(receiver, planId2, 30, 0, ''); // 30 credits for planId2
+        vm.stopPrank();
+
+        // Try to burn more credits than available for planId2
+        uint256[] memory ids = new uint256[](2);
+        uint256[] memory values = new uint256[](2);
+        ids[0] = planId;
+        ids[1] = planId2;
+        values[0] = 25; // Valid burn for planId
+        values[1] = 50; // Invalid burn for planId2 (only 30 available)
+
+        vm.prank(burner);
+        vm.expectRevert(
+            abi.encodeWithSelector(NFT1155ExpirableCredits.NotEnoughCreditsToBurn.selector, receiver, planId2, 50)
+        );
+        nftExpirableCredits.burnBatch(receiver, ids, values, 0, '');
+
+        // Verify balances are unchanged
+        uint256 balance1 = nftExpirableCredits.balanceOf(receiver, planId);
+        uint256 balance2 = nftExpirableCredits.balanceOf(receiver, planId2);
+        assertEq(balance1, 50);
+        assertEq(balance2, 30);
+    }
+
+    function test_burn_notEnoughCreditsToBurn_withExpiredCredits_reverts() public {
+        // Mint credits with expiration
+        vm.startPrank(minter);
+        nftExpirableCredits.mint(receiver, planId, 100, 60, ''); // 100 credits, 60s expiration
+        nftExpirableCredits.mint(receiver, planId, 50, 0, ''); // 50 credits, no expiration
+        vm.stopPrank();
+
+        // Advance time to expire first batch
+        vm.warp(block.timestamp + 70);
+
+        // Try to burn more credits than are available (only 50 non-expired credits remain)
+        vm.prank(burner);
+        vm.expectRevert(
+            abi.encodeWithSelector(NFT1155ExpirableCredits.NotEnoughCreditsToBurn.selector, receiver, planId, 80)
+        );
+        nftExpirableCredits.burn(receiver, planId, 80, 0, '');
+
+        // Verify balance is unchanged (only non-expired credits count)
+        uint256 balance = nftExpirableCredits.balanceOf(receiver, planId);
+        assertEq(balance, 50);
+    }
 }
