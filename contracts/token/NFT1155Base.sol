@@ -49,6 +49,9 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
     function __NFT1155Base_init(IAccessManager _authority, IAsset _assetsRegistryAddress) internal onlyInitializing {
         NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
 
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_authority != IAccessManager(address(0)), InvalidAuthorityAddress());
+
         __AccessManagedUUPSUpgradeable_init(address(_authority));
         __EIP712_init(type(NFT1155Base).name, '1');
 

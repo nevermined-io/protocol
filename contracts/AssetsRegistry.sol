@@ -45,6 +45,8 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
      * @dev This function replaces the constructor for upgradeable contracts
      */
     function initialize(INVMConfig _nvmConfigAddress, IAccessManager _authority) external initializer {
+        require(_nvmConfigAddress != INVMConfig(address(0)), InvalidNVMConfigAddress());
+        require(_authority != IAccessManager(address(0)), InvalidAuthorityAddress());
         _getAssetsRegistryStorage().nvmConfig = _nvmConfigAddress;
         __AccessManagedUUPSUpgradeable_init(address(_authority));
     }

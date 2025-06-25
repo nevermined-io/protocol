@@ -40,6 +40,25 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
     bytes32 private constant LOCK_PAYMENT_CONDITION_STORAGE_LOCATION =
         0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
 
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
+    /**
+     * @notice Error thrown when an invalid agreement store address is provided in an agreement creation process
+     * @dev The agreement store address must be a valid address
+     */
+    error InvalidAgreementStoreAddress();
+
+    /**
+     * /**
+     * @notice Error thrown when an invalid vault address is provided in an agreement creation process
+     * @dev The vault address must be a valid address
+     */
+    error InvalidVaultAddress();
+
     /// @custom:storage-location erc7201:nevermined.lockpaymentcondition.storage
     struct LockPaymentConditionStorage {
         INVMConfig nvmConfig;
@@ -68,6 +87,10 @@ contract LockPaymentCondition is ReentrancyGuardTransientUpgradeable, TemplateCo
         IAgreement _agreementStoreAddress,
         IVault _vaultAddress
     ) external initializer {
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_agreementStoreAddress != IAgreement(address(0)), InvalidAgreementStoreAddress());
+        require(_vaultAddress != IVault(address(0)), InvalidVaultAddress());
+
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         LockPaymentConditionStorage storage $ = _getLockPaymentConditionStorage();
 

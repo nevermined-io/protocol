@@ -412,6 +412,16 @@ interface IAsset {
      */
     error PlansMustBeUnique();
 
+    /**
+     * @notice Error thrown when the NVMConfig address is set to the zero address
+     */
+    error InvalidNVMConfigAddress();
+
+    /**
+     * @notice Error thrown when the authority address is set to the zero address
+     */
+    error InvalidAuthorityAddress();
+
     /* FUNCTIONS */
 
     /**

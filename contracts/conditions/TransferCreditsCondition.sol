@@ -36,6 +36,18 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
      */
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
 
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
+    /**
+     * @notice Error thrown when an invalid agreement store address is provided in an agreement creation process
+     * @dev The agreement store address must be a valid address
+     */
+    error InvalidAgreementStoreAddress();
+
     /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
     struct TransferCreditsConditionStorage {
         IAsset assetsRegistry;
@@ -53,6 +65,9 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         external
         initializer
     {
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_agreementStoreAddress != IAgreement(address(0)), InvalidAgreementStoreAddress());
+
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 

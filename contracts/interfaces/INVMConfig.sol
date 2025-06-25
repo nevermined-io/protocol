@@ -22,6 +22,18 @@ interface INVMConfig {
     event NeverminedConfigChange(address indexed whoChanged, bytes32 indexed parameter, bytes value);
 
     /**
+     * @notice Error thrown when an invalid authority address is provided in an agreement creation process
+     * @dev The authority address must be a valid address
+     */
+    error InvalidAuthorityAddress();
+
+    /**
+     * @notice Error thrown when an invalid default fee controller address is provided in an agreement creation process
+     * @dev The default fee controller address must be a valid address
+     */
+    error InvalidDefaultFeeControllerAddress();
+
+    /**
      * @notice Error thrown when an invalid fee receiver address is provided
      * @dev The fee receiver cannot be the zero address when fees are enabled
      * @param feeReceiver The invalid fee receiver address that was provided

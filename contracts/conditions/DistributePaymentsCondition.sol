@@ -36,6 +36,10 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
     bytes32 private constant DISTRIBUTE_PAYMENTS_CONDITION_STORAGE_LOCATION =
         0xe41c4b3e2f7bba486623bae88edfd7e81be9c1146d2f719bf139ea3fc6346a00;
 
+    error InvalidAssetsRegistryAddress();
+    error InvalidAgreementStoreAddress();
+    error InvalidVaultAddress();
+
     /// @custom:storage-location erc7201:nevermined.distributepaymentscondition.storage
     struct DistributePaymentsConditionStorage {
         IAsset assetsRegistry;
@@ -59,6 +63,10 @@ contract DistributePaymentsCondition is ReentrancyGuardTransientUpgradeable, Tem
     ) external initializer {
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         DistributePaymentsConditionStorage storage $ = _getDistributePaymentsConditionStorage();
+
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_agreementStoreAddress != IAgreement(address(0)), InvalidAgreementStoreAddress());
+        require(_vaultAddress != IVault(address(0)), InvalidVaultAddress());
 
         $.assetsRegistry = _assetsRegistryAddress;
         $.agreementStore = _agreementStoreAddress;

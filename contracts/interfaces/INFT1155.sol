@@ -54,6 +54,24 @@ interface INFT1155 {
     /// @param sender The address of the account that is getting the role
     error InvalidRole(address sender, uint64 role);
 
+    /**
+     * @notice Error thrown when an invalid authority address is provided in an agreement creation process
+     * @dev The authority address must be a valid address
+     */
+    error InvalidAuthorityAddress();
+
+    /**
+     * @notice Error thrown when an invalid vault address is provided in an agreement creation process
+     * @dev The vault address must be a valid address
+     */
+    error InvalidVaultAddress();
+
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
     /// Returns the next nonce for the given sender and keyspace
     /// @param _sender The address of the account
     /// @param _keyspace The keyspaces for which to generate the nonce
