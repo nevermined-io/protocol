@@ -441,7 +441,11 @@ contract AssetsRegistry is IAsset, AccessManagedUUPSUpgradeable {
         }
 
         // Validate that all plans exist
+        uint256 previousPlan = 0;
         for (uint256 i = 0; i < _plans.length; i++) {
+            require(_plans[i] > previousPlan, PlansMustBeUnique());
+            previousPlan = _plans[i];
+
             if ($.plans[_plans[i]].lastUpdated == 0) {
                 revert PlanNotFound(_plans[i]);
             }

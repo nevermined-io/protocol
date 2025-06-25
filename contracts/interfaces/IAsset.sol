@@ -407,6 +407,11 @@ interface IAsset {
      */
     error HooksMustBeUnique();
 
+    /**
+     * @notice Error thrown when plans are not unique
+     */
+    error PlansMustBeUnique();
+
     /* FUNCTIONS */
 
     /**
