@@ -331,16 +331,6 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         revert InvalidRole(msg.sender, CREDITS_TRANSFER_ROLE);
     }
 
-    /**
-     * @notice Checks if the contract supports a given interface
-     * @param interfaceId Interface identifier to check
-     * @return Boolean indicating whether the interface is supported
-     * @dev Supports ERC1155 and ERC2981 interfaces
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return ERC1155Upgradeable.supportsInterface(interfaceId) || interfaceId == type(IERC2981).interfaceId;
-    }
-
     function _getNFT1155BaseStorage() internal pure returns (NFT1155BaseStorage storage $) {
         // solhint-disable-next-line no-inline-assembly
         assembly ("memory-safe") {
