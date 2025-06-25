@@ -95,6 +95,7 @@ contract NFT1155CreditsTest is BaseTest {
 
     // Helper function to create plans with different amounts
     function _createPlanWithAmount(uint256 amount) internal returns (uint256) {
+        uint256 nonce = 0; // Use 0 to match the default createPlan behavior
         uint256[] memory _amounts = new uint256[](1);
         _amounts[0] = amount;
         address[] memory _receivers = new address[](1);
@@ -126,8 +127,8 @@ contract NFT1155CreditsTest is BaseTest {
         priceConfig.receivers = receivers;
 
         vm.prank(owner);
-        assetsRegistry.createPlan(priceConfig, creditsConfig);
-        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, address(this));
+        assetsRegistry.createPlan(priceConfig, creditsConfig, nonce);
+        return assetsRegistry.hashPlanId(priceConfig, creditsConfig, owner, nonce);
     }
 
     function test_mintBatch_unauthorized() public {
@@ -144,7 +145,9 @@ contract NFT1155CreditsTest is BaseTest {
         amounts[1] = 200;
 
         vm.prank(unauthorized);
-        vm.expectPartialRevert(IAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(INFT1155.InvalidRole.selector, unauthorized, uint64(CREDITS_MINTER_ROLE))
+        );
         nftCredits.mintBatch(receiver, ids, amounts, '');
     }
 

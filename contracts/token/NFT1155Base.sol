@@ -113,8 +113,18 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
     function mintBatch(address _to, uint256[] memory _ids, uint256[] memory _values, bytes memory _data)
         public
         virtual
-        restricted
     {
+        NFT1155BaseStorage storage $ = _getNFT1155BaseStorage();
+
+        address sender = msg.sender;
+        (bool hasRole,) = IAccessManager(authority()).hasRole(CREDITS_MINTER_ROLE, sender);
+
+        for (uint256 i = 0; i < _ids.length; i++) {
+            IAsset.Plan memory plan = $.assetsRegistry.getPlan(_ids[i]);
+            if (plan.lastUpdated == 0) revert IAsset.PlanNotFound(_ids[i]);
+            require(hasRole || plan.owner == sender, InvalidRole(sender, CREDITS_MINTER_ROLE));
+        }
+
         _mintBatch(_to, _ids, _values, _data);
     }
 

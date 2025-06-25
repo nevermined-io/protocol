@@ -246,7 +246,7 @@ contract ManagedPermissionsTest is BaseTest, ERC1155Holder {
         nftCredits.mintBatch(roleUser, ids, values, '');
         // Should revert for nonRoleUser
         vm.prank(nonRoleUser);
-        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, nonRoleUser));
+        vm.expectRevert(abi.encodeWithSelector(INFT1155.InvalidRole.selector, nonRoleUser, CREDITS_MINTER_ROLE));
         nftCredits.mintBatch(nonRoleUser, ids, values, '');
     }
 
