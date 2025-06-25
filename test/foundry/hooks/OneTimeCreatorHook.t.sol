@@ -11,7 +11,9 @@ import {IFeeController} from '../../../contracts/interfaces/IFeeController.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {IHook} from '../../../contracts/interfaces/IHook.sol';
+
 import {BaseTest} from '../common/BaseTest.sol';
+import {IAccessManaged} from '@openzeppelin/contracts/access/manager/IAccessManaged.sol';
 
 contract OneTimeCreatorHookTest is BaseTest {
     address creator;
@@ -96,6 +98,67 @@ contract OneTimeCreatorHookTest is BaseTest {
         vm.prank(creator);
         vm.expectRevert(IAsset.HooksMustBeUnique.selector);
         assetsRegistry.createPlanWithHooks(priceConfig, creditsConfig, hooks, uniqueNonce);
+    }
+
+    function test_beforeAgreementRegistered_onlyTemplate_reverts() public {
+        address unauthorized = makeAddr('unauthorized');
+
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Try to call beforeAgreementRegistered from unauthorized address
+        vm.prank(unauthorized);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, unauthorized));
+        oneTimeCreatorHook.beforeAgreementRegistered(
+            agreementId, testCreator, testPlanId, conditionIds, conditionStates, params
+        );
+    }
+
+    function test_afterAgreementCreated_onlyTemplate_reverts() public {
+        address unauthorized = makeAddr('unauthorized');
+
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Try to call afterAgreementCreated from unauthorized address
+        vm.prank(unauthorized);
+        vm.expectRevert(abi.encodeWithSelector(IAccessManaged.AccessManagedUnauthorized.selector, unauthorized));
+        oneTimeCreatorHook.afterAgreementCreated(agreementId, testCreator, testPlanId, conditionIds, params);
+    }
+
+    function test_beforeAgreementRegistered_template_success() public {
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        IAgreement.ConditionState[] memory conditionStates = new IAgreement.ConditionState[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Call beforeAgreementRegistered from template (this contract has template role)
+        vm.expectEmit(true, true, false, false);
+        emit OneTimeCreatorHook.FirstAgreementCreated(testCreator, agreementId);
+        oneTimeCreatorHook.beforeAgreementRegistered(
+            agreementId, testCreator, testPlanId, conditionIds, conditionStates, params
+        );
+    }
+
+    function test_afterAgreementCreated_template_success() public {
+        bytes32 agreementId = keccak256('test-agreement');
+        address testCreator = makeAddr('test-creator');
+        uint256 testPlanId = 1;
+        bytes32[] memory conditionIds = new bytes32[](0);
+        bytes[] memory params = new bytes[](0);
+
+        // Call afterAgreementCreated from template (this contract has template role)
+        // Should not revert
+        oneTimeCreatorHook.afterAgreementCreated(agreementId, testCreator, testPlanId, conditionIds, params);
     }
 
     function _createPlanWithHooks(IHook[] memory hooks) internal returns (uint256) {

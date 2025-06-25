@@ -65,7 +65,7 @@ contract OneTimeCreatorHook is IHook, AccessManagedUUPSUpgradeable {
         bytes32[] memory,
         IAgreement.ConditionState[] memory,
         bytes[] memory
-    ) external {
+    ) external restricted {
         OneTimeCreatorHookStorage storage $ = _getOneTimeCreatorHookStorage();
 
         require(!$.hasCreatedAgreement[_planId][_creator], CreatorAlreadyCreatedAgreement(_creator, _agreementId));
@@ -88,7 +88,7 @@ contract OneTimeCreatorHook is IHook, AccessManagedUUPSUpgradeable {
         uint256 _planId,
         bytes32[] memory _conditionIds,
         bytes[] memory _params
-    ) external {
+    ) external restricted {
         // No action needed after agreement creation
     }
 
