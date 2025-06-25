@@ -272,7 +272,8 @@ abstract contract NFT1155Base is ERC1155Upgradeable, INFT1155, EIP712Upgradeable
         uint256 _max
     ) internal pure returns (uint256) {
         if (_creditsType == IAsset.CreditsType.DYNAMIC) {
-            if (_amount < _min || _amount > _max) return _min;
+            if (_amount < _min) return _min;
+            else if (_amount > _max) return _max;
             else return _amount;
         } else if (_creditsType == IAsset.CreditsType.FIXED) {
             return _min;
