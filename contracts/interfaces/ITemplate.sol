@@ -38,4 +38,34 @@ interface ITemplate {
      * @param receiver The invalid receiver address being used in the agreement
      */
     error InvalidReceiver(address receiver);
+
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
+    /**
+     * @notice Error thrown when an invalid NVMConfig address is provided in an agreement creation process
+     * @dev The NVMConfig address must be a valid address
+     */
+    error InvalidNVMConfigAddress();
+
+    /**
+     * @notice Error thrown when an invalid fiat settlement condition address is provided in an agreement creation process
+     * @dev The fiat settlement condition address must be a valid address
+     */
+    error InvalidFiatSettlementConditionAddress();
+
+    /**
+     * @notice Error thrown when an invalid transfer credits condition address is provided in an agreement creation process
+     * @dev The transfer credits condition address must be a valid address
+     */
+    error InvalidTransferCreditsConditionAddress();
+
+    /**
+     * @notice Error thrown when an invalid agreement store address is provided in an agreement creation process
+     * @dev The agreement store address must be a valid address
+     */
+    error InvalidAgreementStoreAddress();
 }

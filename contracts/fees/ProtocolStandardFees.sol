@@ -16,7 +16,7 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 contract ProtocolStandardFees is IProtocolStandardFees, AccessManagedUUPSUpgradeable {
     // keccak256(abi.encode(uint256(keccak256("nevermined.protocolstandardfees.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant PROTOCOL_STANDARD_FEES_STORAGE_LOCATION =
-        0x6c9566430157c5ec4491fdbbed7bf67f82d06a6dee70d9aaa3ede461d7d98901;
+        0x0d784bb8b76bb03d4f7da8f1a5de7ac267beddd13f33d8a855f72ce8098dc700;
 
     /// @custom:storage-location erc7201:nevermined.protocolstandardfees.storage
     struct ProtocolStandardFeesStorage {

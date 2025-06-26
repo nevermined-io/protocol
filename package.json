@@ -1,6 +1,6 @@
 {
   "name": "@nevermined-io/contracts",
-  "version": "4.0.0",
+  "version": "1.0.2",
   "description": "Nevermined Protocol that allows monetization of AI Agents",
   "author": "Nevermined AG",
   "license": "Apache-2.0",

@@ -35,4 +35,16 @@ interface IFiatSettlement {
      * @param expectedRole The expected role that was provided
      */
     error InvalidRole(address addr, uint64 expectedRole);
+
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
+    /**
+     * @notice Error thrown when an invalid agreement store address is provided in an agreement creation process
+     * @dev The agreement store address must be a valid address
+     */
+    error InvalidAgreementStoreAddress();
 }

@@ -4,16 +4,27 @@
 pragma solidity ^0.8.30;
 
 import {FiatPaymentTemplate} from '../../../contracts/agreements/FiatPaymentTemplate.sol';
+
+import {FIAT_SETTLEMENT_ROLE} from '../../../contracts/common/Roles.sol';
 import {IAgreement} from '../../../contracts/interfaces/IAgreement.sol';
 import {IAsset} from '../../../contracts/interfaces/IAsset.sol';
 import {INVMConfig} from '../../../contracts/interfaces/INVMConfig.sol';
 import {ITemplate} from '../../../contracts/interfaces/ITemplate.sol';
 
 import {BaseTest} from '../common/BaseTest.sol';
+import {console} from 'forge-std/console.sol';
 
 contract FiatPaymentTemplateTest is BaseTest {
     function setUp() public override {
         super.setUp();
+        // Grant FIAT_SETTLEMENT_ROLE to this test contract so it can fulfill fiat settlement conditions
+        _grantRole(FIAT_SETTLEMENT_ROLE, address(this));
+    }
+
+    function test_fiatSettlementRoleGranted() public view {
+        // Verify that this test contract has the FIAT_SETTLEMENT_ROLE
+        (bool hasRole,) = accessManager.hasRole(FIAT_SETTLEMENT_ROLE, address(this));
+        assertTrue(hasRole, 'Test contract should have FIAT_SETTLEMENT_ROLE');
     }
 
     function test_createAgreement() public {

@@ -29,12 +29,24 @@ import {IAccessManager} from '@openzeppelin/contracts/access/manager/IAccessMana
 contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, TemplateCondition {
     // keccak256(abi.encode(uint256(keccak256("nevermined.transfercreditscondition.storage")) - 1)) & ~bytes32(uint256(0xff))
     bytes32 private constant TRANSFER_CREDITS_CONDITION_STORAGE_LOCATION =
-        0x249686b58dc8ad820998e3d83bd78653adb95e2993297822a42d3d4df7f1ae00;
+        0x11e83ddb7fc8dc31a8b791a97ca4f63a6582f72d5627230814ad0de9199e1400;
 
     /**
      * @notice Contract name identifier used in the Nevermined ecosystem
      */
     bytes32 public constant NVM_CONTRACT_NAME = keccak256('TransferCreditsCondition');
+
+    /**
+     * @notice Error thrown when an invalid assets registry address is provided in an agreement creation process
+     * @dev The assets registry address must be a valid address
+     */
+    error InvalidAssetsRegistryAddress();
+
+    /**
+     * @notice Error thrown when an invalid agreement store address is provided in an agreement creation process
+     * @dev The agreement store address must be a valid address
+     */
+    error InvalidAgreementStoreAddress();
 
     /// @custom:storage-location erc7201:nevermined.transfercreditscondition.storage
     struct TransferCreditsConditionStorage {
@@ -53,6 +65,9 @@ contract TransferCreditsCondition is ReentrancyGuardTransientUpgradeable, Templa
         external
         initializer
     {
+        require(_assetsRegistryAddress != IAsset(address(0)), InvalidAssetsRegistryAddress());
+        require(_agreementStoreAddress != IAgreement(address(0)), InvalidAgreementStoreAddress());
+
         ReentrancyGuardTransientUpgradeable.__ReentrancyGuardTransient_init();
         TransferCreditsConditionStorage storage $ = _getTransferCreditsConditionStorage();
 

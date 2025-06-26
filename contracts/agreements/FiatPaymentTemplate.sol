@@ -71,6 +71,16 @@ contract FiatPaymentTemplate is BaseTemplate {
 
         FiatPaymentTemplateStorage storage $ = _getFiatPaymentTemplateStorage();
 
+        require(_nvmConfigAddress != INVMConfig(address(0)), InvalidNVMConfigAddress());
+        require(
+            _fiatSettlementConditionAddress != FiatSettlementCondition(address(0)),
+            InvalidFiatSettlementConditionAddress()
+        );
+        require(
+            _transferCondtionAddress != TransferCreditsCondition(address(0)), InvalidTransferCreditsConditionAddress()
+        );
+        require(_agreementStoreAddress != AgreementsStore(address(0)), InvalidAgreementStoreAddress());
+
         $.nvmConfig = _nvmConfigAddress;
         $.fiatSettlementCondition = _fiatSettlementConditionAddress;
         $.transferCondition = _transferCondtionAddress;
