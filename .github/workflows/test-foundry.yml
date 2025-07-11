@@ -13,6 +13,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Enable Corepack
+        run: corepack enable          
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
