@@ -22,7 +22,7 @@
     "build": "forge build",
     "compile": "forge build",
     "compile:hardhat": "npx hardhat compile",
-    "deploy:local": "export DEBUG=true && yarn deploy:local:install && yarn deploy:local:config:permissions && yarn deploy:local:config:fees",
+    "deploy:local": "DEBUG=true && yarn deploy:local:install && yarn deploy:local:config:permissions && yarn deploy:local:config:fees",
     "deploy:local:install": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:local:config:permissions": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:local:config:fees": "forge script scripts/deploy/SetNetworkFees.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
@@ -73,8 +73,8 @@
     "solhint": "^5.0.5",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
-    "typescript": "~5.0.4",
+    "typescript": "^5.4.0",
     "viem": "^2.27.0"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "yarn@4.9.2"
 }
