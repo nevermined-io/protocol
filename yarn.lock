@@ -1168,7 +1168,7 @@ __metadata:
     "@nomicfoundation/ignition-core": "npm:^0.15.11"
     "@nomiclabs/hardhat-solhint": "npm:^4.0.1"
     "@openzeppelin/contracts": "npm:^5.2.0"
-    "@openzeppelin/contracts-upgradeable": "npm:^5.2.0"
+    "@openzeppelin/contracts-upgradeable": "npm:^5.4.0"
     "@openzeppelin/hardhat-upgrades": "npm:^3.9.0"
     "@safe-global/api-kit": "npm:^3.0.1"
     "@types/chai": "npm:^4.2.0"
@@ -1682,12 +1682,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@openzeppelin/contracts-upgradeable@npm:^5.2.0":
-  version: 5.2.0
-  resolution: "@openzeppelin/contracts-upgradeable@npm:5.2.0"
+"@openzeppelin/contracts-upgradeable@npm:^5.4.0":
+  version: 5.4.0
+  resolution: "@openzeppelin/contracts-upgradeable@npm:5.4.0"
   peerDependencies:
-    "@openzeppelin/contracts": 5.2.0
-  checksum: 10c0/fd26cff80d0a6b502625eb46f14b43e91ffad94a22b8745ff0edf6ab76924fd61773a629b5a42af1741f621fd7eb620cb03e596b21ba23024c4f2b132dc843b6
+    "@openzeppelin/contracts": 5.4.0
+  checksum: 10c0/0bf78ad1a42151eb41eb7ff6645714a65649766643514b704d398927fe72533d2a143557306610db93f625124dfef9ee06b2c9ca624ada16074962cbcb622b6b
   languageName: node
   linkType: hard
 
