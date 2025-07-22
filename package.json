@@ -37,7 +37,7 @@
     "postpack": "pinst --enable"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.2.0",
+    "@openzeppelin/contracts": "^5.4.0",
     "@openzeppelin/contracts-upgradeable": "^5.4.0",
     "@safe-global/api-kit": "^3.0.1",
     "dotenv": "^16.5.0"
