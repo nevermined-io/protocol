@@ -159,6 +159,7 @@ contract DeployAll is Script, DeployConfig {
         bool debug = vm.envOr('DEBUG', false);
         address ownerAddress = vm.envOr('OWNER_ADDRESS', msg.sender);
         address governorAddress = vm.envOr('GOVERNOR_ADDRESS', msg.sender);
+        address upgraderAddress = vm.envOr('UPGRADER_ADDRESS', msg.sender);
 
         bool revertIfAlreadyDeployed = vm.envOr('REVERT_IF_ALREADY_DEPLOYED', true);
 
@@ -295,6 +296,7 @@ contract DeployAll is Script, DeployConfig {
         string memory jsonContent = vm.serializeString(rootJsonKey, 'version', version);
         jsonContent = vm.serializeAddress(rootJsonKey, 'owner', ownerAddress);
         jsonContent = vm.serializeAddress(rootJsonKey, 'governor', governorAddress);
+        jsonContent = vm.serializeAddress(rootJsonKey, 'upgrader', upgraderAddress);
         jsonContent = vm.serializeUint(rootJsonKey, 'chainId', block.chainid);
         jsonContent = vm.serializeUint(rootJsonKey, 'blockNumber', block.number);
         jsonContent = vm.serializeUint(rootJsonKey, 'snapshotId', 0);
