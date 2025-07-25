@@ -18,7 +18,7 @@ Create a `.env` file with the following variables:
 ```
 export RPC_URL="http://localhost:8545"
 
-export OWNER_MNEMONIC="test test test test test test test test test test test junk"
+export OWNER_MNEMONIC="test test test test test test test test test test test test junk"
 export OWNER_INDEX=0
 export OWNER_ADDRESS="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 
@@ -124,26 +124,89 @@ forge verify-contract <FIXED_PAYMENT_TEMPLATE_ADDRESS> FixedPaymentTemplate --ch
 forge verify-contract <FIAT_PAYMENT_TEMPLATE_ADDRESS> FiatPaymentTemplate --chain base-sepolia --etherscan-api-key $ETHERSCAN_API_KEY
 ```
 
-## Contract Upgrades
+## Upgrading Contracts
 
-The Nevermined contracts follow an upgradeable pattern where new implementations are registered in the NVMConfig contract. To upgrade a contract:
+The upgrade process for contracts is now managed via environment variables and Safe multisig. Please follow these steps:
 
-1. Deploy the new implementation:
+### 1. Set Up the Upgrade Environment
 
-```bash
-# Example for deploying a new AssetsRegistry implementation
-forge create contracts/AssetsRegistry.sol:AssetsRegistry --rpc-url $RPC_URL --mnemonics "$MNEMONIC" --mnemonic-indexes $OWNER_INDEX
+Create a file named `.env.upgrades` in your project root with the following content (replace values as needed):
+
+```sh
+# RPC Endpoint
+export RPC_URL=https://sepolia.base.org
+
+# Contract Details
+export PROXY_ADDRESS=0x7bcbBf5aed163064a9A8CBbe1bBb8Ec5de3581E0
+export NEW_IMPLEMENTATION_ADDRESS=0xf522DAE5dEEB5D10D55fC86e187F42E99CE628aF
+
+# Upgrades SAFE Address
+export SAFE_ADDRESS=0x2020949c1B565421AC21b76e70340266c4CA9A90
+export SAFE_SIGNER_PRIVATE_KEY=<redacted>
+
+# Access Manager Address
+export ACCESS_MANAGER_ADDRESS=0x286fDDB4E7ed448c52c6033c16E04Ecc5475Aa20
 ```
 
-2. Register the new implementation in NVMConfig (must be done by the governor):
+### 2. Load the Environment Variables
 
-```bash
-# Get the contract name hash
-export CONTRACT_NAME=$(cast keccak "AssetsRegistry")
+In your terminal, run:
 
-# Register the new implementation
-forge script scripts/upgrade/UpgradeContract.sol --rpc-url $RPC_URL --broadcast --mnemonics "$MNEMONIC" --mnemonic-indexes $GOVERNOR_INDEX --sig "run(address,bytes32,address)" $NVM_CONFIG_ADDRESS $CONTRACT_NAME $NEW_IMPLEMENTATION_ADDRESS
+```sh
+source .env.upgrades
 ```
+
+### 3. Initiate the Upgrade
+
+Run:
+
+```sh
+yarn upgrade:initiate
+```
+
+- This will schedule the upgrade and propose a transaction to your Safe.
+- **Check your terminal output for details.**
+- Go to your Safe interface and sign the transaction.
+
+Example output:
+```
+Initiating contract upgrade process...
+Connected to chain ID: 84532
+Retrieved upgrade delay for Safe: 10 seconds
+Scheduling upgrade for proxy 0x7bcbBf5aed163064a9A8CBbe1bBb8Ec5de3581E0 to implementation 0xf522DAE5dEEB5D10D55fC86e187F42E99CE628aF
+Upgrade will be executable after timestamp: 1753427357 (2025-07-25T07:09:17.000Z)
+Transaction hash: 0x1d7f44192586b62a35f160504a4ac1a0408c8a2b07f42fae50aa12992583ab1c proposed to Safe... Waiting for confirmation...
+Transaction proposed to Safe with hash: 0x1d7f44192586b62a35f160504a4ac1a0408c8a2b07f42fae50aa12992583ab1c
+Please review and sign the transaction in your Safe interface
+```
+
+### 4. Finalize the Upgrade
+
+After the required delay, run:
+
+```sh
+yarn upgrade:finalize
+```
+
+- This will execute the upgrade and propose another transaction to your Safe.
+- **Check your terminal output for details.**
+- Go to your Safe interface and sign the transaction.
+
+Example output:
+```
+Finalizing contract upgrade...
+Connected to chain ID: 84532
+Executing scheduled contract upgrade
+Proxy: 0x7bcbBf5aed163064a9A8CBbe1bBb8Ec5de3581E0
+New implementation: 0xf522DAE5dEEB5D10D55fC86e187F42E99CE628aF
+Transaction hash: 0x7289965e969ded2e1e60ca8956a9e96956bc1ec6ca9685706a7750cce2b66e40 proposed to Safe... Waiting for confirmation...
+Upgrade execution transaction proposed to Safe with hash: 0x7289965e969ded2e1e60ca8956a9e96956bc1ec6ca9685706a7750cce2b66e40
+Please review and sign the transaction in your Safe interface
+```
+
+**Note:**
+- Always refer to the terminal output for the latest status and transaction hashes.
+- Both steps require signing transactions in your Safe interface.
 
 ## Deployment Verification Checklist
 
