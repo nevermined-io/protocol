@@ -1,6 +1,6 @@
 {
   "name": "@nevermined-io/contracts",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "Nevermined Protocol that allows monetization of AI Agents",
   "author": "Nevermined AG",
   "license": "Apache-2.0",
@@ -27,7 +27,7 @@
     "deploy:local:config:permissions": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:local:config:fees": "forge script scripts/deploy/SetNetworkFees.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
     "deploy:base-sepolia": "sh .env.base-sepolia.sh && yarn deploy:remote:install && yarn deploy:remote:config && yarn deploy:remote:config:fees",
-    "deploy:base-mainnet": "source .env.base-mainnet.sh && yarn deploy:remote:install && yarn deploy:remote:config && yarn deploy:remote:config:fees",
+    "deploy:base-mainnet": "sh .env.base-mainnet.sh && yarn deploy:remote:install && yarn deploy:remote:config && yarn deploy:remote:config:fees",
     "deploy:remote:install": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify ",
     "deploy:remote:config": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:remote:config:fees": "forge script scripts/deploy/SetNetworkFees.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
