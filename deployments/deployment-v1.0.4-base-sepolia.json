@@ -1,5 +1,5 @@
 {
-  "blockNumber": 28833714,
+  "blockNumber": 28832899,
   "chainId": 84532,
   "contracts": {
     "AccessManager": "0x399C05bE0656b5A8df385D52E103488c50f170F0",
@@ -24,5 +24,5 @@
   "owner": "0x731E7a35DDBB7d2b168D16824B371034f0DD0024",
   "snapshotId": 0,
   "upgrader": "0x2020949c1B565421AC21b76e70340266c4CA9A90",
-  "version": "1.0.2"
+  "version": "1.0.4"
 }

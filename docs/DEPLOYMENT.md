@@ -70,6 +70,14 @@ yarn deploy:local:config:permissions
 yarn deploy:local:config:fees
 ```
 
+### Remote Deployment (Base Sepolia example)
+
+```bash
+source .env.base-sepolia.sh
+yarn deploy:base-sepolia
+```
+
+
 ### Understanding Mnemonic-Based Deployment
 
 The deployment scripts use Foundry's mnemonic-based key derivation system:
@@ -127,6 +135,17 @@ forge verify-contract <FIAT_PAYMENT_TEMPLATE_ADDRESS> FiatPaymentTemplate --chai
 ## Upgrading Contracts
 
 The upgrade process for contracts is now managed via environment variables and Safe multisig. Please follow these steps:
+
+### 0. Deploy and verify the new contract implementation
+
+This step needs to be done for each contract you want to upgrade. Make sure the new implementation is deployed and verified on the network.
+
+a. Deploy the new contract implementation using Foundry:
+
+```bash
+# Example for deploying a new NFT1155ExpirableCredits implementation
+forge create contracts/token/NFT1155ExpirableCredits.sol:NFT1155ExpirableCredits --rpc-url $RPC_URL --mnemonic "$OWNER_MNEMONIC" --mnemonic-index $OWNER_INDEX --broadcast --verify --etherscan-api-key $ETHERSCAN_API_KEY
+```
 
 ### 1. Set Up the Upgrade Environment
 
