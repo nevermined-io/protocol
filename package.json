@@ -31,8 +31,8 @@
     "deploy:remote:install": "forge script scripts/deploy/DeployAll.sol --extra-output-files abi --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS --verify ",
     "deploy:remote:config": "forge script scripts/deploy/ConfigureAll.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$OWNER_MNEMONIC\" --mnemonic-indexes $OWNER_INDEX --sender $OWNER_ADDRESS ",
     "deploy:remote:config:fees": "forge script scripts/deploy/SetNetworkFees.sol --rpc-url $RPC_URL --broadcast --mnemonics \"$GOVERNOR_MNEMONIC\" --mnemonic-indexes $GOVERNOR_INDEX --sender $GOVERNOR_ADDRESS ",
-    "upgrade:initiate": "source .env.upgrades && ts-node scripts/upgrade/upgrade.ts --initiate",
-    "upgrade:finalize": "source .env.upgrades && ts-node scripts/upgrade/upgrade.ts --finalize",
+    "upgrade:initiate": "ts-node scripts/upgrade/upgrade.ts --initiate",
+    "upgrade:finalize": "ts-node scripts/upgrade/upgrade.ts --finalize",
     "prepack": "pinst --disable",
     "postpack": "pinst --enable"
   },

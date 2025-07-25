@@ -35,6 +35,7 @@ contract ConfigureAll is Script, DeployConfig {
 
         address ownerAddress = vm.parseJsonAddress(json, '$.owner');
         address governorAddress = vm.parseJsonAddress(json, '$.governor');
+        address upgraderAddress = vm.parseJsonAddress(json, '$.upgrader');
 
         if (debug) console2.log('Configuring contracts with Owner address:', ownerAddress);
         console2.log('Configuring contracts with JSON addresses from file:', addressesJson);
@@ -45,7 +46,7 @@ contract ConfigureAll is Script, DeployConfig {
         ManagePermissions.Config memory config = ManagePermissions.Config({
             owner: ownerAddress,
             governor: governorAddress,
-            upgrader: ownerAddress,
+            upgrader: upgraderAddress,
             nvmConfig: NVMConfig(vm.parseJsonAddress(json, '$.contracts.NVMConfig')),
             assetsRegistry: AssetsRegistry(vm.parseJsonAddress(json, '$.contracts.AssetsRegistry')),
             agreementsStore: AgreementsStore(vm.parseJsonAddress(json, '$.contracts.AgreementsStore')),

@@ -29,7 +29,7 @@ import {Script} from 'lib/forge-std/src/Script.sol';
 import {console2} from 'lib/forge-std/src/console2.sol';
 
 contract ManagePermissions is Script, DeployConfig {
-    uint32 UPGRADE_DELAY = 1 days;
+    uint32 DEFAULT_UPGRADE_DELAY = 1 days;
 
     struct Config {
         address owner;
@@ -57,8 +57,10 @@ contract ManagePermissions is Script, DeployConfig {
 
         vm.startBroadcast(config.owner);
 
+        uint32 upgradeDelay = uint32(vm.envOr('UPGRADE_DELAY_IN_SECONDS', DEFAULT_UPGRADE_DELAY));
+
         // Grant and configure upgrader role
-        _grantUpgraderRole(config.upgrader, config.accessManager);
+        _grantUpgraderRole(config.upgrader, config.accessManager, upgradeDelay);
         _configureUpgradeRole(
             toArray(
                 address(config.nvmConfig),
@@ -178,10 +180,10 @@ contract ManagePermissions is Script, DeployConfig {
         accessManager.grantRole(NVM_INFRA_ADMIN_ROLE, roleReceiver, 0);
     }
 
-    function _grantUpgraderRole(address upgrader, AccessManager accessManager) internal {
-        console2.log('Granting upgrader role to upgrader ', upgrader);
+    function _grantUpgraderRole(address upgrader, AccessManager accessManager, uint32 upgradeDelay) internal {
+        console2.log('Granting upgrader role to upgrader ', upgrader, ' with delay ', upgradeDelay);
 
-        accessManager.grantRole(UPGRADE_ROLE, upgrader, UPGRADE_DELAY);
+        accessManager.grantRole(UPGRADE_ROLE, upgrader, upgradeDelay);
     }
 
     function _grantTemplateRoles(address[] memory templates, AccessManager accessManager) internal {
